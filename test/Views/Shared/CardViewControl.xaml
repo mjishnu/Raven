@@ -229,6 +229,7 @@
                 </StackPanel>
                 <ItemsView
                     Grid.Row="1"
+                    Padding="10"
                     ItemTemplate="{StaticResource NormalItemTemplate}"
                     ItemsSource="{x:Bind ItemsSource}"
                     Layout="{StaticResource VirtualGridLayout}" />

@@ -116,29 +116,81 @@
                         Text="Screenshots" />
                     <!--  Divider  -->
                     <Rectangle Height="1" Fill="{ThemeResource DividerStrokeColorDefaultBrush}" />
-                    <ScrollViewer
-                        Padding="24"
-                        HorizontalScrollBarVisibility="Hidden"
-                        HorizontalScrollMode="Enabled"
-                        VerticalScrollBarVisibility="Disabled"
-                        VerticalScrollMode="Disabled">
-                        <ItemsRepeater ItemsSource="{x:Bind AppData.Screenshots, Mode=OneWay}">
-                            <ItemsRepeater.Layout>
-                                <StackLayout Orientation="Horizontal" Spacing="24" />
-                            </ItemsRepeater.Layout>
-                            <ItemsRepeater.ItemTemplate>
-                                <DataTemplate>
-                                    <Border CornerRadius="10">
-                                        <Image
-                                            Width="630"
-                                            Height="350"
-                                            Source="{Binding Url}"
-                                            Stretch="Fill" />
-                                    </Border>
-                                </DataTemplate>
-                            </ItemsRepeater.ItemTemplate>
-                        </ItemsRepeater>
-                    </ScrollViewer>
+                    <Grid>
+                        <!--  Left Arrow Button - Fixed with correct Glyph and ZIndex  -->
+                        <Button
+                            x:Name="LeftArrowButton"
+                            Width="40"
+                            Height="40"
+                            Margin="8,0,0,0"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1"
+                            Canvas.ZIndex="10"
+                            Click="LeftArrowButton_Click"
+                            CornerRadius="26">
+                            <FontIcon
+                                Margin="0,0,1,0"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                FontSize="15"
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Glyph="&#xE96F;" />
+
+                        </Button>
+
+                        <!--  ScrollViewer for ItemsRepeater - Added PointerWheelChanged handler to prevent wheel scrolling  -->
+                        <ScrollViewer
+                            x:Name="ScreenshotsScrollViewer"
+                            Padding="24"
+                            HorizontalScrollBarVisibility="Hidden"
+                            HorizontalScrollMode="Disabled"
+                            VerticalScrollBarVisibility="Disabled"
+                            VerticalScrollMode="Disabled">
+                            <ItemsRepeater ItemsSource="{x:Bind AppData.Screenshots, Mode=OneWay}">
+                                <ItemsRepeater.Layout>
+                                    <StackLayout Orientation="Horizontal" Spacing="24" />
+                                </ItemsRepeater.Layout>
+                                <ItemsRepeater.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border CornerRadius="10">
+                                            <Image
+                                                Width="630"
+                                                Height="350"
+                                                Source="{Binding Url}"
+                                                Stretch="Fill" />
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsRepeater.ItemTemplate>
+                            </ItemsRepeater>
+                        </ScrollViewer>
+
+                        <!--  Right Arrow Button - Fixed with correct Glyph  -->
+                        <Button
+                            x:Name="RightArrowButton"
+                            Width="40"
+                            Height="40"
+                            Margin="0,0,8,0"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Center"
+                            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1"
+                            Canvas.ZIndex="10"
+                            Click="RightArrowButton_Click"
+                            CornerRadius="26">
+                            <FontIcon
+                                Margin="1,0,0,0"
+                                HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                FontSize="15"
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Glyph="&#xE970;" />
+                        </Button>
+                    </Grid>
+
                 </StackPanel>
                 <!--  Full Description Section  -->
                 <StackPanel

@@ -36,7 +36,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\StoreListings\StoreListings.Library\StoreListings.Library.csproj" />
+    <ProjectReference Include="..\StoreListings\StoreListings.Library\StoreListings.Library.csproj" />
     <ProjectReference Include="..\test.Core\test.Core.csproj" />
   </ItemGroup>
   <ItemGroup>
