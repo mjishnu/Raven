@@ -18,6 +18,7 @@ public class PageService : IPageService
         Configure<BundlesViewModel, BundlesPage>();
         Configure<SearchViewModel, SearchPage>();
         Configure<SettingsViewModel, SettingsPage>();
+        Configure<DownloadsViewModel, DownloadsPage>();
     }
 
     public Type GetPageType(string key)

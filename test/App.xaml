@@ -13,6 +13,9 @@
             </ResourceDictionary.MergedDictionaries>
             <helper:HideElementConverter x:Key="HideElementConverter" />
             <helper:OneDecimalPlaceConverter x:Key="OneDecimalPlaceConverter" />
+            <helper:DownloadStatusToVisibilityConverter x:Key="DownloadStatusToVisibilityConverter" />
+            <helper:CompletedStatusToVisibilityConverter x:Key="CompletedStatusToVisibilityConverter" />
+            <helper:NotDownloadingStatusToVisibilityConverter x:Key="NotDownloadingStatusToVisibilityConverter" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

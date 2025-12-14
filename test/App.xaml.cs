@@ -86,6 +86,8 @@ public partial class App : Application
                     services.AddSingleton<MainViewModel>();
                     services.AddTransient<SearchPage>();
                     services.AddSingleton<SearchViewModel>();
+                    services.AddTransient<DownloadsPage>();
+                    services.AddSingleton<DownloadsViewModel>();
 
                     // Configuration
                     services.Configure<LocalSettingsOptions>(
@@ -110,6 +112,9 @@ public partial class App : Application
     protected override async void OnLaunched(LaunchActivatedEventArgs args)
     {
         base.OnLaunched(args);
+
+        // Initialize DownloadManagerService with the dispatcher queue
+        DownloadManagerService.Instance.Initialize(Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread());
 
         await App.GetService<IActivationService>().ActivateAsync(args);
         // Add other services

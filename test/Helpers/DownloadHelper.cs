@@ -9,12 +9,14 @@ public sealed class DownloadHelper
 {
     public static async Task StartDownloadAsync(
         FileEntry entry,
+        string productId,
         CancellationToken token,
         UIUpdateService updateService
     )
     {
         const int THROTTLE_MS = 500;
         var reporter = updateService.GetReporter();
+        var downloadManager = DownloadManagerService.Instance;
 
         // Per-file progress tracking state
         int lastWholePercent = -1;
@@ -75,6 +77,9 @@ public sealed class DownloadHelper
                         Details: $"{whole}% • {receivedMB:F1} / {totalMB:F0} MB"
                     )
                 );
+
+                // Update DownloadItem progress directly
+                downloadManager.UpdateDownloadProgress(productId, e.ProgressPercentage);
             }
         };
 
@@ -155,6 +160,9 @@ public sealed class DownloadHelper
                     cancelled = true;
                     break;
                 }
+
+                // Register the downloaded file path for tracking
+                downloadManager.AddDownloadedFilePath(productId, destinationPath);
             }
             catch (OperationCanceledException)
             {
