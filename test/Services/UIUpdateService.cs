@@ -120,8 +120,7 @@ public sealed class UIUpdateService : INotifyPropertyChanged
                 _animTimer.Start();
             }
 
-            // Immediately reflect the base text without resetting dots
-            StatusText = _animBase + (_animDots == 0 ? string.Empty : new string('.', _animDots));
+            StatusText = ComposeAnimatedStatus();
         });
     }
 
@@ -136,8 +135,7 @@ public sealed class UIUpdateService : INotifyPropertyChanged
             }
 
             _animBase = baseText;
-            // Immediately update while keeping current dots.
-            StatusText = _animBase + (_animDots == 0 ? string.Empty : new string('.', _animDots));
+            StatusText = ComposeAnimatedStatus();
         });
     }
 
@@ -160,7 +158,23 @@ public sealed class UIUpdateService : INotifyPropertyChanged
     private void AnimationTick(object? sender, object? e)
     {
         _animDots = (_animDots % 3) + 1;
-        StatusText = _animBase + new string('.', _animDots);
+        StatusText = ComposeAnimatedStatus();
+    }
+
+    private string ComposeAnimatedStatus()
+    {
+        // Keep the string length constant to avoid layout re-measure/re-arrange jank.
+        // Using a fixed 3-char tail prevents the status column from "shimmering".
+        // Example: "Installing   ", "Installing.  ", "Installing.. ", "Installing..."
+        var dots = _animDots switch
+        {
+            1 => ".  ",
+            2 => ".. ",
+            3 => "...",
+            _ => "   "
+        };
+
+        return _animBase + dots;
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;
