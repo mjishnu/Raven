@@ -36,16 +36,16 @@ public sealed partial class DownloadsPage : Page
             switch (item.Status)
             {
                 case DownloadStatus.Pending:
-                    _animator.Start(item, GetAnimatorBaseText(item, "Fetching download URLs"));
+                    StartOrUpdateAnimation(item, fallback: "Fetching download URLs");
                     break;
                 case DownloadStatus.Downloading:
-                    _animator.Start(item, GetAnimatorBaseText(item, "Downloading"));
+                    StartOrUpdateAnimation(item, fallback: "Downloading");
                     break;
                 case DownloadStatus.Installing:
-                    _animator.Start(item, GetAnimatorBaseText(item, "Installing"));
+                    StartOrUpdateAnimation(item, fallback: "Installing");
                     break;
                 case DownloadStatus.Cancelling:
-                    _animator.Start(item, GetAnimatorBaseText(item, "Cancelling"));
+                    StartOrUpdateAnimation(item, fallback: "Cancelling");
                     break;
                 default:
                     _animator.Stop(item);
@@ -54,8 +54,32 @@ public sealed partial class DownloadsPage : Page
         }
     }
 
+    private void StartOrUpdateAnimation(DownloadItem item, string fallback)
+    {
+        if (_animator == null)
+            return;
+
+        var baseText = GetAnimatorBaseText(item, fallback);
+
+        // If we're already showing the same base text, don't restart the timer.
+        // Restarting can temporarily clear the override and cause visible flicker.
+        if (!string.IsNullOrWhiteSpace(item.StatusTextOverride))
+        {
+            var existingBase = item.StatusTextOverride.TrimEnd('.', ' ');
+            if (string.Equals(existingBase, baseText, StringComparison.OrdinalIgnoreCase))
+            {
+                _animator.UpdateBase(item, baseText);
+                return;
+            }
+        }
+
+        _animator.Start(item, baseText);
+    }
+
     private static string GetAnimatorBaseText(DownloadItem item, string fallback)
     {
+        // Prefer the override when present; otherwise fall back to the computed StatusText.
+        // This preserves more specific state like "Downloading (1/4) files...".
         var text = item.StatusTextOverride ?? item.StatusText;
         if (string.IsNullOrWhiteSpace(text))
             return fallback;

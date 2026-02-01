@@ -23,8 +23,14 @@ public static class GetDownloadUrl
             || n.Contains("resource", StringComparison.OrdinalIgnoreCase);
     }
 
-    private static IEnumerable<(FE3Handler.SyncUpdatesResponse.Update Update, string Url)> ReduceFrameworkDependencyFiles(
-        IReadOnlyList<(FE3Handler.SyncUpdatesResponse.Update Update, string Url)> latestVersionGroup,
+    private static IEnumerable<(
+        FE3Handler.SyncUpdatesResponse.Update Update,
+        string Url
+    )> ReduceFrameworkDependencyFiles(
+        IReadOnlyList<(
+            FE3Handler.SyncUpdatesResponse.Update Update,
+            string Url
+        )> latestVersionGroup,
         string archRid
     )
     {
@@ -84,10 +90,19 @@ public static class GetDownloadUrl
 
             return arch switch
             {
-                "arm64" => hasArm64 ? 3 : neutral ? 2 : 0,
-                "arm" => hasArm ? 3 : neutral ? 2 : 0,
-                "x86" => hasX86 ? 3 : neutral ? 2 : 0,
-                "x64" => hasX64 ? 3 : neutral ? 2 : (!hasArm64 && !hasArm && !hasX86 && !hasX64) ? 1 : 0,
+                "arm64" => hasArm64 ? 3
+                : neutral ? 2
+                : 0,
+                "arm" => hasArm ? 3
+                : neutral ? 2
+                : 0,
+                "x86" => hasX86 ? 3
+                : neutral ? 2
+                : 0,
+                "x64" => hasX64 ? 3
+                : neutral ? 2
+                : (!hasArm64 && !hasArm && !hasX86 && !hasX64) ? 1
+                : 0,
                 _ => 0,
             };
         }
@@ -213,7 +228,21 @@ public static class GetDownloadUrl
                 }
 
                 // Choose latest applicable main (non-framework) that matches OS + device family + arch
-                var arch = archRid;
+                static IReadOnlyList<string> GetArchPreferenceOrder(string archRid)
+                {
+                    return archRid switch
+                    {
+                        // x64 PCs can also run x86 apps (WOW64)
+                        "x64" => new[] { "x64", "x86" },
+                        // x86 PCs can only run x86 apps
+                        "x86" => new[] { "x86" },
+                        // ARM64 can run ARM natively, and x64/x86 via emulation
+                        "arm64" => new[] { "arm64", "arm", "x64", "x86" },
+                        // ARM (32-bit) only runs ARM apps
+                        "arm" => new[] { "arm" },
+                        _ => new[] { archRid },
+                    };
+                }
 
                 static bool ArchMatches(string name, string archRid)
                 {
@@ -234,6 +263,8 @@ public static class GetDownloadUrl
                     };
                 }
 
+                var archPreferences = GetArchPreferenceOrder(archRid);
+
                 var candidates = updatesAndUrl
                     .Where(t =>
                         !t.Update.IsFramework
@@ -245,86 +276,90 @@ public static class GetDownloadUrl
                     .OrderByDescending(t => t.Update.Version)
                     .ToList();
 
-                // Find the first candidate whose dependencies are fully applicable
-                foreach (
-                    var main in candidates.Where(c =>
-                        ArchMatches(c.Update.FileName ?? c.Update.PackageIdentityName, arch)
-                    )
-                )
+                // Try preferred architectures in order (native first, then compatible fallbacks).
+                foreach (var arch in archPreferences)
                 {
-                    var dcatMain = packageResult.Value.FirstOrDefault(p =>
-                        p.PackageIdentity.Equals(
-                            main.Update.PackageIdentityName,
-                            StringComparison.OrdinalIgnoreCase
+                    // Find the first candidate whose dependencies are fully applicable
+                    foreach (
+                        var main in candidates.Where(c =>
+                            ArchMatches(c.Update.FileName ?? c.Update.PackageIdentityName, arch)
                         )
-                        && p.Version == main.Update.Version
-                    );
-
-                    var depEntries = new List<FileEntry>();
-
-                    if (dcatMain is not null && dcatMain.FrameworkDependencies.Any())
+                    )
                     {
-                        var allDepsOk = true;
+                        var dcatMain = packageResult.Value.FirstOrDefault(p =>
+                            p.PackageIdentity.Equals(
+                                main.Update.PackageIdentityName,
+                                StringComparison.OrdinalIgnoreCase
+                            )
+                            && p.Version == main.Update.Version
+                        );
 
-                        foreach (var dep in dcatMain.FrameworkDependencies)
+                        var depEntries = new List<FileEntry>();
+
+                        if (dcatMain is not null && dcatMain.FrameworkDependencies.Any())
                         {
-                            var applicable = updatesAndUrl
-                                .Where(d =>
-                                    d.Update.PackageIdentityName.Equals(
-                                        dep.PackageIdentity,
-                                        StringComparison.OrdinalIgnoreCase
-                                    )
-                                    && d.Update.Version >= dep.MinVersion
-                                    && d.Update.TargetPlatforms.Any(tp =>
-                                        tp.MinVersion <= OSVersion.Value
-                                        && (
-                                            tp.Family == DeviceFamily.Universal
-                                            || tp.Family == deviceFamily
+                            var allDepsOk = true;
+
+                            foreach (var dep in dcatMain.FrameworkDependencies)
+                            {
+                                var applicable = updatesAndUrl
+                                    .Where(d =>
+                                        d.Update.PackageIdentityName.Equals(
+                                            dep.PackageIdentity,
+                                            StringComparison.OrdinalIgnoreCase
+                                        )
+                                        && d.Update.Version >= dep.MinVersion
+                                        && d.Update.TargetPlatforms.Any(tp =>
+                                            tp.MinVersion <= OSVersion.Value
+                                            && (
+                                                tp.Family == DeviceFamily.Universal
+                                                || tp.Family == deviceFamily
+                                            )
+                                        )
+                                        && ArchMatches(
+                                            d.Update.FileName ?? d.Update.PackageIdentityName,
+                                            arch
                                         )
                                     )
-                                    && ArchMatches(
-                                        d.Update.FileName ?? d.Update.PackageIdentityName,
-                                        arch
-                                    )
-                                )
-                                .ToList();
+                                    .ToList();
 
-                            if (!applicable.Any())
-                            {
-                                allDepsOk = false;
-                                break;
+                                if (!applicable.Any())
+                                {
+                                    allDepsOk = false;
+                                    break;
+                                }
+
+                                var latestGroup = applicable
+                                    .GroupBy(a => a.Update.Version)
+                                    .OrderByDescending(g => g.Key)
+                                    .First()
+                                    .ToList();
+
+                                var reduced = ReduceFrameworkDependencyFiles(latestGroup, arch);
+
+                                foreach (var a in reduced)
+                                {
+                                    depEntries.Add(
+                                        new FileEntry(
+                                            FileName: a.Update.FileName,
+                                            Url: a.Url,
+                                            Dependencies: Array.Empty<FileEntry>()
+                                        )
+                                    );
+                                }
                             }
 
-                            var latestGroup = applicable
-                                .GroupBy(a => a.Update.Version)
-                                .OrderByDescending(g => g.Key)
-                                .First()
-                                .ToList();
-
-                            var reduced = ReduceFrameworkDependencyFiles(latestGroup, arch);
-
-                            foreach (var a in reduced)
-                            {
-                                depEntries.Add(
-                                    new FileEntry(
-                                        FileName: a.Update.FileName,
-                                        Url: a.Url,
-                                        Dependencies: Array.Empty<FileEntry>()
-                                    )
-                                );
-                            }
+                            if (!allDepsOk)
+                                continue; // try next candidate
                         }
 
-                        if (!allDepsOk)
-                            continue; // try next candidate
+                        // Return main with dependencies
+                        return new FileEntry(
+                            FileName: main.Update.FileName,
+                            Url: main.Url,
+                            Dependencies: depEntries
+                        );
                     }
-
-                    // Return main with dependencies
-                    return new FileEntry(
-                        FileName: main.Update.FileName,
-                        Url: main.Url,
-                        Dependencies: depEntries
-                    );
                 }
 
                 // No applicable candidate found
