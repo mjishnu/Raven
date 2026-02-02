@@ -18,6 +18,21 @@ public enum DownloadStatus
 
 public partial class DownloadItem : INotifyPropertyChanged
 {
+    private string? _storeVersion;
+    public string? StoreVersion
+    {
+        get => _storeVersion;
+        set
+        {
+            if (_storeVersion != value)
+            {
+                _storeVersion = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+
+
     private string _productId = string.Empty;
     public string ProductId
     {

@@ -7,7 +7,6 @@ using test.Helpers;
 using test.Models;
 using test.Services;
 using test.ViewModels;
-using Windows.Management.Deployment;
 
 namespace test.Views;
 
@@ -67,6 +66,16 @@ public sealed partial class AppPage : Page
         UpdateInstallButtonState();
     }
 
+    private string? GetCurrentStoreToken()
+    {
+        if (_currentProductInfo == null)
+            return null;
+
+        return _currentProductInfo.InstallerType == InstallerType.Unpackaged
+            ? _currentProductInfo.Version
+            : _currentProductInfo.RevisionId;
+    }
+
     private void LoadProduct(StoreEdgeFDProduct productInfo)
     {
         _currentProductInfo = productInfo;
@@ -90,6 +99,11 @@ public sealed partial class AppPage : Page
         {
             downloadItem.ProductInfo = productInfo;
             downloadManager.UpdateDownloadRevision(productInfo.ProductId, productInfo.RevisionId);
+
+            if (productInfo.InstallerType == InstallerType.Unpackaged)
+            {
+                downloadManager.UpdateDownloadStoreVersion(productInfo.ProductId, productInfo.Version);
+            }
         }
         SetLoading(false);
         UpdateInstallButtonState();
@@ -139,7 +153,13 @@ public sealed partial class AppPage : Page
 
         var productId = _currentProductInfo.ProductId;
         var isUnpackaged = _currentProductInfo.InstallerType == InstallerType.Unpackaged;
-        var isInstalled = !isUnpackaged && IsPackageInstalled(_currentProductInfo.PackageFamilyName);
+        var isInstalled = !isUnpackaged
+            && PackagedAppDiscovery.IsInstalled(_currentProductInfo.PackageFamilyName);
+        var win32KeyName = _currentProductInfo.PackageFamilyName;
+        var win32Info = isUnpackaged
+            ? Win32AppDiscovery.GetInstalledInfo(_currentProductInfo.Title)
+            : null;
+        var isUnpackagedInstalled = isUnpackaged && win32Info?.IsInstalled == true;
         var downloadManager = DownloadManagerService.Instance;
         var downloadItem = downloadManager.GetDownload(productId);
         var isUpdateAvailable = IsUpdateAvailable(downloadItem);
@@ -155,9 +175,13 @@ public sealed partial class AppPage : Page
                 UpdateProgressIndeterminate(downloadItem.Status);
             }
         }
-        else if (isInstalled)
+        else if (isInstalled || isUnpackagedInstalled)
         {
-            var content = isUpdateAvailable ? "Update" : "Open";
+            var shouldShowUpdate = isInstalled
+                ? isUpdateAvailable
+                : IsUnpackagedUpdateAvailable(downloadItem);
+
+            var content = shouldShowUpdate ? "Update" : "Open";
             SetInstallButtonState(content: content, enabled: true, showProgress: false);
         }
         // Only show Retry when the last action itself failed/cancelled.
@@ -170,6 +194,34 @@ public sealed partial class AppPage : Page
         {
             SetInstallButtonState(content: "Install", enabled: true, showProgress: false);
         }
+    }
+
+    private bool IsUnpackagedUpdateAvailable(DownloadItem? downloadItem)
+    {
+        if (_currentProductInfo == null)
+            return false;
+
+        // Ensure we have the latest installed version from the registry.
+        var installedInfo = Win32AppDiscovery.GetInstalledInfo(
+            _currentProductInfo.Title
+        );
+
+        // Prefer the Store version already captured on the download item.
+        // If the user hasn't downloaded anything yet, fall back to the currently
+        // loaded product's Store version so the UI can still show "Update".
+        var storeVersion = downloadItem?.StoreVersion ?? _currentProductInfo.Version;
+        var localVersion = installedInfo.InstalledVersion;
+
+        if (string.IsNullOrWhiteSpace(storeVersion) || string.IsNullOrWhiteSpace(localVersion))
+            return false;
+
+        if (System.Version.TryParse(storeVersion, out var storeV)
+            && System.Version.TryParse(localVersion, out var localV))
+        {
+            return storeV > localV;
+        }
+
+        return !string.Equals(storeVersion, localVersion, StringComparison.OrdinalIgnoreCase);
     }
 
     private bool IsUpdateAvailable(DownloadItem? downloadItem)
@@ -206,62 +258,21 @@ public sealed partial class AppPage : Page
         );
     }
 
-    private static DateTimeOffset? GetInstalledUtc(string? packageFamilyName)
-    {
-        if (string.IsNullOrWhiteSpace(packageFamilyName))
-            return null;
-
-        try
-        {
-            var pm = new PackageManager();
-            var pkg = pm.FindPackagesForUser(string.Empty, packageFamilyName).FirstOrDefault();
-            var path = pkg?.InstalledLocation?.Path;
-            if (string.IsNullOrWhiteSpace(path) || !Directory.Exists(path))
-                return null;
-
-            var creationUtc = Directory.GetCreationTimeUtc(path);
-            return new DateTimeOffset(creationUtc, TimeSpan.Zero);
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
-    private static async Task<bool> TryLaunchInstalledAppAsync(string? packageFamilyName)
-    {
-        if (string.IsNullOrWhiteSpace(packageFamilyName))
-            return false;
-
-        try
-        {
-            var pm = new PackageManager();
-            var pkg = pm.FindPackagesForUser(string.Empty, packageFamilyName).FirstOrDefault();
-            if (pkg == null)
-                return false;
-
-            var entries = await pkg.GetAppListEntriesAsync();
-            var entry = entries.FirstOrDefault();
-            if (entry == null)
-                return false;
-
-            await entry.LaunchAsync();
-            return true;
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine(ex);
-            return false;
-        }
-    }
+    private static DateTimeOffset? GetInstalledUtc(string? packageFamilyName) =>
+        PackagedAppDiscovery.GetInstalledUtc(packageFamilyName);
 
     private bool IsDownloadUpToDate(DownloadItem downloadItem)
     {
-        var currentRevision = _currentProductInfo?.RevisionId;
-        if (string.IsNullOrWhiteSpace(currentRevision) || downloadItem.RevisionId == null)
+        var token = GetCurrentStoreToken();
+        if (string.IsNullOrWhiteSpace(token))
             return false;
 
-        return string.Equals(downloadItem.RevisionId, currentRevision, StringComparison.OrdinalIgnoreCase);
+        if (_currentProductInfo?.InstallerType == InstallerType.Unpackaged)
+        {
+            return string.Equals(downloadItem.StoreVersion, token, StringComparison.OrdinalIgnoreCase);
+        }
+
+        return string.Equals(downloadItem.RevisionId, token, StringComparison.OrdinalIgnoreCase);
     }
 
     private void BindToDownloadItem(DownloadItem item)
@@ -406,22 +417,6 @@ public sealed partial class AppPage : Page
         }
     }
 
-    private static bool IsPackageInstalled(string? packageFamilyName)
-    {
-        if (string.IsNullOrWhiteSpace(packageFamilyName))
-            return false;
-
-        try
-        {
-            var packageManager = new PackageManager();
-            return packageManager.FindPackagesForUser(string.Empty, packageFamilyName).Any();
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
     protected override void OnNavigatedFrom(NavigationEventArgs e)
     {
         base.OnNavigatedFrom(e);
@@ -518,23 +513,57 @@ public sealed partial class AppPage : Page
         if (_currentProductInfo == null)
             return;
 
+        var beforeAction = InstallButton.Content?.ToString();
+
+        // Always re-evaluate the current state first.
+        // Users can install/uninstall or downloads can complete while staying on this page.
+        UpdateInstallButtonState();
+
+        var afterAction = InstallButton.Content?.ToString();
+        if (!string.Equals(beforeAction, afterAction, StringComparison.OrdinalIgnoreCase))
+        {
+            // State changed while the user stayed on this page; only refresh the UI.
+            return;
+        }
+
         var productId = _currentProductInfo.ProductId;
         var downloadManager = DownloadManagerService.Instance;
         var isUnpackaged = _currentProductInfo.InstallerType == InstallerType.Unpackaged;
 
+        var action = InstallButton.Content?.ToString();
+
         // If the button is currently acting as "Open", don't ever start install/download.
         // If the user uninstalled the app while staying on this page, just refresh the UI to "Install".
-        if (string.Equals(InstallButton.Content?.ToString(), "Open", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(action, "Open", StringComparison.OrdinalIgnoreCase))
         {
-            if (IsPackageInstalled(_currentProductInfo.PackageFamilyName))
+            if (!isUnpackaged)
             {
-                await TryLaunchInstalledAppAsync(_currentProductInfo.PackageFamilyName);
-            }
-            else
-            {
-                UpdateInstallButtonState();
+                await PackagedAppDiscovery.TryLaunchAsync(_currentProductInfo.PackageFamilyName);
+                return;
             }
 
+            var launch = await Win32AppDiscovery.TryLaunchDetailedAsync(_currentProductInfo.Title);
+            if (!launch.Success)
+            {
+                var title = "Unable to open app";
+                var msg = launch.FailureReason switch
+                {
+                    Win32AppDiscovery.LaunchFailureReason.NotFoundInRegistry =>
+                        "This app was not found in the Windows uninstall registry. It may not be installed.",
+                    Win32AppDiscovery.LaunchFailureReason.MissingLaunchTarget =>
+                        "The app appears to be installed, but a launch target couldn't be found (Start Menu/DisplayIcon). The app may have been installed incorrectly.",
+                    Win32AppDiscovery.LaunchFailureReason.LaunchTargetNotFoundOnDisk =>
+                        "The app appears to be installed, but its launch file couldn't be found on disk. The app may have been moved or installed incorrectly.",
+                    _ => "The app couldn't be opened. Try reinstalling the app.",
+                };
+
+                if (!string.IsNullOrWhiteSpace(launch.InstalledVersion))
+                {
+                    msg += $"\n\nInstalled version: {launch.InstalledVersion}";
+                }
+
+                await ShowErrorDialogAsync(title, msg);
+            }
             return;
         }
 
@@ -549,11 +578,10 @@ public sealed partial class AppPage : Page
 
         try
         {
-            if (isUnpackaged && cacheCandidate is { HasValidCache: true })
+            if (isUnpackaged && cacheCandidate is { HasValidCache: true } && IsDownloadUpToDate(cacheCandidate))
             {
                 cacheCandidate.ProductInfo = _currentProductInfo;
                 await LaunchUnpackagedInstallerAsync(cacheCandidate);
-                UpdateInstallButtonState();
                 return;
             }
 
@@ -588,7 +616,6 @@ public sealed partial class AppPage : Page
 
                 if (installedFromCache)
                 {
-                    UpdateInstallButtonState();
                     return;
                 }
             }
@@ -723,7 +750,6 @@ public sealed partial class AppPage : Page
                     await LaunchUnpackagedInstallerAsync(currentItem);
                 }
                 UnbindFromDownloadItem();
-                UpdateInstallButtonState();
                 return;
             }
 
@@ -744,6 +770,10 @@ public sealed partial class AppPage : Page
             Debug.WriteLine(ex);
             UpdateService.StopStatusAnimation();
             HandleDownloadError(productId, "Failed to install.", DownloadStatus.Failed);
+        }
+        finally
+        {
+            UpdateInstallButtonState();
         }
     }
 
@@ -829,7 +859,7 @@ public sealed partial class AppPage : Page
             UpdateService.StopStatusAnimation();
             var packageFamilyName = downloadItem.ProductInfo?.PackageFamilyName
                 ?? _currentProductInfo?.PackageFamilyName;
-            if (IsPackageInstalled(packageFamilyName))
+            if (PackagedAppDiscovery.IsInstalled(packageFamilyName))
             {
                 downloadManager.UpdateDownloadStatusText(productId, null);
                 downloadManager.UpdateDownloadStatus(productId, DownloadStatus.Completed);

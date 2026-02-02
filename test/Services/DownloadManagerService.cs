@@ -101,6 +101,7 @@ public class DownloadManagerService
                 LogoUrl = productInfo.Logo?.Url,
                 PublisherName = productInfo.PublisherName,
                 RevisionId = productInfo.RevisionId,
+                StoreVersion = productInfo.Version,
                 Status = DownloadStatus.Downloading,
                 StartedAt = DateTime.Now,
                 ProductInfo = productInfo,
@@ -110,6 +111,30 @@ public class DownloadManagerService
             RunOnUIThread(() => Downloads.Insert(0, item));
             SaveDownloads();
         }
+    }
+
+    public void UpdateDownloadStoreVersion(string productId, string? storeVersion)
+    {
+        if (string.IsNullOrWhiteSpace(storeVersion))
+            return;
+
+        var item = GetDownload(productId);
+        if (
+            item == null
+            || string.Equals(item.StoreVersion, storeVersion, StringComparison.OrdinalIgnoreCase)
+        )
+            return;
+
+        if (IsAnyoneObserving)
+        {
+            RunOnUIThread(() => item.StoreVersion = storeVersion);
+        }
+        else
+        {
+            item.StoreVersion = storeVersion;
+        }
+
+        SaveDownloads();
     }
 
     public void RegisterCancellationToken(string productId, CancellationTokenSource cts)
@@ -261,7 +286,10 @@ public class DownloadManagerService
             return;
 
         var item = GetDownload(productId);
-        if (item == null || string.Equals(item.RevisionId, revisionId, StringComparison.OrdinalIgnoreCase))
+        if (
+            item == null
+            || string.Equals(item.RevisionId, revisionId, StringComparison.OrdinalIgnoreCase)
+        )
             return;
 
         if (IsAnyoneObserving)
@@ -275,7 +303,6 @@ public class DownloadManagerService
 
         SaveDownloads();
     }
-
 
     public void UpdateDownloadProgress(string productId, double progress)
     {
@@ -313,7 +340,6 @@ public class DownloadManagerService
             }
         }
     }
-
 
     public void AddDownloadedFilePath(string productId, string filePath)
     {
@@ -385,7 +411,12 @@ public class DownloadManagerService
                         DownloadedProductIds.Add(productId);
                     }
                 }
-                else if (status is DownloadStatus.Cancelled or DownloadStatus.Failed or DownloadStatus.Completed)
+                else if (
+                    status
+                    is DownloadStatus.Cancelled
+                        or DownloadStatus.Failed
+                        or DownloadStatus.Completed
+                )
                 {
                     item.StatusTextOverride = null;
                 }
@@ -453,8 +484,10 @@ public class DownloadManagerService
                         // - Older builds used "Downloaded" for "files present on disk".
                         // - Some builds used "Completed".
                         var statusText = item.Status.ToString();
-                        if (statusText.Equals("Downloaded", StringComparison.OrdinalIgnoreCase)
-                            || statusText.Equals("Completed", StringComparison.OrdinalIgnoreCase))
+                        if (
+                            statusText.Equals("Downloaded", StringComparison.OrdinalIgnoreCase)
+                            || statusText.Equals("Completed", StringComparison.OrdinalIgnoreCase)
+                        )
                         {
                             item.Status = DownloadStatus.Completed;
                         }
@@ -462,7 +495,8 @@ public class DownloadManagerService
                         // Infer cache presence if it wasn't persisted in older versions.
                         if (!item.HasValidCache)
                         {
-                            item.HasValidCache = item.Status == DownloadStatus.Completed
+                            item.HasValidCache =
+                                item.Status == DownloadStatus.Completed
                                 || item.DownloadedFilePaths.Count > 0;
                         }
 
@@ -488,9 +522,10 @@ public class DownloadManagerService
                         }
                         else if (item.Status == DownloadStatus.Installing)
                         {
-                            item.Status = item.DownloadedFilePaths.Count > 0
-                                ? DownloadStatus.Completed
-                                : DownloadStatus.Cancelled;
+                            item.Status =
+                                item.DownloadedFilePaths.Count > 0
+                                    ? DownloadStatus.Completed
+                                    : DownloadStatus.Cancelled;
                         }
                         Downloads.Add(item);
                         if (item.Status is DownloadStatus.Completed)
