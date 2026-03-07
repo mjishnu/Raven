@@ -21,6 +21,7 @@ public sealed partial class AppPage : Page
     private ProductData? _currentProductInfo;
     private DownloadItem? _activeDownloadItem;
     private bool _isForceInstalling;
+    private int _lightboxIndex;
     private string _naturalAction = "Install";
     private string? _overrideAction;
 
@@ -82,6 +83,7 @@ public sealed partial class AppPage : Page
 
         _isForceInstalling = false;
         _overrideAction = null;
+        LightboxOverlay.Visibility = Visibility.Collapsed;
         UpdateService.StopStatusAnimation();
         UnbindFromDownloadItem();
     }
@@ -1197,5 +1199,90 @@ public sealed partial class AppPage : Page
     private void SetProgressIndeterminate(bool isIndeterminate)
     {
         ProgressBar.IsIndeterminate = isIndeterminate;
+    }
+
+    private void ScreenshotRepeater_ElementPrepared(
+        ItemsRepeater sender,
+        ItemsRepeaterElementPreparedEventArgs args
+    )
+    {
+        if (args.Element is Button btn)
+        {
+            btn.Tag = args.Index;
+            btn.Click -= ScreenshotButton_Click;
+            btn.Click += ScreenshotButton_Click;
+        }
+    }
+
+    private void ScreenshotButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.Tag is int index)
+            OpenLightbox(index);
+    }
+
+    private void OpenLightbox(int index)
+    {
+        if (AppData.Screenshots.Count == 0)
+            return;
+
+        _lightboxIndex = Math.Clamp(index, 0, AppData.Screenshots.Count - 1);
+        UpdateLightbox();
+        LightboxOverlay.Visibility = Visibility.Visible;
+    }
+
+    private void UpdateLightbox()
+    {
+        var screenshots = AppData.Screenshots;
+        var screenshot = screenshots[_lightboxIndex];
+
+        if (!string.IsNullOrWhiteSpace(screenshot.Url))
+        {
+            LightboxImage.Source = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(
+                new Uri(screenshot.Url)
+            );
+        }
+
+        LightboxCounter.Text = $"{_lightboxIndex + 1} / {screenshots.Count}";
+        LightboxLeftButton.IsEnabled = _lightboxIndex > 0;
+        LightboxRightButton.IsEnabled = _lightboxIndex < screenshots.Count - 1;
+    }
+
+    private void LightboxClose_Click(object sender, RoutedEventArgs e)
+    {
+        LightboxOverlay.Visibility = Visibility.Collapsed;
+    }
+
+    private void LightboxBackdrop_Tapped(
+        object sender,
+        Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e
+    )
+    {
+        LightboxOverlay.Visibility = Visibility.Collapsed;
+    }
+
+    private void LightboxLeft_Click(object sender, RoutedEventArgs e)
+    {
+        if (_lightboxIndex > 0)
+        {
+            _lightboxIndex--;
+            UpdateLightbox();
+        }
+    }
+
+    private void LightboxRight_Click(object sender, RoutedEventArgs e)
+    {
+        if (_lightboxIndex < AppData.Screenshots.Count - 1)
+        {
+            _lightboxIndex++;
+            UpdateLightbox();
+        }
+    }
+
+    private void LightboxNavArea_Tapped(
+        object sender,
+        Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e
+    )
+    {
+        e.Handled = true;
     }
 }

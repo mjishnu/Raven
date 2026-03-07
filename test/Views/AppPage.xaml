@@ -13,6 +13,7 @@
       <Setter Property="BorderThickness" Value="0" />
     </Style>
   </Page.Resources>
+  <Grid>
   <ScrollViewer>
     <Grid>
       <StackPanel
@@ -403,15 +404,27 @@
               VerticalScrollBarVisibility="Disabled"
               VerticalScrollMode="Disabled"
             >
-              <ItemsRepeater ItemsSource="{x:Bind AppData.Screenshots, Mode=OneWay}">
+              <ItemsRepeater
+                x:Name="ScreenshotRepeater"
+                ItemsSource="{x:Bind AppData.Screenshots, Mode=OneWay}"
+                ElementPrepared="ScreenshotRepeater_ElementPrepared"
+              >
                 <ItemsRepeater.Layout>
                   <StackLayout Orientation="Horizontal" Spacing="24" />
                 </ItemsRepeater.Layout>
                 <ItemsRepeater.ItemTemplate>
                   <DataTemplate>
-                    <Border CornerRadius="10">
-                      <Image Width="630" Height="350" Source="{Binding Url}" Stretch="Fill" />
-                    </Border>
+                    <Button
+                      Background="Transparent"
+                      BorderBrush="Transparent"
+                      BorderThickness="0"
+                      Padding="0"
+                      CornerRadius="10"
+                    >
+                      <Border CornerRadius="10">
+                        <Image Width="630" Height="350" Source="{Binding Url}" Stretch="Fill" />
+                      </Border>
+                    </Button>
                   </DataTemplate>
                 </ItemsRepeater.ItemTemplate>
               </ItemsRepeater>
@@ -539,4 +552,89 @@
       </StackPanel>
     </Grid>
   </ScrollViewer>
+  <!--  Lightbox overlay  -->
+  <Grid x:Name="LightboxOverlay" Visibility="Collapsed">
+    <Rectangle Tapped="LightboxBackdrop_Tapped">
+      <Rectangle.Fill>
+        <AcrylicBrush TintColor="#000000" TintOpacity="0.7" TintLuminosityOpacity="0.0" FallbackColor="#CC000000" />
+      </Rectangle.Fill>
+    </Rectangle>
+    <Button
+      x:Name="LightboxCloseButton"
+      HorizontalAlignment="Right"
+      VerticalAlignment="Top"
+      Margin="16"
+      Background="Transparent"
+      BorderBrush="Transparent"
+      BorderThickness="0"
+      Click="LightboxClose_Click"
+    >
+      <FontIcon FontSize="18" Foreground="White" Glyph="&#xE711;" />
+    </Button>
+    <Grid Margin="80,52,80,48">
+      <Border HorizontalAlignment="Center" VerticalAlignment="Center" CornerRadius="10">
+        <Image
+          x:Name="LightboxImage"
+          MaxWidth="1100"
+          MaxHeight="620"
+          Stretch="Uniform"
+        />
+      </Border>
+    </Grid>
+    <Border
+      Width="48"
+      Height="48"
+      HorizontalAlignment="Left"
+      VerticalAlignment="Center"
+      Margin="16,0"
+      Background="Transparent"
+      CornerRadius="24"
+      Tapped="LightboxNavArea_Tapped"
+    >
+      <Button
+        x:Name="LightboxLeftButton"
+        Width="48"
+        Height="48"
+        Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+        BorderThickness="1"
+        Click="LightboxLeft_Click"
+        CornerRadius="24"
+      >
+        <FontIcon FontSize="16" Glyph="&#xE76B;" />
+      </Button>
+    </Border>
+    <Border
+      Width="48"
+      Height="48"
+      HorizontalAlignment="Right"
+      VerticalAlignment="Center"
+      Margin="0,0,16,0"
+      Background="Transparent"
+      CornerRadius="24"
+      Tapped="LightboxNavArea_Tapped"
+    >
+      <Button
+        x:Name="LightboxRightButton"
+        Width="48"
+        Height="48"
+        Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+        BorderThickness="1"
+        Click="LightboxRight_Click"
+        CornerRadius="24"
+      >
+        <FontIcon FontSize="16" Glyph="&#xE76C;" />
+      </Button>
+    </Border>
+    <TextBlock
+      x:Name="LightboxCounter"
+      HorizontalAlignment="Center"
+      VerticalAlignment="Bottom"
+      Margin="0,0,0,16"
+      FontSize="14"
+      Foreground="White"
+    />
+  </Grid>
+  </Grid>
 </Page>
