@@ -119,6 +119,7 @@ public class UpdateItem : INotifyPropertyChanged
                 OnPropertyChanged(nameof(StatusText));
                 OnPropertyChanged(nameof(IsVersionVisible));
                 OnPropertyChanged(nameof(IsProgressVisible));
+                OnPropertyChanged(nameof(IsCheckboxEnabled));
             }
         }
     }
@@ -191,6 +192,9 @@ public class UpdateItem : INotifyPropertyChanged
         or DownloadStatus.Downloading
         or DownloadStatus.Installing
         or DownloadStatus.Cancelling;
+
+    /// <summary>True when the checkbox can be interacted with (item is not currently being updated).</summary>
+    public bool IsCheckboxEnabled => !IsProgressVisible;
 
     public event PropertyChangedEventHandler? PropertyChanged;
 

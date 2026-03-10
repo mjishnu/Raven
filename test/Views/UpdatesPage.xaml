@@ -1,4 +1,4 @@
-<Page
+﻿<Page
   x:Class="test.Views.UpdatesPage"
   xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -30,13 +30,11 @@
       <Setter Property="VerticalContentAlignment" Value="Center" />
     </Style>
   </Page.Resources>
-
   <Grid Margin="{StaticResource NavigationViewPageContentMargin}">
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto" />
       <RowDefinition Height="*" />
     </Grid.RowDefinitions>
-
     <!--  Header  -->
     <Grid Grid.Row="0" Margin="0,24">
       <Grid.ColumnDefinitions>
@@ -61,10 +59,12 @@
         Style="{ThemeResource AccentButtonStyle}"
         Visibility="{x:Bind ViewModel.IsChecking, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
       >
-        <FontIcon Glyph="&#xEE95;" />
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <FontIcon FontSize="12" Glyph="" />
+          <TextBlock Text="Stop" />
+        </StackPanel>
       </Button>
     </Grid>
-
     <!--  State A: Empty (no updates, not checking)  -->
     <StackPanel
       Grid.Row="1"
@@ -78,7 +78,7 @@
         HorizontalAlignment="Center"
         FontSize="48"
         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-        Glyph="&#xE895;"
+        Glyph=""
       />
       <TextBlock
         Foreground="{ThemeResource TextFillColorSecondaryBrush}"
@@ -87,7 +87,6 @@
         TextAlignment="Center"
       />
     </StackPanel>
-
     <!--  State B: Checking (progress ring)  -->
     <StackPanel
       Grid.Row="1"
@@ -97,26 +96,38 @@
       Spacing="16"
       Visibility="{x:Bind ViewModel.IsChecking, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
     >
-      <ProgressRing
-        Width="48"
-        Height="48"
-        IsActive="True"
-      />
-      <TextBlock
-        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-        Style="{ThemeResource BodyTextBlockStyle}"
-        Text="{x:Bind ViewModel.CheckingProgressText, Mode=OneWay}"
-        TextAlignment="Center"
-      />
+      <ProgressRing Width="48" Height="48" Background="LightGray" IsActive="True" />
+      <!--
+                Base text and dots in separate blocks so only dots animate;
+                the base never shifts. Dots use U+2008 (PUNCTUATION SPACE) as
+                filler so the dots area is always exactly 3-period-widths wide.
+            -->
+      <StackPanel
+        Margin="20,0,0,0"
+        HorizontalAlignment="Center"
+        Orientation="Horizontal"
+        Spacing="0"
+      >
+        <TextBlock
+          Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+          Style="{ThemeResource BodyTextBlockStyle}"
+          Text="{x:Bind ViewModel.CheckingProgressBase, Mode=OneWay}"
+        />
+        <TextBlock
+          Width="24"
+          Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+          HorizontalTextAlignment="Left"
+          Style="{ThemeResource BodyTextBlockStyle}"
+          Text="{x:Bind ViewModel.CheckingProgressDots, Mode=OneWay}"
+        />
+      </StackPanel>
     </StackPanel>
-
-    <!--  State C: Updates available (scrollable list)  -->
+    <!--  State C: Updates available and/or completed (scrollable list)  -->
     <ScrollViewer
       Grid.Row="1"
-      Visibility="{x:Bind ViewModel.HasUpdates, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
+      Visibility="{x:Bind ViewModel.ShowUpdatesList, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
     >
       <StackPanel Padding="0,0,0,24" Spacing="8">
-
         <!--  Select All  -->
         <CheckBox
           x:Name="SelectAllCheckBox"
@@ -124,8 +135,8 @@
           Click="SelectAll_Click"
           Content="Select all"
           IsChecked="{x:Bind ViewModel.IsAllSelected, Mode=OneWay}"
+          Visibility="{x:Bind ViewModel.HasUpdates, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
         />
-
         <!--  Available Updates  -->
         <ListView
           x:Name="UpdatesList"
@@ -133,6 +144,7 @@
           ItemClick="UpdateItem_ItemClick"
           ItemsSource="{x:Bind ViewModel.AvailableUpdates, Mode=OneWay}"
           SelectionMode="None"
+          Visibility="{x:Bind ViewModel.HasUpdates, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
         >
           <ListView.ItemContainerStyle>
             <Style TargetType="ListViewItem">
@@ -157,16 +169,15 @@
                   <ColumnDefinition Width="*" />
                   <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-
                 <!--  Checkbox  -->
                 <CheckBox
                   Grid.Column="0"
                   MinWidth="20"
                   VerticalAlignment="Center"
-                  IsChecked="{x:Bind IsSelected, Mode=OneWay}"
                   Click="ItemCheckBox_Click"
+                  IsChecked="{x:Bind IsSelected, Mode=OneWay}"
+                  IsEnabled="{x:Bind IsCheckboxEnabled, Mode=OneWay}"
                 />
-
                 <!--  App icon  -->
                 <Border
                   Grid.Column="1"
@@ -177,24 +188,20 @@
                 >
                   <Image Source="{Binding LogoUrl, Mode=OneWay}" Stretch="UniformToFill" />
                 </Border>
-
                 <!--  Info column  -->
                 <Grid Grid.Column="2" VerticalAlignment="Top" RowSpacing="6">
                   <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                   </Grid.RowDefinitions>
-
                   <TextBlock
                     Grid.Row="0"
                     FontWeight="SemiBold"
                     Text="{x:Bind Title, Mode=OneWay}"
                     TextTrimming="CharacterEllipsis"
                   />
-
                   <!--  Row 1: version info OR progress  -->
                   <Grid Grid.Row="1">
-
                     <!--  Version text (visible when not active)  -->
                     <TextBlock
                       Foreground="{ThemeResource TextFillColorTertiaryBrush}"
@@ -202,10 +209,9 @@
                       Visibility="{x:Bind IsVersionVisible, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
                     >
                       <Run Text="{x:Bind InstalledVersion, Mode=OneWay}" />
-                      <Run Text="&#x2192;" />
+                      <Run Text="→" />
                       <Run Text="{x:Bind StoreVersion, Mode=OneWay}" />
                     </TextBlock>
-
                     <!--  Progress area (visible when active)  -->
                     <StackPanel
                       Spacing="4"
@@ -216,14 +222,12 @@
                           <ColumnDefinition Width="*" />
                           <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-
                         <TextBlock
                           Grid.Column="0"
                           Foreground="{ThemeResource TextFillColorTertiaryBrush}"
                           Style="{ThemeResource CaptionTextBlockStyle}"
                           Text="{Binding StatusText, Mode=OneWay}"
                         />
-
                         <!--  Download details (percent + size) - Downloading only  -->
                         <TextBlock
                           Grid.Column="1"
@@ -233,7 +237,6 @@
                           Text="{Binding DisplayDetailsText, Mode=OneWay}"
                           Visibility="{Binding Status, Converter={StaticResource DownloadDetailsStatusToVisibilityConverter}, Mode=OneWay}"
                         />
-
                         <!--  Installing: progress percent only  -->
                         <TextBlock
                           Grid.Column="1"
@@ -242,21 +245,17 @@
                           Style="{ThemeResource CaptionTextBlockStyle}"
                           Visibility="{Binding Status, Converter={StaticResource InstallingStatusToVisibilityConverter}, Mode=OneWay}"
                         >
-                          <Run
-                            Text="{Binding Progress, Mode=OneWay, Converter={StaticResource ProgressToPercentTextConverter}}"
-                          />
+                          <Run Text="{Binding Progress, Mode=OneWay, Converter={StaticResource ProgressToPercentTextConverter}}" />
                         </TextBlock>
                       </Grid>
-
                       <ProgressBar
-                        Maximum="100"
                         IsIndeterminate="{Binding Status, Converter={StaticResource DownloadStatusToIndeterminateConverter}, Mode=OneWay}"
+                        Maximum="100"
                         Value="{Binding Progress, Mode=OneWay}"
                       />
                     </StackPanel>
                   </Grid>
                 </Grid>
-
                 <!--  Cancel button (visible while update is in progress)  -->
                 <Button
                   Grid.Column="3"
@@ -267,13 +266,12 @@
                   ToolTipService.ToolTip="Cancel update"
                   Visibility="{x:Bind IsProgressVisible, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
                 >
-                  <FontIcon FontSize="12" Glyph="&#xE711;" />
+                  <FontIcon FontSize="12" Glyph="" />
                 </Button>
               </Grid>
             </DataTemplate>
           </ListView.ItemTemplate>
         </ListView>
-
         <!--  Completed section header  -->
         <TextBlock
           Margin="0,16,0,8"
@@ -281,7 +279,6 @@
           Text="Completed"
           Visibility="{x:Bind ViewModel.HasCompletedUpdates, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}"
         />
-
         <!--  Completed list  -->
         <ListView
           IsItemClickEnabled="True"
@@ -312,11 +309,9 @@
                   <ColumnDefinition Width="*" />
                   <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-
                 <Border Grid.Column="0" Width="60" Height="60" CornerRadius="8">
                   <Image Source="{Binding LogoUrl, Mode=OneWay}" Stretch="UniformToFill" />
                 </Border>
-
                 <Grid Grid.Column="1" VerticalAlignment="Center" RowSpacing="2">
                   <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
@@ -335,19 +330,10 @@
                     Text="{Binding StatusText, Mode=OneWay}"
                   />
                 </Grid>
-
-                <FontIcon
-                  Grid.Column="2"
-                  VerticalAlignment="Center"
-                  FontSize="16"
-                  Foreground="{ThemeResource SystemFillColorSuccessBrush}"
-                  Glyph="&#xE73E;"
-                />
               </Grid>
             </DataTemplate>
           </ListView.ItemTemplate>
         </ListView>
-
       </StackPanel>
     </ScrollViewer>
   </Grid>

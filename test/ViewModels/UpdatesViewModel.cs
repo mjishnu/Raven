@@ -33,27 +33,37 @@ public partial class UpdatesViewModel : ObservableObject
     private int _selectedCount;
 
     [ObservableProperty]
-    private string _checkingProgressText = string.Empty;
+    private string _checkingProgressBase = string.Empty;
+
+    [ObservableProperty]
+    private string _checkingProgressDots = string.Empty;
 
     [ObservableProperty]
     private double _checkingProgress;
 
     public bool HasUpdates => AvailableUpdates.Count > 0;
     public bool HasCompletedUpdates => CompletedUpdates.Count > 0;
-    public bool ShowEmptyState => !HasUpdates && !IsChecking && !IsUpdating;
-    public bool IsAllSelected =>
-        AvailableUpdates.Count > 0 && AvailableUpdates.All(x => x.IsSelected);
+    public bool ShowUpdatesList => (HasUpdates || HasCompletedUpdates) && !IsChecking;
+    public bool ShowEmptyState => !HasUpdates && !HasCompletedUpdates && !IsChecking && !IsUpdating;
+    public bool IsAllSelected
+    {
+        get
+        {
+            var selectable = AvailableUpdates.Where(x => !x.IsProgressVisible).ToList();
+            return selectable.Count > 0 && selectable.All(x => x.IsSelected);
+        }
+    }
 
     public string ButtonText =>
         IsChecking ? "Checking..."
-        : IsUpdating ? "Updating..."
         : SelectedCount > 0 ? $"Update selected ({SelectedCount})"
         : "Check for updates";
 
-    public bool ButtonEnabled => !IsChecking && !IsUpdating;
+    public bool ButtonEnabled => !IsChecking && (!IsUpdating || SelectedCount > 0);
 
     private CancellationTokenSource? _checkCts;
     private CancellationTokenSource? _updateCts;
+    private volatile string _checkingBaseText = "Checking";
 
     private static readonly string CompletedUpdatesPath = Path.Combine(
         Path.GetTempPath(),
@@ -69,11 +79,14 @@ public partial class UpdatesViewModel : ObservableObject
             OnPropertyChanged(nameof(HasUpdates));
             OnPropertyChanged(nameof(ShowEmptyState));
             OnPropertyChanged(nameof(IsAllSelected));
+            OnPropertyChanged(nameof(ShowUpdatesList));
         };
 
         CompletedUpdates.CollectionChanged += (_, _) =>
         {
             OnPropertyChanged(nameof(HasCompletedUpdates));
+            OnPropertyChanged(nameof(ShowEmptyState));
+            OnPropertyChanged(nameof(ShowUpdatesList));
         };
     }
 
@@ -82,6 +95,7 @@ public partial class UpdatesViewModel : ObservableObject
         OnPropertyChanged(nameof(ButtonText));
         OnPropertyChanged(nameof(ButtonEnabled));
         OnPropertyChanged(nameof(ShowEmptyState));
+        OnPropertyChanged(nameof(ShowUpdatesList));
     }
 
     partial void OnIsUpdatingChanged(bool value)
@@ -94,6 +108,7 @@ public partial class UpdatesViewModel : ObservableObject
     partial void OnSelectedCountChanged(int value)
     {
         OnPropertyChanged(nameof(ButtonText));
+        OnPropertyChanged(nameof(ButtonEnabled));
     }
 
     [RelayCommand]
@@ -111,7 +126,7 @@ public partial class UpdatesViewModel : ObservableObject
     private void ToggleSelectAll()
     {
         bool allSelected = IsAllSelected;
-        foreach (var item in AvailableUpdates)
+        foreach (var item in AvailableUpdates.Where(x => !x.IsProgressVisible))
             item.IsSelected = !allSelected;
         RecalculateSelectedCount();
     }
@@ -126,17 +141,26 @@ public partial class UpdatesViewModel : ObservableObject
         AvailableUpdates.Clear();
 
         _checkCts?.Cancel();
+        _checkCts?.Dispose();
         _checkCts = new CancellationTokenSource();
 
         LoadCompletedUpdates();
 
+        // Set text immediately — no waiting for the first HTTP response.
+        // Dots initialise with punctuation spaces (U+2008) so the width is
+        // already the same as "..." before the first tick fires.
+        _checkingBaseText = "Checking";
+        CheckingProgressBase = "Checking";
+        CheckingProgressDots = ".";
+        var dotsCts = CancellationTokenSource.CreateLinkedTokenSource(_checkCts.Token);
+        _ = AnimateCheckingDotsAsync(dotsCts.Token);
+
         var progress = new Progress<(int completed, int total)>(p =>
         {
-            DispatcherQueue?.TryEnqueue(() =>
-            {
-                CheckingProgressText = $"Checking ({p.completed}/{p.total})";
-                CheckingProgress = p.total > 0 ? (double)p.completed / p.total * 100.0 : 0;
-            });
+            // Update base text immediately; animation keeps running with dots.
+            _checkingBaseText = $"Checking ({p.completed}/{p.total})";
+            CheckingProgressBase = _checkingBaseText;
+            CheckingProgress = p.total > 0 ? (double)p.completed / p.total * 100.0 : 0;
         });
 
         List<UpdateItem> updates = [];
@@ -156,6 +180,9 @@ public partial class UpdatesViewModel : ObservableObject
 
         DispatcherQueue?.TryEnqueue(() =>
         {
+            dotsCts.Cancel();
+            dotsCts.Dispose();
+
             for (int i = 0; i < updates.Count; i++)
             {
                 var item = updates[i];
@@ -164,26 +191,64 @@ public partial class UpdatesViewModel : ObservableObject
             }
 
             IsChecking = false;
-            CheckingProgressText = string.Empty;
+            CheckingProgressBase = string.Empty;
+            CheckingProgressDots = string.Empty;
             RecalculateSelectedCount();
             OnPropertyChanged(nameof(HasUpdates));
             OnPropertyChanged(nameof(ShowEmptyState));
         });
     }
 
+    private async Task AnimateCheckingDotsAsync(CancellationToken ct)
+    {
+        // The dots TextBlock has a fixed Width in XAML so the layout slot never
+        // changes size — plain dot strings are sufficient, no width-padding tricks needed.
+        string[] frames = [".", "..", "..."];
+        int i = 1; // frame 0 "." is already shown synchronously before this runs
+        try
+        {
+            while (true)
+            {
+                await Task.Delay(500, ct);
+                var frame = frames[i % frames.Length];
+                DispatcherQueue?.TryEnqueue(() =>
+                {
+                    if (IsChecking)
+                        CheckingProgressDots = frame;
+                });
+                i++;
+            }
+        }
+        catch (OperationCanceledException) { }
+    }
+
     private async Task UpdateSelectedAsync()
     {
+        // Only queue items that are not already being processed.
+        var toUpdate = AvailableUpdates.Where(x => x.IsSelected && !x.IsProgressVisible).ToList();
+        if (toUpdate.Count == 0)
+            return;
+
+        bool freshStart = !IsUpdating;
         IsUpdating = true;
 
-        _updateCts?.Cancel();
-        _updateCts = new CancellationTokenSource();
-
-        var selected = AvailableUpdates.Where(x => x.IsSelected).ToList();
+        if (freshStart)
+        {
+            _updateCts?.Cancel();
+            _updateCts?.Dispose();
+            _updateCts = new CancellationTokenSource();
+        }
+        else
+        {
+            // Reuse the existing CTS so new items join the current cancellation scope
+            // without interrupting already-running downloads.
+            _updateCts ??= new CancellationTokenSource();
+        }
 
         try
         {
             await UpdateCheckService.UpdateAppsAsync(
-                selected,
+                toUpdate,
                 DispatcherQueue!,
                 _updateCts.Token,
                 OnUpdateItemCompleted
@@ -193,35 +258,72 @@ public partial class UpdatesViewModel : ObservableObject
         catch (Exception) { }
         finally
         {
-            IsUpdating = false;
+            // Reset any items stuck as Pending.
+            foreach (var item in toUpdate.Where(x => x.Status == DownloadStatus.Pending))
+            {
+                item.Status = null;
+                item.Progress = 0;
+                item.StatusTextOverride = null;
+                item.DisplayDetailsText = string.Empty;
+                item.IsSelected = false;
+            }
+
             RecalculateSelectedCount();
-            OnPropertyChanged(nameof(ShowEmptyState));
+
+            // Clear the updating flag only once no items remain active.
+            if (!AvailableUpdates.Any(x => x.IsProgressVisible))
+            {
+                IsUpdating = false;
+                OnPropertyChanged(nameof(ShowEmptyState));
+            }
         }
     }
 
     private void OnUpdateItemCompleted(UpdateItem item)
     {
-        DownloadManagerService.Instance.RunOnUIThread(() =>
+        // Called on the UI thread via RunOnUIThread in ProcessItemAsync.
+        if (item.Status == DownloadStatus.Completed)
         {
             item.PropertyChanged -= OnUpdateItemPropertyChanged;
             AvailableUpdates.Remove(item);
             CompletedUpdates.Insert(0, item);
             PersistCompletedUpdates();
-            OnPropertyChanged(nameof(HasUpdates));
-            OnPropertyChanged(nameof(HasCompletedUpdates));
-            OnPropertyChanged(nameof(ShowEmptyState));
-        });
+        }
+        else
+        {
+            // Cancelled or Failed: reset state and keep in the available list for retry.
+            item.Status = null;
+            item.Progress = 0;
+            item.StatusTextOverride = null;
+            item.DisplayDetailsText = string.Empty;
+            item.IsSelected = false;
+            RecalculateSelectedCount();
+        }
     }
 
     private void OnUpdateItemPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(UpdateItem.IsSelected))
-            RecalculateSelectedCount();
+        if (e.PropertyName != nameof(UpdateItem.IsSelected) &&
+            e.PropertyName != nameof(UpdateItem.IsProgressVisible))
+            return;
+
+        // When an item transitions to a terminal non-progress state (Cancelled/Failed)
+        // its checkbox re-enables before OnUpdateItemCompleted resets IsSelected.
+        // Pre-emptively uncheck here so the checkbox never briefly shows
+        // as enabled+checked, and so RecalculateSelectedCount below gets the right tally.
+        if (sender is UpdateItem { IsSelected: true } item &&
+            !item.IsProgressVisible &&
+            item.Status is DownloadStatus.Cancelled or DownloadStatus.Failed)
+        {
+            item.IsSelected = false;
+        }
+
+        RecalculateSelectedCount();
     }
 
     private void RecalculateSelectedCount()
     {
-        SelectedCount = AvailableUpdates.Count(x => x.IsSelected);
+        SelectedCount = AvailableUpdates.Count(x => x.IsSelected && !x.IsProgressVisible);
         OnPropertyChanged(nameof(IsAllSelected));
     }
 

@@ -32,6 +32,12 @@ public class DownloadManagerService
     public ObservableCollection<DownloadItem> Downloads { get; } = [];
     public HashSet<string> DownloadedProductIds { get; private set; } = [];
 
+    private static bool IsActiveStatus(DownloadStatus? status) =>
+        status is DownloadStatus.Downloading
+            or DownloadStatus.Pending
+            or DownloadStatus.Installing
+            or DownloadStatus.Cancelling;
+
     private void TouchDownload(string productId)
     {
         DownloadItem? item;
@@ -49,13 +55,17 @@ public class DownloadManagerService
         {
             item.LastAccessedAt = now;
 
+            // Active downloads keep their alphabetical slot; only inactive items
+            // bubble to the top of the inactive section on access.
+            if (IsActiveStatus(item.Status))
+                return;
+
             lock (_lock)
             {
                 var index = Downloads.IndexOf(item);
-                if (index > 0)
-                {
-                    Downloads.Move(index, 0);
-                }
+                int activeCount = Downloads.Count(d => IsActiveStatus(d.Status));
+                if (index > activeCount)
+                    Downloads.Move(index, activeCount);
             }
         });
     }
@@ -170,13 +180,14 @@ public class DownloadManagerService
         }
     }
 
-    public void AddDownload(ProductData productInfo)
+    public DownloadItem AddDownload(ProductData productInfo)
     {
         lock (_lock)
         {
             // Check if already exists
-            if (Downloads.Any(d => d.ProductId == productInfo.ProductId))
-                return;
+            var existing = Downloads.FirstOrDefault(d => d.ProductId == productInfo.ProductId);
+            if (existing != null)
+                return existing;
 
             var item = new DownloadItem
             {
@@ -194,8 +205,23 @@ public class DownloadManagerService
                 DownloadedFiles = [],
             };
 
-            RunOnUIThread(() => Downloads.Insert(0, item));
+            RunOnUIThread(() =>
+            {
+                // Insert in alphabetical order within the active section.
+                int insertAt = 0;
+                for (int i = 0; i < Downloads.Count; i++)
+                {
+                    if (!IsActiveStatus(Downloads[i].Status))
+                        break;
+                    if (string.Compare(Downloads[i].Title, item.Title, StringComparison.OrdinalIgnoreCase) <= 0)
+                        insertAt = i + 1;
+                    else
+                        break;
+                }
+                Downloads.Insert(insertAt, item);
+            });
             SaveDownloads();
+            return item;
         }
     }
 
@@ -542,6 +568,7 @@ public class DownloadManagerService
         {
             void ApplyStatus()
             {
+                var previousStatus = item.Status;
                 item.Status = status;
                 if (status is DownloadStatus.Completed)
                 {
@@ -576,6 +603,41 @@ public class DownloadManagerService
                 {
                     // Installing implies download phase completed and files should be available on disk.
                     // No dedicated cache flag; the presence of downloaded file paths can be used as a hint.
+                }
+
+                bool wasActive = IsActiveStatus(previousStatus);
+                bool isNowActive = IsActiveStatus(status);
+
+                if (!wasActive && isNowActive)
+                {
+                    // Inactive → active: move into alphabetical position within the active section.
+                    lock (_lock)
+                    {
+                        var idx = Downloads.IndexOf(item);
+                        int targetIdx = 0;
+                        for (int i = 0; i < Downloads.Count; i++)
+                        {
+                            if (Downloads[i] == item || !IsActiveStatus(Downloads[i].Status))
+                                break;
+                            if (string.Compare(Downloads[i].Title, item.Title, StringComparison.OrdinalIgnoreCase) <= 0)
+                                targetIdx = i + 1;
+                            else
+                                break;
+                        }
+                        if (idx >= 0 && idx != targetIdx)
+                            Downloads.Move(idx, targetIdx);
+                    }
+                }
+                else if (wasActive && !isNowActive)
+                {
+                    // Active → inactive: move to the top of the inactive section.
+                    lock (_lock)
+                    {
+                        var idx = Downloads.IndexOf(item);
+                        int activeCount = Downloads.Count(d => IsActiveStatus(d.Status));
+                        if (idx >= 0 && idx != activeCount)
+                            Downloads.Move(idx, activeCount);
+                    }
                 }
             }
 

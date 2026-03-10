@@ -15,9 +15,7 @@ public sealed partial class UpdatesPage : Page
     public UpdatesViewModel ViewModel { get; }
 
     private readonly INavigationService _navigationService;
-    private DownloadItemStatusAnimator? _animator;
     private readonly HashSet<string> _subscribedProductIds = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, DownloadItem> _mirroredDownloadItems = new(StringComparer.OrdinalIgnoreCase);
 
     public UpdatesPage()
     {
@@ -32,22 +30,8 @@ public sealed partial class UpdatesPage : Page
         base.OnNavigatedTo(e);
         DownloadManagerService.Instance.BeginObserving();
 
-        _animator ??= new DownloadItemStatusAnimator(this.DispatcherQueue);
-
         foreach (var updateItem in ViewModel.AvailableUpdates)
-        {
             SubscribeToUpdateItemIfNeeded(updateItem);
-
-            if (updateItem.Status is DownloadStatus.Pending or DownloadStatus.Downloading or DownloadStatus.Installing or DownloadStatus.Cancelling)
-            {
-                var downloadItem = FindDownloadItem(updateItem.ProductId);
-                if (downloadItem != null)
-                {
-                    _mirroredDownloadItems[updateItem.ProductId] = downloadItem;
-                    RestartAnimation(downloadItem, updateItem.Status.Value);
-                }
-            }
-        }
     }
 
     protected override void OnNavigatedFrom(NavigationEventArgs e)
@@ -55,17 +39,10 @@ public sealed partial class UpdatesPage : Page
         base.OnNavigatedFrom(e);
         DownloadManagerService.Instance.EndObserving();
 
-        if (_animator != null)
-        {
-            foreach (var dl in _mirroredDownloadItems.Values)
-                _animator.Stop(dl);
-        }
-
         foreach (var updateItem in ViewModel.AvailableUpdates)
             updateItem.PropertyChanged -= OnUpdateItemPropertyChanged;
 
         _subscribedProductIds.Clear();
-        _mirroredDownloadItems.Clear();
     }
 
     private void SubscribeToUpdateItemIfNeeded(UpdateItem item)
@@ -81,62 +58,7 @@ public sealed partial class UpdatesPage : Page
         _subscribedProductIds.Add(item.ProductId);
     }
 
-    private void OnUpdateItemPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
-    {
-        if (sender is not UpdateItem item)
-            return;
-
-        if (e.PropertyName is nameof(UpdateItem.Status))
-        {
-            if (item.Status is DownloadStatus.Pending or DownloadStatus.Downloading or DownloadStatus.Installing or DownloadStatus.Cancelling)
-            {
-                var downloadItem = FindOrCacheDownloadItem(item.ProductId);
-                if (downloadItem != null)
-                    RestartAnimation(downloadItem, item.Status.Value);
-            }
-            else
-            {
-                if (_mirroredDownloadItems.TryGetValue(item.ProductId, out var dl))
-                    _animator?.Stop(dl);
-            }
-        }
-    }
-
-    private void RestartAnimation(DownloadItem downloadItem, DownloadStatus status)
-    {
-        if (_animator == null)
-            return;
-
-        var fallback = status switch
-        {
-            DownloadStatus.Pending => "Fetching download URLs",
-            DownloadStatus.Downloading => "Downloading",
-            DownloadStatus.Installing => "Installing",
-            DownloadStatus.Cancelling => "Cancelling",
-            _ => "Pending",
-        };
-
-        downloadItem.StatusTextOverride = null;
-        _animator.Start(downloadItem, fallback);
-    }
-
-    private DownloadItem? FindDownloadItem(string productId)
-    {
-        return DownloadManagerService.Instance.Downloads.FirstOrDefault(d =>
-            string.Equals(d.ProductId, productId, StringComparison.OrdinalIgnoreCase));
-    }
-
-    private DownloadItem? FindOrCacheDownloadItem(string productId)
-    {
-        if (_mirroredDownloadItems.TryGetValue(productId, out var cached))
-            return cached;
-
-        var dl = FindDownloadItem(productId);
-        if (dl != null)
-            _mirroredDownloadItems[productId] = dl;
-
-        return dl;
-    }
+    private void OnUpdateItemPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e) { }
 
     private void ItemCheckBox_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
     {
