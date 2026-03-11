@@ -18,6 +18,7 @@ public sealed partial class AppPage : Page
 
     private CancellationTokenSource? _productLoadCts;
     private CancellationTokenSource? _downloadCts;
+    private CancellationTokenSource? _loadingDotsCts;
     private ProductData? _currentProductInfo;
     private DownloadItem? _activeDownloadItem;
     private bool _isForceInstalling;
@@ -168,6 +169,37 @@ public sealed partial class AppPage : Page
     {
         LoadingOverlay.Visibility = isLoading ? Visibility.Visible : Visibility.Collapsed;
         DisplayItem.Visibility = isLoading ? Visibility.Collapsed : Visibility.Visible;
+
+        if (isLoading)
+        {
+            _loadingDotsCts?.Cancel();
+            _loadingDotsCts?.Dispose();
+            _loadingDotsCts = new CancellationTokenSource();
+            _ = AnimateLoadingDotsAsync(_loadingDotsCts.Token);
+        }
+        else
+        {
+            _loadingDotsCts?.Cancel();
+            _loadingDotsCts?.Dispose();
+            _loadingDotsCts = null;
+        }
+    }
+
+    private async Task AnimateLoadingDotsAsync(CancellationToken ct)
+    {
+        string[] frames = [".", "..", "..."];
+        int i = 1;
+        try
+        {
+            while (true)
+            {
+                await Task.Delay(500, ct);
+                var frame = frames[i % frames.Length];
+                DispatcherQueue.TryEnqueue(() => LoadingDotsText.Text = frame);
+                i++;
+            }
+        }
+        catch (OperationCanceledException) { }
     }
 
     private void UpdateInstallButtonState()

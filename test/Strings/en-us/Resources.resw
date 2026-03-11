@@ -168,4 +168,7 @@
   <data name="Shell_Updates.Content" xml:space="preserve">
     <value>Updates</value>
   </data>
+  <data name="Shell_Advanced_Search.Content" xml:space="preserve">
+    <value>Advanced Search</value>
+  </data>
 </root>

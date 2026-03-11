@@ -127,6 +127,14 @@
           </NavigationViewItem.Icon>
         </NavigationViewItem>
         <NavigationViewItem
+          x:Uid="Shell_Advanced_Search"
+          helpers:NavigationHelper.NavigateTo="test.ViewModels.Advanced_SearchViewModel"
+        >
+          <NavigationViewItem.Icon>
+            <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="" />
+          </NavigationViewItem.Icon>
+        </NavigationViewItem>
+        <NavigationViewItem
           helpers:NavigationHelper.NavigateTo="test.ViewModels.InstallationsViewModel"
           Content="Install"
         >

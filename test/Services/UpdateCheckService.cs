@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Threading.Channels;
 using Microsoft.UI.Dispatching;
 using StoreListings.Library;
 using test.Helpers;
@@ -28,114 +29,194 @@ public static class UpdateCheckService
         int completed = 0;
         int total = pfns.Count;
 
-        var batches = pfns.Select((pfn, i) => (pfn, i))
+        var batchList = pfns
+            .Select((pfn, i) => (pfn, i))
             .GroupBy(x => x.i / LOOKUP_BATCH_SIZE)
-            .Select(g => g.Select(x => x.pfn).ToList());
+            .Select(g => g.Select(x => x.pfn).ToList())
+            .ToList();
 
-        foreach (var batch in batches)
-        {
-            ct.ThrowIfCancellationRequested();
+        // Bounded channel (capacity 1): the producer stays at most one StoreEdgeFD fetch
+        // ahead of the consumer, so the next batch's network call overlaps with the current
+        // batch's DCAT lookup and concurrent version checks.
+        var channel = Channel.CreateBounded<(List<string> Batch, Result<List<StoreEdgeFDProduct>> Result)>(1);
 
-            Result<List<StoreEdgeFDProduct>> batchResult;
-            try
+        // Producer: issues one StoreEdgeFD lookup per PFN batch and writes the result to
+        // the channel. Runs concurrently with the consumer.
+        var producer = Task.Run(
+            async () =>
             {
-                batchResult = await StoreEdgeFDProduct.GetProductsByIdTypeAsync(
-                    batch,
-                    StoreIdType.PackageFamilyName,
-                    DeviceFamily.Desktop,
-                    Market.US,
-                    Lang.en,
-                    ct
-                );
-            }
-            catch (OperationCanceledException)
-            {
-                throw;
-            }
-            catch (Exception ex)
-            {
-                Debug.WriteLine($"[UpdateCheckService] Batch lookup failed: {ex.Message}");
-                completed += batch.Count;
-                progress?.Report((completed, total));
-                continue;
-            }
-
-            if (!batchResult.IsSuccess)
-            {
-                completed += batch.Count;
-                progress?.Report((completed, total));
-                continue;
-            }
-
-            var products = batchResult.Value;
-            int processedInBatch = 0;
-
-            foreach (var product in products)
-            {
-                ct.ThrowIfCancellationRequested();
-
-                if (product.InstallerType != InstallerType.Packaged)
+                try
                 {
-                    processedInBatch++;
-                    completed++;
+                    foreach (var batch in batchList)
+                    {
+                        ct.ThrowIfCancellationRequested();
+
+                        Result<List<StoreEdgeFDProduct>> batchResult;
+                        try
+                        {
+                            batchResult = await StoreEdgeFDProduct.GetProductsByIdTypeAsync(
+                                batch,
+                                StoreIdType.PackageFamilyName,
+                                DeviceFamily.Desktop,
+                                Market.US,
+                                Lang.en,
+                                ct
+                            );
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            throw;
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.WriteLine(
+                                $"[UpdateCheckService] Batch lookup failed: {ex.Message}"
+                            );
+                            batchResult = Result<List<StoreEdgeFDProduct>>.Failure(ex);
+                        }
+
+                        await channel.Writer.WriteAsync((batch, batchResult), ct);
+                    }
+                }
+                finally
+                {
+                    channel.Writer.TryComplete();
+                }
+            },
+            ct
+        );
+
+        // Consumer: reads each StoreEdgeFD result from the channel, performs a single DCAT
+        // batch fetch for all packaged products, then does a soft version check (DCAT
+        // AppVersion vs installed) — while the producer is already fetching the next batch.
+        try
+        {
+            await foreach (var (batch, batchResult) in channel.Reader.ReadAllAsync(ct))
+            {
+                if (!batchResult.IsSuccess)
+                {
+                    completed += batch.Count;
                     progress?.Report((completed, total));
                     continue;
                 }
 
-                string? storeVersion = null;
-                try
-                {
-                    storeVersion = await VersionCheckService.GetLatestVersionAsync(
-                        product.ProductId,
-                        product.InstallerType,
-                        ct
-                    );
-                }
-                catch (OperationCanceledException)
-                {
-                    throw;
-                }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine(
-                        $"[UpdateCheckService] Version check failed for {product.ProductId}: {ex.Message}"
-                    );
-                }
+                var products = batchResult.Value;
 
-                string? pfn = product.PackageFamilyName;
-                string? installedVersion = !string.IsNullOrWhiteSpace(pfn)
-                    ? PackagedAppDiscovery.GetInstalledVersion(pfn)
-                    : null;
+                // Batch-fetch DCAT packages for all packaged products in one request.
+                var packagedIds = products
+                    .Where(p => p.InstallerType == InstallerType.Packaged)
+                    .Select(p => p.ProductId)
+                    .ToList();
 
-                if (VersionComparison.IsStoreNewer(storeVersion, installedVersion))
+                var dcatLookup = new Dictionary<string, IEnumerable<StoreListings.Library.DCATPackage>>(
+                    StringComparer.OrdinalIgnoreCase
+                );
+                if (packagedIds.Count > 0)
                 {
-                    results.Add(
-                        new UpdateItem
+                    try
+                    {
+                        var dcatResult =
+                            await StoreListings.Library.DCATPackage.GetMultiplePackagesAsync(
+                                packagedIds,
+                                Market.US,
+                                Lang.en,
+                                true,
+                                ct
+                            );
+                        if (dcatResult.IsSuccess)
                         {
-                            PackageFamilyName = pfn ?? string.Empty,
-                            ProductId = product.ProductId,
-                            Title = product.Title,
-                            LogoUrl = product.Logo?.Url,
-                            PublisherName = product.PublisherName,
-                            InstalledVersion = installedVersion,
-                            StoreVersion = storeVersion!,
-                            RevisionId = product.RevisionId,
-                            IsBundle = product.IsBundle,
+                            foreach (var dcatProduct in dcatResult.Value)
+                                dcatLookup[dcatProduct.ProductId] = dcatProduct.Packages;
                         }
-                    );
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        throw;
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine(
+                            $"[UpdateCheckService] DCAT batch lookup failed: {ex.Message}"
+                        );
+                    }
                 }
 
-                processedInBatch++;
-                completed++;
-                progress?.Report((completed, total));
-            }
+                // Version checks are sequential to avoid overwhelming the FE3 endpoint.
+                // Per-product progress is reported as each check completes so the UI
+                // stays responsive. Non-packaged products are counted inline.
+                foreach (var product in products)
+                {
+                    ct.ThrowIfCancellationRequested();
 
-            // Account for PFNs in the batch that returned no product
-            int unmatched = batch.Count - processedInBatch;
-            if (unmatched > 0)
+                    if (product.InstallerType != InstallerType.Packaged)
+                    {
+                        completed++;
+                        progress?.Report((completed, total));
+                        continue;
+                    }
+
+                    // Soft check: read the version directly from the DCAT catalog data
+                    // that was already fetched above — no FE3 / Windows Update calls.
+                    string? storeVersion = null;
+                    if (dcatLookup.TryGetValue(product.ProductId, out var pkgs))
+                    {
+                        storeVersion = pkgs
+                            .Where(p => p.AppVersion.HasValue)
+                            .OrderByDescending(p => p.AppVersion!.Value)
+                            .FirstOrDefault()
+                            ?.AppVersion
+                            ?.ToString();
+                    }
+
+                    string? pfn = product.PackageFamilyName;
+                    string? installedVersion = !string.IsNullOrWhiteSpace(pfn)
+                        ? PackagedAppDiscovery.GetInstalledVersion(pfn)
+                        : null;
+
+                    if (VersionComparison.IsStoreNewer(storeVersion, installedVersion))
+                    {
+                        results.Add(
+                            new UpdateItem
+                            {
+                                PackageFamilyName = pfn ?? string.Empty,
+                                ProductId = product.ProductId,
+                                Title = product.Title,
+                                LogoUrl = product.Logo?.Url,
+                                PublisherName = product.PublisherName,
+                                InstalledVersion = installedVersion,
+                                StoreVersion = storeVersion!,
+                                RevisionId = product.RevisionId,
+                                IsBundle = product.IsBundle,
+                            }
+                        );
+                    }
+
+                    completed++;
+                    progress?.Report((completed, total));
+                }
+
+                // Account for PFNs in the batch that returned no product.
+                int unmatched = batch.Count - products.Count;
+                if (unmatched > 0)
+                {
+                    completed += unmatched;
+                    progress?.Report((completed, total));
+                }
+            }
+        }
+        finally
+        {
+            // If the consumer exits early (e.g. cancellation), unblock any producer WriteAsync
+            // and always observe the producer task to prevent unobserved exceptions.
+            channel.Writer.TryComplete();
+            try
             {
-                completed += unmatched;
-                progress?.Report((completed, total));
+                await producer;
+            }
+            catch (OperationCanceledException) { }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[UpdateCheckService] Producer faulted: {ex.Message}");
             }
         }
 

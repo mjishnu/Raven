@@ -1,7 +1,9 @@
 ﻿using System.Diagnostics;
+
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.UI.Xaml;
+
 using test.Activation;
 using test.Contracts.Services;
 using test.Core.Contracts.Services;
@@ -81,6 +83,10 @@ public partial class App : Application
                     services.AddTransient<AppPage>();
                     services.AddTransient<ShellPage>();
                     services.AddTransient<ShellViewModel>();
+
+                    // TemplateStudio: Added Advanced Search View and ViewModel
+                    services.AddTransient<Advanced_SearchViewModel>();
+                    services.AddTransient<Advanced_SearchPage>();
 
                     services.AddTransient<MainPage>();
                     services.AddSingleton<MainViewModel>();

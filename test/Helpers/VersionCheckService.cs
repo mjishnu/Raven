@@ -17,6 +17,7 @@ public static class VersionCheckService
         string productId,
         InstallerType installerType,
         CancellationToken cancellationToken = default,
+        IEnumerable<DCATPackage>? prefetchedPackages = null,
         DeviceFamily deviceFamily = DeviceFamily.Desktop,
         Market market = Market.US,
         Lang language = Lang.en,
@@ -32,19 +33,29 @@ public static class VersionCheckService
         {
             case InstallerType.Packaged:
             {
-                var packageResult = await DCATPackage.GetPackagesAsync(
-                    productId,
-                    market,
-                    language,
-                    true,
-                    cancellationToken
-                );
+                IEnumerable<DCATPackage> packages;
+                if (prefetchedPackages != null)
+                {
+                    packages = prefetchedPackages;
+                }
+                else
+                {
+                    var packageResult = await DCATPackage.GetPackagesAsync(
+                        productId,
+                        market,
+                        language,
+                        true,
+                        cancellationToken
+                    );
 
-                if (!packageResult.IsSuccess)
-                    return null;
+                    if (!packageResult.IsSuccess)
+                        return null;
+
+                    packages = packageResult.Value;
+                }
 
                 if (
-                    !packageResult.Value.Any(p =>
+                    !packages.Any(p =>
                         p.PlatformDependencies.Any(pd => pd.MinVersion <= osVersion)
                     )
                 )
@@ -64,7 +75,7 @@ public static class VersionCheckService
 
                 var fe3sync = await FE3Handler.SyncUpdatesAsync(
                     cookieResult.Value,
-                    packageResult.Value.First().WuCategoryId,
+                    packages.First().WuCategoryId,
                     language,
                     market,
                     currentBranch,
