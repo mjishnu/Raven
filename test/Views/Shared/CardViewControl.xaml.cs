@@ -22,6 +22,7 @@ public sealed partial class CardViewControl : UserControl
     private SpringVector3NaturalMotionAnimation _springAnimation;
     private bool filterBtnActive = false;
     private bool isLoadingMore = false;
+    private CancellationTokenSource? _loadingDotsCts;
     #endregion
 
     #region Constructor
@@ -213,6 +214,11 @@ public sealed partial class CardViewControl : UserControl
         LoadingOverlay.Visibility = Visibility.Visible;
         ViewModel.CurrentSkipItem = 0;
 
+        _loadingDotsCts?.Cancel();
+        _loadingDotsCts?.Dispose();
+        _loadingDotsCts = new CancellationTokenSource();
+        _ = AnimateLoadingDotsAsync(_loadingDotsCts.Token);
+
         var success = true;
         var errorText = "";
         isLoadingMore = true;
@@ -226,6 +232,12 @@ public sealed partial class CardViewControl : UserControl
             success = false;
             errorText = ex.Message;
             Debug.WriteLine(errorText);
+        }
+        finally
+        {
+            _loadingDotsCts?.Cancel();
+            _loadingDotsCts?.Dispose();
+            _loadingDotsCts = null;
         }
 
         // Control may have been unloaded while the await was in progress
@@ -399,9 +411,30 @@ public sealed partial class CardViewControl : UserControl
         scrollViewer.Loaded -= ScrollViewer_Loaded;
         Unloaded -= CardViewControl_Unloaded;
 
+        _loadingDotsCts?.Cancel();
+        _loadingDotsCts?.Dispose();
+        _loadingDotsCts = null;
+
         LoadCardsMethod = null;
         ViewModel = null;
         ItemsSource = null;
+    }
+
+    private async Task AnimateLoadingDotsAsync(CancellationToken ct)
+    {
+        string[] frames = [".", "..", "..."];
+        int i = 1;
+        try
+        {
+            while (true)
+            {
+                await Task.Delay(500, ct);
+                var frame = frames[i % frames.Length];
+                DispatcherQueue.TryEnqueue(() => LoadingDotsText.Text = frame);
+                i++;
+            }
+        }
+        catch (OperationCanceledException) { }
     }
 
     public async void NavigateToProductOrBundle(string productId, InstallerType installerType)
@@ -409,6 +442,11 @@ public sealed partial class CardViewControl : UserControl
         DisplayItem.Visibility = Visibility.Collapsed;
         ErrorIcon.Visibility = Visibility.Collapsed;
         LoadingOverlay.Visibility = Visibility.Visible;
+
+        _loadingDotsCts?.Cancel();
+        _loadingDotsCts?.Dispose();
+        _loadingDotsCts = new CancellationTokenSource();
+        _ = AnimateLoadingDotsAsync(_loadingDotsCts.Token);
 
         var NavigationFrame = App.GetService<INavigationService>().Frame;
         try
@@ -435,6 +473,12 @@ public sealed partial class CardViewControl : UserControl
             ErrorIcon.Visibility = Visibility.Visible;
             ErrorTextBlock.Text = ex.Message;
             Debug.WriteLine($"Failed to load product: {ex.Message}");
+        }
+        finally
+        {
+            _loadingDotsCts?.Cancel();
+            _loadingDotsCts?.Dispose();
+            _loadingDotsCts = null;
         }
     }
 

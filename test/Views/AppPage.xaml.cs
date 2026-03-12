@@ -19,6 +19,7 @@ public sealed partial class AppPage : Page
     private CancellationTokenSource? _productLoadCts;
     private CancellationTokenSource? _downloadCts;
     private CancellationTokenSource? _loadingDotsCts;
+    private CancellationTokenSource? _checkUpdateCts;
     private ProductData? _currentProductInfo;
     private DownloadItem? _activeDownloadItem;
     private bool _isForceInstalling;
@@ -87,6 +88,10 @@ public sealed partial class AppPage : Page
         _loadingDotsCts?.Cancel();
         _loadingDotsCts?.Dispose();
         _loadingDotsCts = null;
+
+        _checkUpdateCts?.Cancel();
+        _checkUpdateCts?.Dispose();
+        _checkUpdateCts = null;
 
         _isForceInstalling = false;
         _overrideAction = null;
@@ -158,6 +163,10 @@ public sealed partial class AppPage : Page
             }
 
             LoadProduct(product.ProductInfo);
+        }
+        catch (OperationCanceledException)
+        {
+            SetLoading(false);
         }
         catch (Exception ex)
         {
@@ -849,13 +858,19 @@ public sealed partial class AppPage : Page
         if (_currentProductInfo == null)
             return;
 
+        _checkUpdateCts?.Cancel();
+        _checkUpdateCts?.Dispose();
+        _checkUpdateCts = new CancellationTokenSource();
+        var cts = _checkUpdateCts;
+
         SetLoading(true);
 
         try
         {
             var latestVersion = await VersionCheckService.GetLatestVersionAsync(
                 _currentProductInfo.ProductId,
-                _currentProductInfo.InstallerType
+                _currentProductInfo.InstallerType,
+                cts.Token
             );
 
             if (latestVersion != null)
@@ -874,7 +889,7 @@ public sealed partial class AppPage : Page
 
                 UpdateInstallButtonState();
             }
-            else
+            else if (!cts.IsCancellationRequested)
             {
                 await ShowErrorDialogAsync(
                     "Check Updates",
@@ -882,9 +897,14 @@ public sealed partial class AppPage : Page
                 );
             }
         }
+        catch (OperationCanceledException)
+        {
+            // Navigation cancelled the request; suppress the error.
+        }
         catch (Exception ex)
         {
-            await ShowErrorDialogAsync("Check Updates", $"Failed to check for updates: {ex.Message}");
+            if (!cts.IsCancellationRequested)
+                await ShowErrorDialogAsync("Check Updates", $"Failed to check for updates: {ex.Message}");
         }
         finally
         {
