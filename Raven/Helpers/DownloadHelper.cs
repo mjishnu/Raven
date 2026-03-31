@@ -1,6 +1,5 @@
 ﻿using System.Diagnostics;
 using System.Net;
-using System.Security.Cryptography;
 using Downloader;
 using StoreListings.Library;
 using Raven.Models;

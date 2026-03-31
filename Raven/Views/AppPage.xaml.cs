@@ -2,6 +2,7 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
+using Windows.ApplicationModel.DataTransfer;
 using StoreListings.Library;
 using Raven.Contracts.Services;
 using Raven.Helpers;
@@ -28,6 +29,10 @@ public sealed partial class AppPage : Page
     private int _lightboxIndex;
     private string _naturalAction = "Install";
     private string? _overrideAction;
+    private CancellationTokenSource? _shareIconResetCts;
+
+    private const string ShareGlyph = "\uE72D";
+    private const string ShareSuccessGlyph = "\uE73E";
 
     // The current logical action key — always one of the fixed English identifiers.
     // Used for branching logic. Never read InstallButton.Content for comparisons.
@@ -110,6 +115,11 @@ public sealed partial class AppPage : Page
         _checkUpdateCts?.Cancel();
         _checkUpdateCts?.Dispose();
         _checkUpdateCts = null;
+
+        _shareIconResetCts?.Cancel();
+        _shareIconResetCts?.Dispose();
+        _shareIconResetCts = null;
+        ShareButtonIcon.Glyph = ShareGlyph;
 
         _isForceInstalling = false;
         _overrideAction = null;
@@ -871,6 +881,92 @@ public sealed partial class AppPage : Page
             foreach (var item in flyout.Items.OfType<MenuFlyoutItem>())
                 item.MinWidth = width;
         }
+    }
+
+    private void ShareMenuFlyout_Opening(object? sender, object e)
+    {
+        var hasProduct = _currentProductInfo != null;
+        var hasPfn = hasProduct && !string.IsNullOrWhiteSpace(_currentProductInfo!.PackageFamilyName);
+
+        CopyStoreLinkMenuItem.IsEnabled = hasProduct;
+        CopyProductIdMenuItem.IsEnabled = hasProduct;
+        CopyPackageFamilyNameMenuItem.IsEnabled = hasPfn;
+    }
+
+    private async void CopyStoreLinkMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (_currentProductInfo == null)
+            return;
+
+        await CopyToClipboardAndShowSuccessAsync($"https://apps.microsoft.com/detail/{_currentProductInfo.ProductId}");
+    }
+
+    private async void CopyProductIdMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (_currentProductInfo == null)
+            return;
+
+        await CopyToClipboardAndShowSuccessAsync(_currentProductInfo.ProductId);
+    }
+
+    private async void CopyPackageFamilyNameMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        var pfn = _currentProductInfo?.PackageFamilyName;
+        if (string.IsNullOrWhiteSpace(pfn))
+            return;
+
+        await CopyToClipboardAndShowSuccessAsync(pfn);
+    }
+
+    private async Task CopyToClipboardAndShowSuccessAsync(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return;
+
+        var package = new DataPackage();
+        package.SetText(value);
+        Clipboard.SetContent(package);
+        Clipboard.Flush();
+
+        await ShowShareCopiedSuccessAsync();
+    }
+
+    private async Task ShowShareCopiedSuccessAsync()
+    {
+        _shareIconResetCts?.Cancel();
+        _shareIconResetCts?.Dispose();
+        _shareIconResetCts = new CancellationTokenSource();
+        var ct = _shareIconResetCts.Token;
+
+        ShareButtonIcon.Glyph = ShareSuccessGlyph;
+
+        try
+        {
+            await Task.Delay(1800, ct);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+
+        if (!ct.IsCancellationRequested)
+        {
+            ShareButtonIcon.Glyph = ShareGlyph;
+        }
+    }
+
+    private void ShareButton_PointerEntered(
+        object sender,
+        Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e
+    )
+    {
+        if (ShareButtonIcon.Glyph != ShareSuccessGlyph)
+            return;
+
+        _shareIconResetCts?.Cancel();
+        _shareIconResetCts?.Dispose();
+        _shareIconResetCts = null;
+        ShareButtonIcon.Glyph = ShareGlyph;
     }
 
     private async void CheckUpdate_Click(object sender, RoutedEventArgs e)

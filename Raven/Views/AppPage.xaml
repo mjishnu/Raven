@@ -400,23 +400,83 @@
               />
             </Grid>
           </StackPanel>
-          <!--  install/open/update button  -->
-          <SplitButton
-            x:Name="InstallButton"
-            Height="40"
-            MinWidth="120"
-            Background="{ThemeResource AccentFillColorDefaultBrush}"
-            Click="InstallButton_Click"
-            FontSize="16"
-            Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}"
-          >
-            <SplitButton.Flyout>
-              <MenuFlyout
-                x:Name="InstallButtonFlyout"
-                FlyoutBase.ShouldConstrainToRootBounds="True"
-              />
-            </SplitButton.Flyout>
-          </SplitButton>
+          <!--  install/open/update button + share button  -->
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <SplitButton
+              x:Name="InstallButton"
+              Height="40"
+              MinWidth="120"
+              Background="{ThemeResource AccentFillColorDefaultBrush}"
+              Click="InstallButton_Click"
+              FontSize="16"
+              Foreground="{ThemeResource TextOnAccentFillColorPrimaryBrush}"
+            >
+              <SplitButton.Flyout>
+                <MenuFlyout
+                  x:Name="InstallButtonFlyout"
+                  FlyoutBase.ShouldConstrainToRootBounds="True"
+                />
+              </SplitButton.Flyout>
+            </SplitButton>
+            <Button
+              x:Name="ShareButton"
+              x:Uid="AppPage_ShareBtn"
+              Width="32"
+              Height="32"
+              MinWidth="32"
+              MinHeight="32"
+              Padding="0"
+              HorizontalContentAlignment="Center"
+              VerticalContentAlignment="Center"
+              Background="Transparent"
+              PointerEntered="ShareButton_PointerEntered"
+              BorderThickness="0"
+   
+            >
+              <FontIcon x:Name="ShareButtonIcon" FontSize="16" Glyph="&#xE72D;" />
+              <Button.Flyout>
+                <MenuFlyout
+                  x:Name="ShareMenuFlyout"
+                  FlyoutBase.ShouldConstrainToRootBounds="True"
+                  Placement="BottomEdgeAlignedLeft"
+                  Opening="ShareMenuFlyout_Opening"
+                >
+                  <MenuFlyout.MenuFlyoutPresenterStyle>
+                    <Style TargetType="MenuFlyoutPresenter">
+                        <Setter Property="Background" Value="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}" />
+                    </Style>
+                  </MenuFlyout.MenuFlyoutPresenterStyle>
+                  <MenuFlyoutItem
+                    x:Name="CopyStoreLinkMenuItem"
+                    x:Uid="AppPage_Share_CopyLink"
+                    Click="CopyStoreLinkMenuItem_Click"
+                  >
+                    <MenuFlyoutItem.Icon>
+                      <FontIcon Glyph="" />
+                    </MenuFlyoutItem.Icon>
+                  </MenuFlyoutItem>
+                  <MenuFlyoutItem
+                    x:Name="CopyProductIdMenuItem"
+                    x:Uid="AppPage_Share_CopyProductId"
+                    Click="CopyProductIdMenuItem_Click"
+                  >
+                    <MenuFlyoutItem.Icon>
+                      <FontIcon Glyph="" />
+                    </MenuFlyoutItem.Icon>
+                  </MenuFlyoutItem>
+                  <MenuFlyoutItem
+                    x:Name="CopyPackageFamilyNameMenuItem"
+                    x:Uid="AppPage_Share_CopyPackageFamilyName"
+                    Click="CopyPackageFamilyNameMenuItem_Click"
+                  >
+                    <MenuFlyoutItem.Icon>
+                      <FontIcon Glyph="" />
+                    </MenuFlyoutItem.Icon>
+                  </MenuFlyoutItem>
+                </MenuFlyout>
+              </Button.Flyout>
+            </Button>
+          </StackPanel>
           <!--  Progress button Section  -->
           <Grid
             x:Name="ProgressSection"

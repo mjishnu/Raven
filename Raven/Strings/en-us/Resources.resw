@@ -677,6 +677,18 @@ Installed version: {0}</value>
   <data name="AppPage_MoreOptionsBtn.ToolTipService.ToolTip" xml:space="preserve">
     <value>More options</value>
   </data>
+  <data name="AppPage_ShareBtn.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Share</value>
+  </data>
+  <data name="AppPage_Share_CopyLink.Text" xml:space="preserve">
+    <value>Copy link</value>
+  </data>
+  <data name="AppPage_Share_CopyProductId.Text" xml:space="preserve">
+    <value>Copy product ID</value>
+  </data>
+  <data name="AppPage_Share_CopyPackageFamilyName.Text" xml:space="preserve">
+    <value>Copy PFN</value>
+  </data>
   <data name="AppPage_LightboxClose.ToolTipService.ToolTip" xml:space="preserve">
     <value>Close</value>
   </data>
