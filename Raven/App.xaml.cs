@@ -131,6 +131,17 @@ public partial class App : Application
             .Build();
     }
 
+    private static bool IsInstallLogEvent(LogEvent logEvent)
+    {
+        if (!logEvent.Properties.TryGetValue("SourceContext", out var sourceContextValue))
+            return false;
+
+        if (sourceContextValue is not ScalarValue { Value: string sourceContext })
+            return false;
+
+        return sourceContext.Contains("Install", StringComparison.OrdinalIgnoreCase);
+    }
+
     private static void ConfigureLogging(LoggerConfiguration loggerConfiguration)
     {
         const string outputTemplate =
@@ -155,7 +166,7 @@ public partial class App : Application
                 )
                 .WriteTo.Logger(lc =>
                     lc.Filter
-                        .ByIncludingOnly(Matching.FromSource("Raven.Install"))
+                        .ByIncludingOnly(IsInstallLogEvent)
                         .WriteTo.File(
                             AppLogPaths.InstallLogFilePath,
                             rollingInterval: RollingInterval.Day,
@@ -166,7 +177,9 @@ public partial class App : Application
                 )
                 .WriteTo.Logger(lc =>
                     lc.Filter
-                        .ByIncludingOnly(e => e.Level >= LogEventLevel.Error)
+                        .ByIncludingOnly(e =>
+                            e.Level >= LogEventLevel.Error && !IsInstallLogEvent(e)
+                        )
                         .WriteTo.File(
                             AppLogPaths.CrashLogFilePath,
                             rollingInterval: RollingInterval.Day,

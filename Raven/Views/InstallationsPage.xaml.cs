@@ -352,13 +352,27 @@ public sealed partial class InstallationsPage : Page
 
                 if (installException != null)
                 {
-                    shouldForceRetry =
+                    if (
                         !ignoreVersion
-                        && await InstallHelper.ShowInstallationErrorOrForceInstallDialogAsync(
+                        && installException is COMException comEx
+                        && InstallHelper.IsNewerOrSameVersionInstalled(comEx.HResult)
+                    )
+                    {
+                        shouldForceRetry =
+                            await InstallHelper.ShowInstallationErrorOrForceInstallDialogAsync(
+                                this.Content.XamlRoot,
+                                "Install_Dialog_Title".GetLocalized(),
+                                installException
+                            );
+                    }
+                    else
+                    {
+                        await InstallHelper.ShowInstallationErrorDialogAsync(
                             this.Content.XamlRoot,
                             "Install_Dialog_Title".GetLocalized(),
                             installException
                         );
+                    }
                 }
             }
         }
