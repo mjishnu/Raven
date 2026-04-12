@@ -1,98 +1,105 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <OutputType>WinExe</OutputType>
-    <TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
-    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
-    <RootNamespace>Raven</RootNamespace>
-    <ApplicationIcon>Assets\Raven.ico</ApplicationIcon>
-    <ApplicationManifest>app.manifest</ApplicationManifest>
-    <Platforms>x86;x64;arm64</Platforms>
-    <RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
-    <PublishProfile>Properties\PublishProfiles\win-$(Platform).pubxml</PublishProfile>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <UseWinUI>true</UseWinUI>
-    <WindowsPackageType>None</WindowsPackageType>
-    <SupportedOSPlatformVersion>10.0.18362.0</SupportedOSPlatformVersion>
-    <AssemblyName>Raven</AssemblyName>
-    <AssemblyTitle>Raven</AssemblyTitle>
-    <PublishAot>False</PublishAot>
-  </PropertyGroup>
-  <ItemGroup>
-    <None Remove="Views\AppPage.xaml" />
-    <None Remove="Views\DownloadsPage.xaml" />
-    <None Remove="Views\InstallationsPage.xaml" />
-    <None Remove="Views\Shared\CardViewControl.xaml" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Remove="Views\UpdatesPage.xaml" />
-  </ItemGroup>
-  <ItemGroup>
-    <Manifest Include="$(ApplicationManifest)" />
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
-    <PackageReference Include="CommunityToolkit.WinUI.Media" Version="8.2.251219" />
-    <PackageReference Include="Downloader" Version="5.1.0" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.5" />
-    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.260317003" />
-    <PackageReference Include="Microsoft.Xaml.Behaviors.WinUI.Managed" Version="3.0.1" />
-    <PackageReference Include="Serilog.Extensions.Hosting" Version="10.0.0" />
-    <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
-    <PackageReference Include="WinUIEx" Version="2.9.0" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\StoreListings\StoreListings.Library\StoreListings.Library.csproj" />
-    <ProjectReference Include="..\Raven.Updater\Raven.Updater.csproj" ReferenceOutputAssembly="false" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Update="appsettings.json">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Update="Views\Dialogs\UpdateDialogContent.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </None>
-    <Page Update="Views\UpdatesPage.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Update="Views\DownloadsPage.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Update="Views\Shared\CardViewControl.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Update="Views\AppPage.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Update="Views\InstallationsPage.xaml">
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Views\Shared\" />
-  </ItemGroup>
-  <PropertyGroup Label="Globals">
-    <WebView2EnableCsWinRTProjection>False</WebView2EnableCsWinRTProjection>
-    <WebView2LoaderPreference>Dynamic</WebView2LoaderPreference>
-    <WebView2DispatchAdapterNamespace>Raven</WebView2DispatchAdapterNamespace>
-    <SignAssembly>False</SignAssembly>
-    <Copyright></Copyright>
-    <FileVersion>1.0.0.0</FileVersion>
-    <AssemblyVersion>1.0.0.0</AssemblyVersion>
-    <PackageIcon></PackageIcon>
-  </PropertyGroup>
-  <!-- Copy Raven.Updater files next to the app output after build -->
-  <Target Name="CopyRavenUpdater" AfterTargets="Build">
-    <ItemGroup>
-      <UpdaterFiles Include="$(SolutionDir)Raven.Updater\bin\$(Configuration)\net10.0\Raven.Updater*" />
-    </ItemGroup>
-    <Copy SourceFiles="@(UpdaterFiles)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" Condition="@(UpdaterFiles) != ''" />
-  </Target>
-  <!-- Also copy Raven.Updater files on publish for exe deployments -->
-  <Target Name="CopyRavenUpdaterOnPublish" AfterTargets="Publish">
-    <ItemGroup>
-      <UpdaterFiles Include="$(SolutionDir)Raven.Updater\bin\$(Configuration)\net10.0\Raven.Updater*" />
-    </ItemGroup>
-    <Copy SourceFiles="@(UpdaterFiles)" DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true" Condition="@(UpdaterFiles) != ''" />
-  </Target>
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
+		<TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+		<RootNamespace>Raven</RootNamespace>
+		<ApplicationIcon>Assets\Raven.ico</ApplicationIcon>
+		<ApplicationManifest>app.manifest</ApplicationManifest>
+		<Platforms>x86;x64;arm64</Platforms>
+		<RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<UseWinUI>true</UseWinUI>
+		<WindowsPackageType>None</WindowsPackageType>
+		<SupportedOSPlatformVersion>10.0.18362.0</SupportedOSPlatformVersion>
+		<EnableMsixTooling>true</EnableMsixTooling>
+		<AssemblyName>Raven</AssemblyName>
+		<AssemblyTitle>Raven</AssemblyTitle>
+		<PublishAot>false</PublishAot>
+		<UpdaterPublishDir>$(BaseIntermediateOutputPath)UpdaterPublish\$(RuntimeIdentifier)\</UpdaterPublishDir>
+	</PropertyGroup>
+	<ItemGroup>
+		<None Remove="Views\AppPage.xaml" />
+		<None Remove="Views\DownloadsPage.xaml" />
+		<None Remove="Views\InstallationsPage.xaml" />
+		<None Remove="Views\Shared\CardViewControl.xaml" />
+	</ItemGroup>
+	<ItemGroup>
+		<None Remove="Views\UpdatesPage.xaml" />
+	</ItemGroup>
+	<ItemGroup>
+		<Manifest Include="$(ApplicationManifest)" />
+	</ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+		<PackageReference Include="CommunityToolkit.WinUI.Media" Version="8.2.251219" />
+		<PackageReference Include="Downloader" Version="5.1.0" />
+		<PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.5" />
+		<PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.260317003" />
+		<PackageReference Include="Microsoft.Xaml.Behaviors.WinUI.Managed" Version="3.0.1" />
+		<PackageReference Include="Serilog.Extensions.Hosting" Version="10.0.0" />
+		<PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
+		<PackageReference Include="WinUIEx" Version="2.9.0" />
+	</ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\StoreListings\StoreListings.Library\StoreListings.Library.csproj" />
+		<ProjectReference Include="..\Raven.Updater\Raven.Updater.csproj" ReferenceOutputAssembly="false" />
+	</ItemGroup>
+	<ItemGroup>
+		<None Update="appsettings.json">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+		<None Update="Views\Dialogs\UpdateDialogContent.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</None>
+		<Page Update="Views\UpdatesPage.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</Page>
+		<Page Update="Views\DownloadsPage.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</Page>
+		<Page Update="Views\Shared\CardViewControl.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</Page>
+		<Page Update="Views\AppPage.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</Page>
+		<Page Update="Views\InstallationsPage.xaml">
+			<Generator>MSBuild:Compile</Generator>
+		</Page>
+	</ItemGroup>
+	<ItemGroup>
+		<Folder Include="Views\Shared\" />
+	</ItemGroup>
+	<ItemGroup>
+		<Content Remove="Assets\**\*" />
+		<Content Include="Assets\**\*">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+		</Content>
+	</ItemGroup>
+	<PropertyGroup Label="Globals">
+		<WebView2EnableCsWinRTProjection>False</WebView2EnableCsWinRTProjection>
+		<WebView2LoaderPreference>Dynamic</WebView2LoaderPreference>
+		<WebView2DispatchAdapterNamespace>Raven</WebView2DispatchAdapterNamespace>
+		<SignAssembly>False</SignAssembly>
+		<Copyright></Copyright>
+		<FileVersion>1.0.0.0</FileVersion>
+		<AssemblyVersion>1.0.0.0</AssemblyVersion>
+		<PackageIcon></PackageIcon>
+	</PropertyGroup>
+	<Target Name="IncludePriAndUpdaterInPublish" BeforeTargets="ComputeFilesToPublish">
+		<MSBuild
+		  Projects="$(MSBuildThisFileDirectory)..\Raven.Updater\Raven.Updater.csproj"
+		  Targets="Publish"
+		  Properties="Configuration=$(Configuration);RuntimeIdentifier=$(RuntimeIdentifier);SelfContained=$(SelfContained);PublishDir=$(UpdaterPublishDir)"
+		  Condition="'$(RuntimeIdentifier)' != ''" />
+		<ItemGroup>
+			<ResolvedFileToPublish Include="$(UpdaterPublishDir)**\*">
+				<RelativePath>%(RecursiveDir)%(Filename)%(Extension)</RelativePath>
+				<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+			</ResolvedFileToPublish>
+		</ItemGroup>
+	</Target>
 </Project>
