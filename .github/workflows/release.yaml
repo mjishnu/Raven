@@ -92,12 +92,12 @@ jobs:
           }
 
           $certBytes = $cert.Export([System.Security.Cryptography.X509Certificates.X509ContentType]::Cert)
-          [System.IO.File]::WriteAllBytes("./publish_output/RavenCert.cer", $certBytes)
           [System.IO.File]::WriteAllBytes("RavenCert.cer", $certBytes)
 
       - name: Create Zip Archive
         shell: pwsh
         run: |
+          Get-ChildItem -Path ./publish_output -Include *.cer,*.pfx -Recurse -File -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
           Compress-Archive -Path ./publish_output/* -DestinationPath Raven-${{ needs.prepare.outputs.release_tag }}-win-${{ matrix.arch }}.zip
 
       - name: Upload App Artifact

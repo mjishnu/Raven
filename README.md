@@ -105,6 +105,13 @@ Raven.sln
   - Windows App SDK / WinUI Development
   - Windows 10 SDK (26100)
 
+### Runtime requirements (for running Raven)
+
+Raven does **not** bundle these dependencies. Install them manually before running the app:
+
+- **.NET 10**: https://dotnet.microsoft.com/en-us/download/dotnet/10.0
+- **Windows App SDK Runtime**: https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/downloads
+
 ## 🚀 Getting Started
 
 ### 1. Clone the Repository
