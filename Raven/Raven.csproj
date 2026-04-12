@@ -43,7 +43,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\StoreListings\StoreListings.Library\StoreListings.Library.csproj" />
-    <ProjectReference Include="..\Raven.Core\Raven.Core.csproj" />
     <ProjectReference Include="..\Raven.Updater\Raven.Updater.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
   <ItemGroup>

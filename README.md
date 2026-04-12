@@ -74,11 +74,6 @@ Raven.sln
 │   ├── Styles/               # XAML resource dictionaries
 │   └── Strings/              # Localized string resources (en-us)
 │
-├── Raven.Core/               # Platform-agnostic core library
-│   ├── Services/             # File I/O and shared services
-│   ├── Contracts/            # Core service interfaces
-│   └── Helpers/              # JSON utilities
-│
 └── StoreListings/            # Git submodule — Microsoft Store API wrapper
     └── StoreListings.Library/
         ├── StoreEdgeFDProduct.cs   # Store product queries

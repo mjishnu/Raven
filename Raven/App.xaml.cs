@@ -9,8 +9,6 @@ using Microsoft.UI.Xaml;
 
 using Raven.Activation;
 using Raven.Contracts.Services;
-using Raven.Core.Contracts.Services;
-using Raven.Core.Services;
 using Raven.Helpers;
 using Raven.Models;
 using Raven.Services;
@@ -90,9 +88,6 @@ public partial class App : Application
                     services.AddSingleton<IActivationService, ActivationService>();
                     services.AddSingleton<IPageService, PageService>();
                     services.AddSingleton<INavigationService, NavigationService>();
-
-                    // Core Services
-                    services.AddSingleton<IFileService, FileService>();
 
                     // Views and ViewModels
                     services.AddTransient<SettingsViewModel>();
