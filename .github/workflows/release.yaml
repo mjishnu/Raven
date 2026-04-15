@@ -100,6 +100,16 @@ jobs:
           Get-ChildItem -Path ./publish_output -Include *.cer,*.pfx -Recurse -File -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
           Compress-Archive -Path ./publish_output/* -DestinationPath Raven-${{ needs.prepare.outputs.release_tag }}-win-${{ matrix.arch }}.zip
 
+      - name: Create Auto Install Certificate Zip
+        if: matrix.arch == 'x64'
+        shell: pwsh
+        run: |
+          $bundleDir = Join-Path $PWD "auto_install_cert"
+          New-Item -ItemType Directory -Path $bundleDir -Force | Out-Null
+          Copy-Item -Path "RavenCert.cer" -Destination (Join-Path $bundleDir "raven.cer") -Force
+          Copy-Item -Path ".github/scripts/Install-RavenCert.bat" -Destination (Join-Path $bundleDir "install_raven_cert.bat") -Force
+          Compress-Archive -Path (Join-Path $bundleDir "*") -DestinationPath "auto_install_cert.zip" -Force
+
       - name: Upload App Artifact
         uses: actions/upload-artifact@v4
         with:
@@ -112,6 +122,13 @@ jobs:
         with:
           name: Public-Certificate
           path: RavenCert.cer
+
+      - name: Upload Auto Install Certificate Artifact
+        if: matrix.arch == 'x64'
+        uses: actions/upload-artifact@v4
+        with:
+          name: Auto-Install-Cert
+          path: auto_install_cert.zip
 
   release:
     name: Create Draft Release
