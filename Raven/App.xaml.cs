@@ -87,6 +87,7 @@ public partial class App : Application
                     services.AddSingleton<ILocalSettingsService, LocalSettingsService>();
                     services.AddSingleton<IThemeSelectorService, ThemeSelectorService>();
                     services.AddSingleton<ILocaleService, LocaleService>();
+                    services.AddSingleton<IArchitectureSelectorService, ArchitectureSelectorService>();
                     services.AddTransient<INavigationViewService, NavigationViewService>();
 
                     services.AddSingleton<IActivationService, ActivationService>();

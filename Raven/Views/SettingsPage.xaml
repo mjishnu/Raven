@@ -116,6 +116,36 @@
                         BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                         BorderThickness="1"
                         CornerRadius="8"
+                        RowSpacing="12">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <TextBlock
+                            x:Uid="Settings_Architecture"
+                            Grid.Row="0"
+                            Style="{ThemeResource SubtitleTextBlockStyle}" />
+                        <TextBlock
+                            x:Uid="Settings_ArchitectureDescription"
+                            Grid.Row="1"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{ThemeResource BodyTextBlockStyle}"
+                            TextWrapping="Wrap" />
+                        <ComboBox
+                            Grid.Row="2"
+                            MinWidth="260"
+                            MaxWidth="340"
+                            HorizontalAlignment="Left"
+                            ItemsSource="{x:Bind ViewModel.AllArchitectureNames}"
+                            SelectedIndex="{x:Bind ViewModel.SelectedArchitectureIndex, Mode=TwoWay}" />
+                    </Grid>
+                    <Grid
+                        Padding="20"
+                        Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
                         RowSpacing="10">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />

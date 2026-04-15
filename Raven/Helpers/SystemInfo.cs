@@ -1,4 +1,5 @@
 ﻿using System.Runtime.InteropServices;
+using Raven.Contracts.Services;
 using StoreListings.Library;
 using Windows.System.Profile;
 
@@ -24,26 +25,54 @@ static class SystemInfo
         return new StoreListings.Library.Version(10u, 0u, 19045u, 0u);
     }
 
-    public static string GetOsArchRid()
+    public static string GetSystemArchRid()
     {
         return RuntimeInformation.OSArchitecture switch
         {
             Architecture.X64 => "x64",
             Architecture.Arm64 => "arm64",
             Architecture.X86 => "x86",
+            Architecture.Arm => "arm",
             _ => "x64",
         };
     }
 
+    public static string ToArchRid(StoreEdgeFDArch architecture)
+    {
+        return architecture switch
+        {
+            StoreEdgeFDArch.ARM64 => "arm64",
+            StoreEdgeFDArch.ARM => "arm",
+            StoreEdgeFDArch.X86 => "x86",
+            _ => "x64",
+        };
+    }
+
+    public static StoreEdgeFDArch ToStoreEdgeFDArch(string archRid)
+    {
+        return archRid.ToLowerInvariant() switch
+        {
+            "arm64" => StoreEdgeFDArch.ARM64,
+            "arm" => StoreEdgeFDArch.ARM,
+            "x86" => StoreEdgeFDArch.X86,
+            _ => StoreEdgeFDArch.X64,
+        };
+    }
+
+    public static string GetOsArchRid()
+    {
+        try
+        {
+            return App.GetService<IArchitectureSelectorService>().SelectedArchRid;
+        }
+        catch
+        {
+            return GetSystemArchRid();
+        }
+    }
+
     public static StoreEdgeFDArch GetStoreEdgeFDArch()
     {
-        return RuntimeInformation.OSArchitecture switch
-        {
-            Architecture.X64 => StoreEdgeFDArch.X64,
-            Architecture.X86 => StoreEdgeFDArch.X86,
-            Architecture.Arm64 => StoreEdgeFDArch.ARM64,
-            Architecture.Arm => StoreEdgeFDArch.ARM,
-            _ => StoreEdgeFDArch.X86,
-        };
+        return ToStoreEdgeFDArch(GetOsArchRid());
     }
 }

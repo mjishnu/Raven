@@ -174,6 +174,12 @@
   <data name="Settings_Market.Text" xml:space="preserve">
     <value>Market (Region)</value>
   </data>
+  <data name="Settings_Architecture.Text" xml:space="preserve">
+    <value>Architecture</value>
+  </data>
+  <data name="Settings_ArchitectureDescription.Text" xml:space="preserve">
+    <value>Select your system architecture</value>
+  </data>
   <data name="Settings_Reset.Text" xml:space="preserve">
     <value>Reset</value>
   </data>
@@ -187,7 +193,7 @@
     <value>Reset app data?</value>
   </data>
   <data name="Settings_ResetDialogContent" xml:space="preserve">
-    <value>This will remove all downloaded files and cached download data, and restore language and region to defaults. This action cannot be undone.</value>
+    <value>This will remove all downloaded files and cached download data, and restore language, region, and architecture to defaults. This action cannot be undone.</value>
   </data>
   <data name="Settings_ResetDialogPrimary" xml:space="preserve">
     <value>Reset</value>

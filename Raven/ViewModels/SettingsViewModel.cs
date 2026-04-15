@@ -15,6 +15,7 @@ public partial class SettingsViewModel : ObservableRecipient
 {
     private readonly IThemeSelectorService _themeSelectorService;
     private readonly ILocaleService _localeService;
+    private readonly IArchitectureSelectorService _architectureSelectorService;
     private bool _isInitialized;
 
     [ObservableProperty]
@@ -29,21 +30,28 @@ public partial class SettingsViewModel : ObservableRecipient
     [ObservableProperty]
     private int _selectedLanguageIndex;
 
+    [ObservableProperty]
+    private int _selectedArchitectureIndex;
+
     private readonly List<(string DisplayName, Market Value)> _marketItems;
     private readonly List<(string DisplayName, Lang Value)> _languageItems;
+    private readonly List<(string DisplayName, StoreEdgeFDArch Value)> _architectureItems;
 
     public IReadOnlyList<string> AllMarketNames { get; }
     public IReadOnlyList<string> AllLanguageNames { get; }
+    public IReadOnlyList<string> AllArchitectureNames { get; }
 
     public ICommand SwitchThemeCommand { get; }
 
     public SettingsViewModel(
         IThemeSelectorService themeSelectorService,
-        ILocaleService localeService
+        ILocaleService localeService,
+        IArchitectureSelectorService architectureSelectorService
     )
     {
         _themeSelectorService = themeSelectorService;
         _localeService = localeService;
+        _architectureSelectorService = architectureSelectorService;
         _elementTheme = _themeSelectorService.Theme;
         _versionDescription = GetVersionDescription();
 
@@ -65,6 +73,15 @@ public partial class SettingsViewModel : ObservableRecipient
         _selectedLanguageIndex = Math.Max(
             0,
             _languageItems.FindIndex(x => x.Value == _localeService.Language)
+        );
+
+        _architectureItems = Enum.GetValues<StoreEdgeFDArch>()
+            .Select(a => (a.ToString(), a))
+            .ToList();
+        AllArchitectureNames = _architectureItems.Select(x => x.DisplayName).ToList();
+        _selectedArchitectureIndex = Math.Max(
+            0,
+            _architectureItems.FindIndex(x => x.Value == _architectureSelectorService.SelectedStoreEdgeArchitecture)
         );
 
         SwitchThemeCommand = new RelayCommand<ElementTheme>(
@@ -99,6 +116,16 @@ public partial class SettingsViewModel : ObservableRecipient
             _ = _localeService.SetLanguageAsync(lang);
     }
 
+    partial void OnSelectedArchitectureIndexChanged(int value)
+    {
+        if (!_isInitialized || value < 0 || value >= _architectureItems.Count)
+            return;
+
+        var selectedArchitecture = _architectureItems[value].Value;
+        if (selectedArchitecture != _architectureSelectorService.SelectedStoreEdgeArchitecture)
+            _ = _architectureSelectorService.SetSelectedArchitectureAsync(selectedArchitecture);
+    }
+
     private static string GetMarketDisplayName(Market market)
     {
         try
@@ -131,6 +158,7 @@ public partial class SettingsViewModel : ObservableRecipient
         ElementTheme = _themeSelectorService.Theme;
 
         await _localeService.ResetToDefaultAsync();
+        await _architectureSelectorService.ResetToDefaultAsync();
 
         SelectedMarketIndex = Math.Max(
             0,
@@ -139,6 +167,10 @@ public partial class SettingsViewModel : ObservableRecipient
         SelectedLanguageIndex = Math.Max(
             0,
             _languageItems.FindIndex(x => x.Value == _localeService.Language)
+        );
+        SelectedArchitectureIndex = Math.Max(
+            0,
+            _architectureItems.FindIndex(x => x.Value == _architectureSelectorService.SelectedStoreEdgeArchitecture)
         );
     }
 
