@@ -1,8 +1,34 @@
-﻿using System.Diagnostics;
+﻿using Microsoft.Extensions.Logging;
 using StoreListings.Library;
 using Raven.Models;
 
 namespace Raven.Helpers;
+
+/// <summary>
+/// Specific reason a download URL could not be resolved for a product, so the UI
+/// can show an actionable message instead of a generic "not supported" error and
+/// the logs record exactly which stage failed.
+/// </summary>
+public enum DownloadUrlFailureReason
+{
+    /// <summary>Querying the Store catalog / update service failed (often transient or network related).</summary>
+    StoreQueryFailed,
+
+    /// <summary>The app requires a newer Windows version than this device is running.</summary>
+    OsVersionIncompatible,
+
+    /// <summary>No build matches this device's CPU architecture.</summary>
+    ArchitectureIncompatible,
+
+    /// <summary>No installable package/installer is published for this app.</summary>
+    NoInstallerAvailable,
+
+    /// <summary>A download link for the package or one of its dependencies could not be retrieved.</summary>
+    DownloadInfoUnavailable,
+
+    /// <summary>The product uses an installer type Raven does not support.</summary>
+    UnsupportedInstallerType,
+}
 
 public static class GetDownloadUrl
 {
@@ -22,48 +48,99 @@ public static class GetDownloadUrl
             || n.Contains("resource", StringComparison.OrdinalIgnoreCase);
     }
 
-    private static IEnumerable<(
-        FE3Handler.SyncUpdatesResponse.Update Update,
-        string Url
-    )> ReduceFrameworkDependencyFiles(
-        IReadOnlyList<(
-            FE3Handler.SyncUpdatesResponse.Update Update,
-            string Url
-        )> latestVersionGroup,
-        string archRid
+    /// <summary>
+    /// Collapses a framework's versioned PackageIdentityName to a stable "family" key by removing
+    /// dotted numeric segments, so different releases of the same framework
+    /// (e.g. Microsoft.WindowsAppRuntime.1.4 / .1.5 / .1.7 -> microsoft.windowsappruntime) group
+    /// together and only the latest is selected. VCLibs (one version) stays its own family.
+    /// </summary>
+    private static string GetFrameworkFamilyKey(string? packageIdentityName)
+    {
+        if (string.IsNullOrWhiteSpace(packageIdentityName))
+            return string.Empty;
+
+        var segments = packageIdentityName
+            .Split('.', StringSplitOptions.RemoveEmptyEntries)
+            .Where(s => !s.All(char.IsDigit));
+
+        return string.Join('.', segments).ToLowerInvariant();
+    }
+
+    /// <summary>
+    /// Picks the framework dependency file(s) for a single framework family (every architecture and
+    /// version variant grouped under one family key), honouring the architecture priority for the
+    /// chosen main.
+    /// <para>
+    /// Architectures outside the priority list are never returned — an x64 install must not receive
+    /// arm64 packages, regardless of mode.
+    /// </para>
+    /// <para>
+    /// Normal mode returns a single file: the highest-priority architecture that exists (x64, then
+    /// x86, then neutral for an x64 system), at its latest version. Bypass mode
+    /// (<paramref name="includeAllSupportedArchs"/>) returns <i>every</i> supported-architecture
+    /// build of <i>every</i> version FE3 returned (older releases included), so the installer can try
+    /// them all.
+    /// </para>
+    /// </summary>
+    private static IEnumerable<FE3Handler.SyncUpdatesResponse.Update> SelectFrameworkDependencies(
+        IReadOnlyList<FE3Handler.SyncUpdatesResponse.Update> frameworkGroup,
+        string archRid,
+        bool includeAllSupportedArchs
     )
     {
-        if (latestVersionGroup.Count == 0)
-            return latestVersionGroup;
+        if (frameworkGroup.Count == 0)
+            return Array.Empty<FE3Handler.SyncUpdatesResponse.Update>();
 
         // Prefer non-resource packages.
-        var nonResource = latestVersionGroup
-            .Where(a => !IsLikelyResourceOnlyPackage(a.Update.FileName))
+        var nonResource = frameworkGroup
+            .Where(u => !IsLikelyResourceOnlyPackage(u.FileName))
             .ToList();
 
-        var candidates = nonResource.Count > 0 ? nonResource : latestVersionGroup.ToList();
+        var candidates = nonResource.Count > 0 ? nonResource : frameworkGroup.ToList();
         var priorities = Utils.GetArchPriorities(archRid, isPackaged: true);
 
+        if (includeAllSupportedArchs)
+        {
+            // Bypass mode: keep every supported-architecture build of every version. Architectures
+            return candidates
+                .Where(u =>
+                    priorities.Contains(
+                        Utils.ParseArchString(
+                            u.FileName ?? u.PackageIdentityName,
+                            isPackaged: true
+                        )
+                    )
+                )
+                .ToList();
+        }
+
+        // Normal mode: a single file — the highest-priority architecture that exists, latest version.
         foreach (var pref in priorities)
         {
             var matches = candidates
-                .Where(a =>
+                .Where(u =>
                     Utils.ParseArchString(
-                        a.Update.FileName ?? a.Update.PackageIdentityName,
+                        u.FileName ?? u.PackageIdentityName,
                         isPackaged: true
                     ) == pref
                 )
                 .ToList();
 
-            if (matches.Any())
+            if (matches.Count == 0)
+                continue;
+
+            // Latest version of this architecture; shortest filename to avoid edge-case variants.
+            return new[]
             {
-                // If multiple remain, pick the shortest filename to avoid edge-case variants
-                var best = matches.OrderBy(a => (a.Update.FileName ?? string.Empty).Length).First();
-                return new[] { best };
-            }
+                matches
+                    .OrderByDescending(u => u.Version)
+                    .ThenBy(u => (u.FileName ?? string.Empty).Length)
+                    .First(),
+            };
         }
 
-        return new[] { candidates.First() };
+        // No architecturally-compatible build for the chosen main; contribute no dependency
+        return Array.Empty<FE3Handler.SyncUpdatesResponse.Update>();
     }
 
     public static async Task<FileEntry?> fetch(
@@ -76,121 +153,83 @@ public static class GetDownloadUrl
         string flightRing = "Retail",
         string flightingBranchName = "Retail",
         string currentBranch = "ge_release",
-        bool ignoreDependencyFilter = false
+        bool ignoreDependencyFilter = false,
+        Action<DownloadUrlFailureReason>? onFailure = null
     )
     {
         var OSVersion = SystemInfo.GetExactWindowsVersion();
         var archRid = SystemInfo.GetOsArchRid();
-        Debug.WriteLine($"{installerType}, {OSVersion}, {archRid}, {productId}");
+
+        var logger = App.GetService<ILoggerFactory>().CreateLogger(typeof(GetDownloadUrl).FullName!);
+
+        void Fail(DownloadUrlFailureReason reason)
+        {
+            logger.LogWarning(
+                "Download URL resolution failed | Reason={Reason} | ProductId={ProductId} | InstallerType={InstallerType} | OSVersion={OSVersion} | Arch={Arch}",
+                reason,
+                productId,
+                installerType,
+                OSVersion,
+                archRid
+            );
+            onFailure?.Invoke(reason);
+        }
+
         switch (installerType)
         {
             case InstallerType.Packaged:
-            {
-                var selectionContext = await VersionCheckService.GetPackagedSelectionContextAsync(
-                    productId,
-                    cancellationToken,
-                    prefetchedPackages: null,
-                    deviceFamily,
-                    market,
-                    language,
-                    flightRing,
-                    flightingBranchName,
-                    currentBranch,
-                    OSVersion,
-                    archRid
-                );
-
-                if (selectionContext is null)
-                    return null;
-
-                var packageList = selectionContext.Packages;
-                var updates = selectionContext.Updates;
-                var priorities = Utils.GetArchPriorities(selectionContext.ArchRid, isPackaged: true);
-
-                foreach (var archPref in priorities)
                 {
-                    var archCandidates = selectionContext.Candidates.Where(c =>
-                        Utils.ParseArchString(c.FileName ?? c.PackageIdentityName, isPackaged: true)
-                        == archPref
+                    var contextFailure = DownloadUrlFailureReason.StoreQueryFailed;
+                    var selectionContext = await VersionCheckService.GetPackagedSelectionContextAsync(
+                        productId,
+                        cancellationToken,
+                        prefetchedPackages: null,
+                        deviceFamily,
+                        market,
+                        language,
+                        flightRing,
+                        flightingBranchName,
+                        currentBranch,
+                        OSVersion,
+                        archRid,
+                        onFailure: r => contextFailure = r
                     );
 
-                    foreach (var main in archCandidates)
+                    if (selectionContext is null)
                     {
-                        // --- 1. SELECTION ---
-                        var dcatMain = packageList.FirstOrDefault(p =>
-                            p.PackageIdentityName.Equals(
-                                main.PackageIdentityName,
-                                StringComparison.OrdinalIgnoreCase
+                        Fail(contextFailure);
+                        return null;
+                    }
+
+                    var updates = selectionContext.Updates;
+                    var priorities = Utils.GetArchPriorities(selectionContext.ArchRid, isPackaged: true);
+
+                    var frameworkGroups = updates
+                        .Where(d =>
+                            d.IsFramework
+                            && d.TargetPlatforms.Any(tp =>
+                                tp.MinVersion <= selectionContext.OsVersion
+                                && (
+                                    tp.Family == DeviceFamily.Universal
+                                    || tp.Family == deviceFamily
+                                )
                             )
-                            && (
-                                p.AppVersion is null
-                                || p.AppVersion.ToString() == main.Version.ToString()
-                            )
-                        );
+                        )
+                        .GroupBy(d => GetFrameworkFamilyKey(d.PackageIdentityName))
+                        .Select(g => g.ToList())
+                        .ToList();
 
-                        var requiredDepUpdates = new List<FE3Handler.SyncUpdatesResponse.Update>();
-                        var allDepsOk = true;
-
-                        if (dcatMain is not null && dcatMain.FrameworkDependencies?.Any() == true)
-                        {
-                            foreach (var dep in dcatMain.FrameworkDependencies)
-                            {
-                                var applicable = updates
-                                    .Where(d =>
-                                        d.PackageIdentityName.Equals(
-                                            dep.PackageIdentity,
-                                            StringComparison.OrdinalIgnoreCase
-                                        )
-                                        && d.Version >= dep.MinVersion
-                                        && d.TargetPlatforms.Any(tp =>
-                                            tp.MinVersion <= selectionContext.OsVersion
-                                            && (
-                                                tp.Family == DeviceFamily.Universal
-                                                || tp.Family == deviceFamily
-                                            )
-                                        )
-                                    )
-                                    .ToList();
-
-                                if (!applicable.Any())
-                                {
-                                    allDepsOk = false;
-                                    break;
-                                }
-
-                                var latestGroup = applicable
-                                    .GroupBy(a => a.Version)
-                                    .OrderByDescending(g => g.Key)
-                                    .First()
-                                    .ToList();
-
-                                if (ignoreDependencyFilter)
-                                {
-                                    requiredDepUpdates.AddRange(latestGroup);
-                                }
-                                else
-                                {
-                                    var reduced = ReduceFrameworkDependencyFiles(
-                                        latestGroup
-                                            .Select(u => (Update: u, Url: string.Empty))
-                                            .ToList(),
-                                        selectionContext.ArchRid
-                                    );
-
-                                    requiredDepUpdates.AddRange(reduced.Select(r => r.Update));
-                                }
-                            }
-                        }
-
-                        if (!allDepsOk)
-                            continue;
-
-                        // --- 2. FETCH URLs ---
-                        var mainDownloadInfo = await FE3Handler.GetPackageDownloadInfo(
+                    // Helper func to fetch the download URL + blockmap for one update and package it into a FileEntry
+                    async Task<FileEntry?> ResolveDownloadEntry(
+                        FE3Handler.SyncUpdatesResponse.Update update,
+                        IReadOnlyList<FileEntry> dependencies
+                    )
+                    {
+                        var info = await FE3Handler.GetPackageDownloadInfo(
                             selectionContext.NewCookie,
-                            main.UpdateID,
-                            main.RevisionNumber,
-                            main.Digest,
+                            update.UpdateID,
+                            update.RevisionNumber,
+                            update.Digest,
                             language,
                             market,
                             currentBranch,
@@ -202,102 +241,123 @@ public static class GetDownloadUrl
                             selectionContext.OsArch
                         );
 
-                        if (!mainDownloadInfo.IsSuccess)
+                        if (!info.IsSuccess)
+                            return null;
+
+                        update.SetDownloadInfoPackageDigest(info.Value.Package.Digest);
+                        update.SetDownloadInfoBlockmapUrl(info.Value.BlockmapCab?.Url);
+                        update.SetDownloadInfoBlockmapDigest(info.Value.BlockmapCab?.Digest);
+
+                        return new FileEntry(
+                            FileName: update.FileName,
+                            Url: info.Value.Package.Url,
+                            Dependencies: dependencies,
+                            Digest: update.GetDownloadInfoPackageDigest(),
+                            BlockmapUrl: update.GetDownloadInfoBlockmapUrl(),
+                            BlockmapCabFileDigest: update.GetDownloadInfoBlockmapDigest()
+                        );
+                    }
+
+                    var anyArchMatch = false;
+
+                    // Iterate through the archs assume equal priority for main and dependencies
+                    foreach (var archPref in priorities)
+                    {
+                        // check main exist for this arch
+                        var archCandidates = selectionContext
+                            .Candidates.Where(c =>
+                                Utils.ParseArchString(
+                                    c.FileName ?? c.PackageIdentityName,
+                                    isPackaged: true
+                                ) == archPref
+                            )
+                            .ToList();
+
+                        // if no main then skip this arch
+                        if (archCandidates.Count == 0)
                             continue;
 
-                        var depEntries = new List<FileEntry>();
-                        var networkDepsOk = true;
+                        anyArchMatch = true;
 
-                        foreach (var depUpdate in requiredDepUpdates.Distinct())
+                        var depArch = archPref == "neutral" ? selectionContext.ArchRid : archPref;
+
+                        var requiredDepUpdates = frameworkGroups
+                            .SelectMany(group =>
+                                SelectFrameworkDependencies(
+                                    group,
+                                    depArch,
+                                    includeAllSupportedArchs: ignoreDependencyFilter
+                                )
+                            )
+                            .Distinct()
+                            .ToList();
+
+                        var depEntries = new List<FileEntry>();
+                        var depsResolved = true;
+
+                        //  Get url for all dependencies for this arch
+                        foreach (var depUpdate in requiredDepUpdates)
                         {
-                            var depDownloadInfo = await FE3Handler.GetPackageDownloadInfo(
-                                selectionContext.NewCookie,
-                                depUpdate.UpdateID,
-                                depUpdate.RevisionNumber,
-                                depUpdate.Digest,
-                                language,
-                                market,
-                                currentBranch,
-                                flightRing,
-                                flightingBranchName,
-                                selectionContext.OsVersion,
-                                deviceFamily,
-                                cancellationToken,
-                                selectionContext.OsArch
+                            var depEntry = await ResolveDownloadEntry(
+                                depUpdate, 
+                                Array.Empty<FileEntry>()
                             );
 
-                            if (!depDownloadInfo.IsSuccess)
+                            if (depEntry is null)
                             {
-                                networkDepsOk = false;
+                                depsResolved = false;
                                 break;
                             }
 
-                            depUpdate.SetDownloadInfoPackageDigest(
-                                depDownloadInfo.Value.Package.Digest
-                            );
-                            depUpdate.SetDownloadInfoBlockmapUrl(
-                                depDownloadInfo.Value.BlockmapCab?.Url
-                            );
-                            depUpdate.SetDownloadInfoBlockmapDigest(
-                                depDownloadInfo.Value.BlockmapCab?.Digest
-                            );
-
-                            depEntries.Add(
-                                new FileEntry(
-                                    FileName: depUpdate.FileName,
-                                    Url: depDownloadInfo.Value.Package.Url,
-                                    Dependencies: Array.Empty<FileEntry>(),
-                                    Digest: depUpdate.GetDownloadInfoPackageDigest(),
-                                    BlockmapUrl: depUpdate.GetDownloadInfoBlockmapUrl(),
-                                    BlockmapCabFileDigest: depUpdate.GetDownloadInfoBlockmapDigest()
-                                )
-                            );
+                            depEntries.Add(depEntry);
                         }
 
-                        if (!networkDepsOk)
-                            continue; // Dependency URL failed, fallback to next main candidate
+                        if (!depsResolved)
+                            continue; // A dependency URL failed; try the next architecture.
 
-                        // --- 3. ASSEMBLY ---
-                        main.SetDownloadInfoPackageDigest(mainDownloadInfo.Value.Package.Digest);
-                        main.SetDownloadInfoBlockmapUrl(mainDownloadInfo.Value.BlockmapCab?.Url);
-                        main.SetDownloadInfoBlockmapDigest(
-                            mainDownloadInfo.Value.BlockmapCab?.Digest
-                        );
+                        // Get url for main file for this arch
+                        foreach (var main in archCandidates)
+                        {
+                            var mainEntry = await ResolveDownloadEntry(main, depEntries);
 
-                        return new FileEntry(
-                            FileName: main.FileName,
-                            Url: mainDownloadInfo.Value.Package.Url,
-                            Dependencies: depEntries,
-                            Digest: main.GetDownloadInfoPackageDigest(),
-                            BlockmapUrl: main.GetDownloadInfoBlockmapUrl(),
-                            BlockmapCabFileDigest: main.GetDownloadInfoBlockmapDigest()
-                        );
+                            if (mainEntry is null)
+                                continue; // Main URL failed; try the next candidate.
+
+                            return mainEntry;
+                        }
                     }
-                }
-                return null;
-            }
-            case InstallerType.Unpackaged:
-            {
-                var selectionContext = await VersionCheckService.GetUnpackagedSelectionContextAsync(
-                    productId,
-                    cancellationToken,
-                    market,
-                    language,
-                    archRid
-                );
 
-                if (selectionContext is null)
+                    Fail(anyArchMatch ? DownloadUrlFailureReason.DownloadInfoUnavailable : DownloadUrlFailureReason.ArchitectureIncompatible);
                     return null;
+                }
+            case InstallerType.Unpackaged:
+                {
+                    var contextFailure = DownloadUrlFailureReason.NoInstallerAvailable;
+                    var selectionContext = await VersionCheckService.GetUnpackagedSelectionContextAsync(
+                        productId,
+                        cancellationToken,
+                        market,
+                        language,
+                        archRid,
+                        onFailure: r => contextFailure = r
+                    );
 
-                return new FileEntry(
-                    FileName: selectionContext.FileName,
-                    Url: selectionContext.InstallerUrl,
-                    Dependencies: Array.Empty<FileEntry>(),
-                    Sha256: selectionContext.InstallerSha256
-                );
-            }
+                    if (selectionContext is null)
+                    {
+                        Fail(contextFailure);
+                        return null;
+                    }
+
+                    return new FileEntry(
+                        FileName: selectionContext.FileName,
+                        Url: selectionContext.InstallerUrl,
+                        Dependencies: Array.Empty<FileEntry>(),
+                        Sha256: selectionContext.InstallerSha256
+                    );
+                }
 
             default:
+                Fail(DownloadUrlFailureReason.UnsupportedInstallerType);
                 return null;
         }
     }

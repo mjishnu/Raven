@@ -156,6 +156,11 @@ public sealed partial class DownloadsPage : Page
         }
 
         _subscribedProductIds.Clear();
+
+        // Sever this transient page's x:Bind subscriptions to the singleton ViewModel
+        // (the ListView's ItemsSource is the singleton DownloadManagerService collection),
+        // which would otherwise root the page forever. Matches the MainPage/SearchPage pattern.
+        Bindings.StopTracking();
     }
 
     private void DownloadsList_ItemClick(object sender, ItemClickEventArgs e)

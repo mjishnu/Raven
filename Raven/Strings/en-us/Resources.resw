@@ -444,6 +444,42 @@
   <data name="AppPage_Error_NotSupportedMsg" xml:space="preserve">
     <value>This app isn't supported. Try a different app or check again later.</value>
   </data>
+  <data name="AppPage_Error_StoreQueryFailedTitle" xml:space="preserve">
+    <value>Couldn't reach the Store</value>
+  </data>
+  <data name="AppPage_Error_StoreQueryFailedMsg" xml:space="preserve">
+    <value>We couldn't retrieve this app's download details right now. Check your internet connection and try again.</value>
+  </data>
+  <data name="AppPage_Error_OsIncompatibleTitle" xml:space="preserve">
+    <value>App not supported</value>
+  </data>
+  <data name="AppPage_Error_OsIncompatibleMsg" xml:space="preserve">
+    <value>This app requires a newer version of Windows than this device is running.</value>
+  </data>
+  <data name="AppPage_Error_ArchIncompatibleTitle" xml:space="preserve">
+    <value>App not supported</value>
+  </data>
+  <data name="AppPage_Error_ArchIncompatibleMsg" xml:space="preserve">
+    <value>This app doesn't offer a build compatible with your device's processor (CPU architecture).</value>
+  </data>
+  <data name="AppPage_Error_NoInstallerTitle" xml:space="preserve">
+    <value>App not available</value>
+  </data>
+  <data name="AppPage_Error_NoInstallerMsg" xml:space="preserve">
+    <value>No installable package is published for this app right now. Check again later.</value>
+  </data>
+  <data name="AppPage_Error_DownloadInfoTitle" xml:space="preserve">
+    <value>Download unavailable</value>
+  </data>
+  <data name="AppPage_Error_DownloadInfoMsg" xml:space="preserve">
+    <value>We couldn't get a download link for this app right now. Try again later.</value>
+  </data>
+  <data name="AppPage_Error_UnsupportedTypeTitle" xml:space="preserve">
+    <value>App not supported</value>
+  </data>
+  <data name="AppPage_Error_UnsupportedTypeMsg" xml:space="preserve">
+    <value>This app uses an installer type that Raven doesn't support yet.</value>
+  </data>
   <data name="AppPage_Error_FailedToInstall" xml:space="preserve">
     <value>Failed to install.</value>
   </data>
@@ -822,5 +858,64 @@ You can enable it by turning on Developer Mode in Windows Settings.</value>
   </data>
   <data name="Sideloading_CancelButton" xml:space="preserve">
     <value>Not now</value>
+  </data>
+  <data name="InstallationsPage_MoreOptionsBtn.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Advanced options</value>
+  </data>
+  <data name="InstallationsPage_AdvancedInstall.Text" xml:space="preserve">
+    <value>Unpackaged Mode</value>
+  </data>
+  <data name="InstallationsPage_CustomFolder.PlaceholderText" xml:space="preserve">
+    <value>Choose install folder…</value>
+  </data>
+  <data name="InstallationsPage_BrowseFolderBtn.Content" xml:space="preserve">
+    <value>Browse</value>
+  </data>
+  <data name="InstallationsPage_RemoveSignature.Content" xml:space="preserve">
+    <value>Remove signature verification</value>
+  </data>
+  <data name="InstallationsPage_SelectDependenciesBtn.Content" xml:space="preserve">
+    <value>Select dependencies</value>
+  </data>
+  <data name="InstallationsPage_FolderPicker_Title" xml:space="preserve">
+    <value>Choose the install location</value>
+  </data>
+  <data name="InstallationsPage_DependencyPicker_Title" xml:space="preserve">
+    <value>Select dependency packages</value>
+  </data>
+  <data name="InstallationsPage_Dependencies_Count" xml:space="preserve">
+    <value>{0} selected</value>
+  </data>
+  <data name="Install_Error_NoFolderSelected" xml:space="preserve">
+    <value>Choose an install folder before installing.</value>
+  </data>
+  <data name="Install_Error_FolderExists" xml:space="preserve">
+    <value>A folder named "{0}" already exists in the chosen location. Choose another location or remove the existing folder.</value>
+  </data>
+  <data name="Install_Error_NoInstallableArch" xml:space="preserve">
+    <value>This bundle has no package compatible with your selected architecture.</value>
+  </data>
+  <data name="Install_Error_ManifestMissing" xml:space="preserve">
+    <value>Could not find AppxManifest.xml in the package.</value>
+  </data>
+  <data name="DeveloperMode_DisabledTitle" xml:space="preserve">
+    <value>Developer Mode is required</value>
+  </data>
+  <data name="DeveloperMode_DisabledMessage" xml:space="preserve">
+    <value>Custom (loose) install registers an app from unpackaged files, which requires Developer Mode.
+
+You can enable it by turning on Developer Mode in Windows Settings.</value>
+  </data>
+  <data name="DeveloperMode_EnableButton" xml:space="preserve">
+    <value>Open Settings</value>
+  </data>
+  <data name="DeveloperMode_CancelButton" xml:space="preserve">
+    <value>Not now</value>
+  </data>
+  <data name="InstallationsPage_ClearFolderBtn.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Clear install location</value>
+  </data>
+  <data name="InstallationsPage_ClearDepsBtn.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Clear selected dependencies</value>
   </data>
 </root>

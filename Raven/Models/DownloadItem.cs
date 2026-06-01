@@ -207,6 +207,13 @@ public partial class DownloadItem : INotifyPropertyChanged
     /// </summary>
     public bool WasDownloadOnly { get; set; }
 
+    /// <summary>
+    /// True when this item was started with the "bypass dependency filter" option, meaning every
+    /// supported-architecture/version dependency was fetched and each must be installed as its own
+    /// standalone package. Persisted so a force-install retry repeats the same install strategy.
+    /// </summary>
+    public bool InstallDependenciesSeparately { get; set; }
+
     public string? PackageFamilyName { get; set; }
 
     /// <summary>
@@ -302,11 +309,11 @@ public partial class DownloadItem : INotifyPropertyChanged
             if (TotalBytes is null or <= 0 || ReceivedBytes is null or < 0)
                 return string.Empty;
 
-            return $" • {FormatBytes((long)ReceivedBytes)} / {FormatBytes((long)TotalBytes)}";
+            return $" ï¿½ {FormatBytes((long)ReceivedBytes)} / {FormatBytes((long)TotalBytes)}";
         }
     }
 
-    // Stores the full details text (e.g., "45% • 500 MB / 1.2 GB") for display.
+    // Stores the full details text (e.g., "45% ï¿½ 500 MB / 1.2 GB") for display.
     // Updated by DownloadHelper; survives page navigation.
     private string _displayDetailsText = string.Empty;
 

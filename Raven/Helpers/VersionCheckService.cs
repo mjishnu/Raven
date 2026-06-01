@@ -46,7 +46,8 @@ public static class VersionCheckService
         string flightingBranchName = "Retail",
         string currentBranch = "ge_release",
         StoreListings.Library.Version? osVersion = null,
-        string? archRid = null
+        string? archRid = null,
+        Action<DownloadUrlFailureReason>? onFailure = null
     )
     {
         var resolvedOsVersion = osVersion ?? SystemInfo.GetExactWindowsVersion();
@@ -68,17 +69,26 @@ public static class VersionCheckService
             );
 
             if (!packageResult.IsSuccess)
+            {
+                onFailure?.Invoke(DownloadUrlFailureReason.StoreQueryFailed);
                 return null;
+            }
 
             packages = packageResult.Value.ToList();
         }
 
         if (!packages.Any(p => p.PlatformDependencies.Any(pd => pd.MinVersion <= resolvedOsVersion)))
+        {
+            onFailure?.Invoke(DownloadUrlFailureReason.OsVersionIncompatible);
             return null;
+        }
 
         var cookieResult = await FE3Handler.GetCookieAsync(cancellationToken);
         if (!cookieResult.IsSuccess)
+        {
+            onFailure?.Invoke(DownloadUrlFailureReason.StoreQueryFailed);
             return null;
+        }
 
         var osArch = GetOsArch(resolvedArchRid);
 
@@ -97,7 +107,10 @@ public static class VersionCheckService
         );
 
         if (!fe3sync.IsSuccess)
+        {
+            onFailure?.Invoke(DownloadUrlFailureReason.StoreQueryFailed);
             return null;
+        }
 
         var updates = fe3sync.Value.Updates.ToList();
         var candidates = updates
@@ -127,7 +140,8 @@ public static class VersionCheckService
         CancellationToken cancellationToken = default,
         Market market = Market.US,
         Lang language = Lang.en,
-        string? archRid = null
+        string? archRid = null,
+        Action<DownloadUrlFailureReason>? onFailure = null
     )
     {
         var resolvedArchRid = archRid ?? SystemInfo.GetOsArchRid();
@@ -140,7 +154,10 @@ public static class VersionCheckService
         );
 
         if (!unpackagedResult.IsSuccess || unpackagedResult.Value == null || !unpackagedResult.Value.Any())
+        {
+            onFailure?.Invoke(DownloadUrlFailureReason.NoInstallerAvailable);
             return null;
+        }
 
         var priorities = Utils.GetArchPriorities(resolvedArchRid, isPackaged: false);
 
@@ -168,6 +185,7 @@ public static class VersionCheckService
             }
         }
 
+        onFailure?.Invoke(DownloadUrlFailureReason.ArchitectureIncompatible);
         return null;
     }
 

@@ -64,7 +64,8 @@ public sealed class DownloadHelper
         string productId,
         CancellationToken token,
         UIUpdateService updateService,
-        bool downloadOnly = false
+        bool downloadOnly = false,
+        bool installDependenciesSeparately = false
     )
     {
         const int MAX_RETRIES_PER_FILE = 5;
@@ -443,7 +444,19 @@ public sealed class DownloadHelper
                             ParallelCount = 1,
                             BufferBlockSize = config.BufferBlockSize,
                             MaximumBytesPerSecond = config.MaximumBytesPerSecond,
-                            EnableLiveStreaming = true,
+
+                            // Cap the in-memory write-ahead buffer. Without this the library's
+                            // memory queue is unbounded, so a fast network races ahead of the disk
+                            // writer and accumulates most of the file in RAM — a spike that never
+                            // drops after the download (lands on the LOH). 16 MB is ample headroom
+                            // for a sequential, single-chunk download and keeps the footprint flat.
+                            MaximumMemoryBufferBytes = 16 * 1024 * 1024,
+
+                            // Do NOT enable live streaming: it makes the library retain the whole
+                            // downloaded payload in memory to expose it as a MemoryStream. We only
+                            // write to disk and read byte *counts* for progress — the live stream is
+                            // never consumed, so enabling it would just hold ~the entire file in RAM.
+                            EnableLiveStreaming = false,
                         };
 
                         await DownloadAsync(
@@ -675,13 +688,42 @@ public sealed class DownloadHelper
             return;
         }
 
-        var depPaths = (downloadItem?.DownloadedFiles ?? [])
-            .Select(f => f.Path)
-            .Where(p =>
-                !string.IsNullOrWhiteSpace(p)
-                && File.Exists(p)
-                && !string.Equals(p, mainPackagePath, StringComparison.OrdinalIgnoreCase)
-            )
+        // Install only the dependencies selected for THIS run. Derive them from the current
+        // FileEntry tree rather than the cumulative DownloadedFiles list
+        var currentDepPaths = flattened
+            .Where(f => !f.Url.Equals(mainUrl, StringComparison.OrdinalIgnoreCase))
+            .Select(f => Path.Combine(depsDownloadDir, Path.GetFileName(f.FileName)))
+            .Where(p => File.Exists(p))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        // Prune any previously-downloaded dependency that is no longer part of the current
+        // selection, both from disk and from the persisted record, so a force-install retry (which
+        // reuses the saved files) stays consistent and the Dependencies folder doesn't accumulate
+        // unused packages.
+        var currentDepSet = new HashSet<string>(currentDepPaths, StringComparer.OrdinalIgnoreCase);
+        foreach (var stale in (downloadItem?.DownloadedFiles ?? []).Select(f => f.Path).ToList())
+        {
+            if (string.IsNullOrWhiteSpace(stale) || currentDepSet.Contains(stale))
+                continue;
+            if (!string.Equals(Path.GetDirectoryName(stale), depsDownloadDir, StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            try
+            {
+                if (File.Exists(stale))
+                    File.Delete(stale);
+            }
+            catch (Exception ex)
+            {
+                installLogger?.LogWarning(ex, "Failed to delete stale dependency {Path}", stale);
+            }
+
+            downloadManager.RemoveDownloadedFileEntry(productId, stale);
+        }
+
+        var depPaths = currentDepPaths
+            .Where(p => !string.Equals(p, mainPackagePath, StringComparison.OrdinalIgnoreCase))
             .ToList();
 
         try
@@ -712,6 +754,7 @@ public sealed class DownloadHelper
                 mainPackagePath,
                 dependencyPackagePaths: depPaths,
                 progress: installProgress,
+                installDependenciesSeparately: installDependenciesSeparately,
                 cancellationToken: token
             );
 

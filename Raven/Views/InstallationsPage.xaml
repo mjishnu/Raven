@@ -1,133 +1,263 @@
 ﻿<Page
-  x:Class="Raven.Views.InstallationsPage"
-  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-  xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-  xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-  mc:Ignorable="d"
->
-  <Grid Margin="{StaticResource NavigationViewPageContentMargin}" RowSpacing="16">
-    <Grid.RowDefinitions>
-      <RowDefinition Height="Auto" />
-      <RowDefinition Height="Auto" />
-      <RowDefinition Height="Auto" />
-      <RowDefinition Height="*" />
-    </Grid.RowDefinitions>
-    <!--  Title  -->
-    <Grid Grid.Row="0" Margin="0,24,0,0">
-      <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="*" />
-        <ColumnDefinition Width="Auto" />
-      </Grid.ColumnDefinitions>
-      <TextBlock
-        x:Uid="InstallationsPage_Header"
-        Grid.Column="0"
-        Style="{ThemeResource TitleTextBlockStyle}"
-      />
+    x:Class="Raven.Views.InstallationsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+    <Grid Margin="{StaticResource NavigationViewPageContentMargin}" RowSpacing="16">
+        <!--  Rows: 0=title, 1=drop zone (fills), 2=progress, 3=file window + Install, 4=advanced + dependencies  -->
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <!--  Title  -->
+        <Grid Grid.Row="0" Margin="0,24,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBlock
+                x:Uid="InstallationsPage_Header"
+                Grid.Column="0"
+                Style="{ThemeResource TitleTextBlockStyle}" />
+            <Button
+                x:Name="MoreOptionsButton"
+                x:Uid="InstallationsPage_MoreOptionsBtn"
+                Grid.Column="1"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Top"
+                Background="Transparent"
+                BorderBrush="Transparent"
+                BorderThickness="0">
+                <FontIcon
+                    FontFamily="{StaticResource SymbolThemeFontFamily}"
+                    FontSize="16"
+                    Glyph="&#xE10C;" />
+                <Button.Flyout>
+                    <MenuFlyout
+                            FlyoutBase.ShouldConstrainToRootBounds="True"
+                            Opening="MoreOptionsFlyout_Opening"
+                            Placement="Bottom">
+                        <MenuFlyout.MenuFlyoutPresenterStyle>
+                            <Style TargetType="MenuFlyoutPresenter">
+                                <Setter Property="Padding" Value="0,4" />
+                                <Setter Property="Background" Value="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}" />
+                            </Style>
+                        </MenuFlyout.MenuFlyoutPresenterStyle>
+                        <ToggleMenuFlyoutItem
+                            x:Name="AdvancedInstallToggle"
+                            x:Uid="InstallationsPage_AdvancedInstall"
+                            Click="AdvancedInstallToggle_Click"
+                            Style="{StaticResource CheckBoxToggleMenuFlyoutItemStyle}" />
+                    </MenuFlyout>
+                </Button.Flyout>
+            </Button>
+        </Grid>
+        <!--  Drag-and-drop button (fills the focal area); also opens the file picker on click  -->
+        <Button
+            x:Name="DropZoneButton"
+            Grid.Row="1"
+            Padding="24"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Stretch"
+            AllowDrop="True"
+            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+            BorderThickness="1"
+            Click="DropZoneButton_Click"
+            CornerRadius="8"
+            DragOver="DropZone_DragOver"
+            Drop="DropZone_Drop">
+            <StackPanel
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Spacing="12">
+                <FontIcon
+                    x:Name="DropZoneIcon"
+                    FontFamily="{StaticResource SymbolThemeFontFamily}"
+                    FontSize="36"
+                    Glyph="" />
+                <TextBlock
+                    x:Name="DropZoneText"
+                    x:Uid="InstallationsPage_DropZone"
+                    HorizontalAlignment="Center"
+                    FontSize="18" />
+            </StackPanel>
+        </Button>
+        <!--  Progress: below the drop zone, just above the Install row; shown only while installing.  -->
+        <StackPanel
+            x:Name="ProgressPanel"
+            Grid.Row="2"
+            Spacing="6"
+            Visibility="Collapsed">
+            <TextBlock
+                x:Name="ProgressStatusText"
+                x:Uid="InstallationsPage_Installing"
+                Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <ProgressBar
+                    x:Name="InstallProgressBar"
+                    Grid.Column="0"
+                    Maximum="100"
+                    Value="0" />
+                <TextBlock
+                    x:Name="ProgressPercentText"
+                    Grid.Column="1"
+                    Margin="12,0,0,0"
+                    VerticalAlignment="Center"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Style="{ThemeResource CaptionTextBlockStyle}" />
+            </Grid>
+        </StackPanel>
+        <!--  Path row: TextBox (read-only) with inline Clear (X), and Install (disabled if no path)  -->
+        <Grid Grid.Row="3" ColumnSpacing="8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <!--  TextBox with refined right padding to avoid overlap with ClearButton  -->
+            <TextBox
+                x:Name="SelectedFileText"
+                x:Uid="InstallationsPage_FileText"
+                Grid.Column="0"
+                MinHeight="40"
+                Margin="0,0,8,0"
+                Padding="10,6,42,6"
+                VerticalAlignment="Center"
+                VerticalContentAlignment="Center"
+                IsReadOnly="True" />
+            <!--  Clear button overlaid inside TextBox area  -->
+            <Button
+                x:Name="ClearButton"
+                x:Uid="InstallationsPage_ClearBtn"
+                Grid.Column="0"
+                Width="40"
+                Height="40"
+                Margin="4,0"
+                Padding="0"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Center"
+                Background="Transparent"
+                BorderThickness="0"
+                Canvas.ZIndex="1"
+                Click="ClearButton_Click"
+                Visibility="Collapsed">
+                <FontIcon
+                    FontFamily="{StaticResource SymbolThemeFontFamily}"
+                    FontSize="14"
+                    Glyph="&#xE711;" />
+            </Button>
+            <!--  Install button (greyed out when disabled)  -->
+            <Button
+                x:Name="InstallButton"
+                x:Uid="InstallationsPage_InstallBtn"
+                Grid.Column="1"
+                Height="40"
+                MinWidth="100"
+                Click="InstallButton_Click"
+                IsEnabled="False"
+                Style="{ThemeResource AccentButtonStyle}" />
+        </Grid>
+        <!--
+            Install options (Row 4): the advanced-only folder + remove-signature collapse when
+            "Advanced install" is off; the dependency picker is available in BOTH modes. The outer
+            StackPanel's Spacing skips the collapsed advanced section, so there's no empty gap.
+        -->
+        <StackPanel
+            Grid.Row="4"
+            Margin="0,0,0,24"
+            Spacing="8">
+            <!--  Advanced-only: custom install folder + remove-signature  -->
+            <StackPanel
+                x:Name="AdvancedPanel"
+                Spacing="8"
+                Visibility="Collapsed">
+                <Grid ColumnSpacing="8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBox
+                        x:Name="CustomFolderText"
+                        x:Uid="InstallationsPage_CustomFolder"
+                        Grid.Column="0"
+                        MinHeight="40"
+                        Margin="0,0,8,0"
+                        Padding="10,6,42,6"
+                        VerticalAlignment="Center"
+                        VerticalContentAlignment="Center"
+                        IsReadOnly="True" />
+                    <!--  Clear (X) overlaid inside the folder TextBox, mirroring the app-file Clear button  -->
+                    <Button
+                        x:Name="ClearFolderButton"
+                        x:Uid="InstallationsPage_ClearFolderBtn"
+                        Grid.Column="0"
+                        Width="40"
+                        Height="40"
+                        Margin="4,0"
+                        Padding="0"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Center"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Canvas.ZIndex="1"
+                        Click="ClearFolderButton_Click"
+                        Visibility="Collapsed">
+                        <FontIcon
+                            FontFamily="{StaticResource SymbolThemeFontFamily}"
+                            FontSize="14"
+                            Glyph="&#xE711;" />
+                    </Button>
+                    <Button
+                        x:Name="BrowseFolderButton"
+                        x:Uid="InstallationsPage_BrowseFolderBtn"
+                        Grid.Column="1"
+                        Height="40"
+                        MinWidth="100"
+                        Click="BrowseFolderButton_Click" />
+                </Grid>
+                <CheckBox
+                    x:Name="RemoveSignatureCheckBox"
+                    x:Uid="InstallationsPage_RemoveSignature"
+                    Click="RemoveSignatureCheckBox_Click" />
+            </StackPanel>
+            <!--  Dependencies: available in both normal and advanced install modes  -->
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button
+                    x:Name="SelectDependenciesButton"
+                    x:Uid="InstallationsPage_SelectDependenciesBtn"
+                    Click="SelectDependenciesButton_Click" />
+                <TextBlock
+                    x:Name="DependenciesCountText"
+                    Margin="4,0,0,0"
+                    VerticalAlignment="Center"
+                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                <!--  Clear all selected dependencies  -->
+                <Button
+                    x:Name="ClearDependenciesButton"
+                    x:Uid="InstallationsPage_ClearDepsBtn"
+                    Width="32"
+                    Height="32"
+                    Padding="0"
+                    VerticalAlignment="Center"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Click="ClearDependenciesButton_Click"
+                    Visibility="Collapsed">
+                    <FontIcon
+                        FontFamily="{StaticResource SymbolThemeFontFamily}"
+                        FontSize="14"
+                        Glyph="&#xE711;" />
+                </Button>
+            </StackPanel>
+        </StackPanel>
     </Grid>
-    <!--  Progress (appears below title)  -->
-    <StackPanel x:Name="ProgressPanel" Grid.Row="1" Spacing="6" Visibility="Collapsed">
-      <TextBlock
-        x:Name="ProgressStatusText"
-        x:Uid="InstallationsPage_Installing"
-        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-      />
-      <Grid>
-        <Grid.ColumnDefinitions>
-          <ColumnDefinition Width="*" />
-          <ColumnDefinition Width="Auto" />
-        </Grid.ColumnDefinitions>
-        <ProgressBar x:Name="InstallProgressBar" Grid.Column="0" Maximum="100" Value="0" />
-        <TextBlock
-          x:Name="ProgressPercentText"
-          Grid.Column="1"
-          Margin="12,0,0,0"
-          VerticalAlignment="Center"
-          Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-          Style="{ThemeResource CaptionTextBlockStyle}"
-        />
-      </Grid>
-    </StackPanel>
-    <!--  Path row: TextBox (read-only) with inline Clear (X), and Install (disabled if no path)  -->
-    <Grid Grid.Row="2" ColumnSpacing="8">
-      <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="*" />
-        <ColumnDefinition Width="Auto" />
-      </Grid.ColumnDefinitions>
-      <!--  TextBox with refined right padding to avoid overlap with ClearButton  -->
-      <TextBox
-        x:Name="SelectedFileText"
-        x:Uid="InstallationsPage_FileText"
-        Grid.Column="0"
-        MinHeight="40"
-        Margin="0,0,8,0"
-        Padding="10,6,42,6"
-        VerticalAlignment="Center"
-        VerticalContentAlignment="Center"
-        IsReadOnly="True"
-      />
-      <!--  Clear button overlaid inside TextBox area  -->
-      <Button
-        x:Name="ClearButton"
-        x:Uid="InstallationsPage_ClearBtn"
-        Grid.Column="0"
-        Width="40"
-        Height="40"
-        Margin="4,0"
-        Padding="0"
-        HorizontalAlignment="Right"
-        VerticalAlignment="Center"
-        Background="Transparent"
-        BorderThickness="0"
-        Canvas.ZIndex="1"
-        Click="ClearButton_Click"
-        Visibility="Collapsed"
-      >
-        <FontIcon Glyph="" />
-      </Button>
-      <!--  Install button (greyed out when disabled)  -->
-      <Button
-        x:Name="InstallButton"
-        x:Uid="InstallationsPage_InstallBtn"
-        Grid.Column="1"
-        Height="40"
-        MinWidth="100"
-        Click="InstallButton_Click"
-        IsEnabled="False"
-        Style="{ThemeResource AccentButtonStyle}"
-      />
-    </Grid>
-    <!--  Drag and drop panel button: fills remaining space to bottom, also opens file picker on click  -->
-    <Button
-      x:Name="DropZoneButton"
-      Grid.Row="3"
-      Margin="0,0,0,24"
-      Padding="24"
-      HorizontalAlignment="Stretch"
-      VerticalAlignment="Stretch"
-      AllowDrop="True"
-      Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-      BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-      BorderThickness="1"
-      Click="DropZoneButton_Click"
-      CornerRadius="8"
-      DragOver="DropZone_DragOver"
-      Drop="DropZone_Drop"
-    >
-      <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
-        <FontIcon
-          x:Name="DropZoneIcon"
-          FontFamily="{StaticResource SymbolThemeFontFamily}"
-          FontSize="36"
-          Glyph=""
-        />
-        <TextBlock
-          x:Name="DropZoneText"
-          x:Uid="InstallationsPage_DropZone"
-          HorizontalAlignment="Center"
-          FontSize="18"
-        />
-      </StackPanel>
-    </Button>
-  </Grid>
 </Page>

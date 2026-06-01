@@ -36,6 +36,25 @@ public sealed partial class Advanced_SearchPage : Page
         ViewModel.IsLoading = false;
     }
 
+    protected override void OnNavigatedFrom(NavigationEventArgs e)
+    {
+        base.OnNavigatedFrom(e);
+
+        // Cancel any in-flight search and the loading-dots loop. The dots loop re-enqueues a
+        // closure onto the DispatcherQueue every 500ms, which keeps this page alive until
+        // cancelled — navigation does not otherwise cancel it.
+        _searchCts?.Cancel();
+        _searchCts?.Dispose();
+        _searchCts = null;
+        _loadingDotsCts?.Cancel();
+        _loadingDotsCts?.Dispose();
+        _loadingDotsCts = null;
+
+        // Sever this transient page's x:Bind subscriptions to the singleton ViewModel,
+        // which would otherwise root the page forever. Matches the MainPage/SearchPage pattern.
+        Bindings.StopTracking();
+    }
+
     private void SearchTypeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         if (sender is ComboBox box)

@@ -13,6 +13,7 @@
       <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
       <converters:OneDecimalPlaceConverter x:Key="OneDecimalPlaceConverter" />
       <converters:HideElementConverter x:Key="HideElementConverter" />
+      <converters:StringToUriConverter x:Key="StringToUriConverter" />
       <!--  Layout definition for ItemsRepeater  -->
       <layout:VirtualGridLayout
         x:Key="VirtualGridLayout"
@@ -50,7 +51,14 @@
             <!--  Top section with image and background  -->
             <Border Background="{x:Bind Image.BackgroundColor}" CornerRadius="8,8,0,0">
               <Grid>
-                <Image Source="{x:Bind Image.Url}" Stretch="Fill" />
+                <Image Stretch="Fill">
+                  <Image.Source>
+                    <BitmapImage
+                      DecodePixelWidth="191"
+                      UriSource="{x:Bind Image.Url, Converter={StaticResource StringToUriConverter}}"
+                    />
+                  </Image.Source>
+                </Image>
                 <Rectangle Fill="{ThemeResource AcrylicBackgroundFillColorDefaultBrush}" />
                 <Border
                   Width="80"
@@ -60,7 +68,14 @@
                   Background="{x:Bind Image.BackgroundColor}"
                   CornerRadius="10"
                 >
-                  <Image Source="{x:Bind Image.Url}" Stretch="Fill" />
+                  <Image Stretch="Fill">
+                    <Image.Source>
+                      <BitmapImage
+                        DecodePixelWidth="80"
+                        UriSource="{x:Bind Image.Url, Converter={StaticResource StringToUriConverter}}"
+                      />
+                    </Image.Source>
+                  </Image>
                 </Border>
               </Grid>
             </Border>
@@ -111,8 +126,8 @@
       </DataTemplate>
     </ResourceDictionary>
   </UserControl.Resources>
-  <ScrollViewer x:Name="scrollViewer">
-    <Grid>
+  <!--  Root is a plain overlay Grid: content + centered loading/error overlays.  -->
+  <Grid>
       <!--  Loading State  -->
       <StackPanel
         x:Name="LoadingOverlay"
@@ -142,10 +157,21 @@
         <FontIcon FontSize="55" Glyph="" />
         <TextBlock x:Name="ErrorTextBlock" Margin="0,12,0,0" />
       </StackPanel>
-      <!--  Content State  -->
-      <StackPanel x:Name="DisplayItem" Margin="{StaticResource NavigationViewPageContentMargin}">
-        <!--  Header Section  -->
-        <StackPanel Grid.Row="0" Margin="0,24">
+      <!--  Content State: one ScrollViewer hosts header + virtualized ItemsRepeater + inline loader.
+            ItemsRepeater virtualizes off this ScrollViewer's effective viewport, so the header is
+            scroll content (scrolls away) and the loader sits inline below the cards.  -->
+      <!--  Defaults to Visible so cached returns (OnNavigatedTo's cached branch, which does NOT
+            call InitialLoadCards) still show the list. InitialLoadCards collapses it synchronously
+            on the fresh-load path before first render, so there is no empty flash.  -->
+      <ScrollViewer
+        x:Name="Scroller"
+        HorizontalScrollBarVisibility="Disabled"
+        HorizontalScrollMode="Disabled"
+        VerticalScrollBarVisibility="Auto"
+      >
+        <StackPanel x:Name="ScrollContent">
+        <!--  Header Section (scrolls away)  -->
+        <StackPanel x:Name="HeaderPanel" Margin="56,24,56,24">
           <Grid Margin="0,0,0,27" HorizontalAlignment="Stretch">
             <TextBlock
               x:Name="HeaderTitle"
@@ -229,48 +255,48 @@
             </Grid>
           </StackPanel>
         </StackPanel>
-        <ItemsView
-          Grid.Row="1"
-          Padding="10"
+        <ItemsRepeater
+          x:Name="CardRepeater"
+          Margin="56,0,56,0"
           ItemTemplate="{StaticResource NormalItemTemplate}"
           ItemsSource="{x:Bind ItemsSource}"
           Layout="{StaticResource VirtualGridLayout}"
         />
-        <!--  No Results  -->
-        <StackPanel
-          x:Name="NoResultsPanel"
-          Margin="0,120"
-          HorizontalAlignment="Center"
-          VerticalAlignment="Center"
-          Visibility="Collapsed"
-        >
-          <FontIcon FontSize="42" Glyph="" />
-          <TextBlock
-            x:Uid="CardView_NoResults_Title"
-            Margin="0,8,0,8"
-            HorizontalAlignment="Center"
-            VerticalAlignment="Center"
-            FontSize="24"
-            Style="{StaticResource TitleTextBlockStyle}"
-          />
-          <TextBlock
-            x:Uid="CardView_NoResults_Subtitle"
-            HorizontalAlignment="Center"
-            VerticalAlignment="Center"
-            FontSize="16"
-          />
-        </StackPanel>
-        <!--  Loading More Indicator  -->
+        <!--  Inline Load-More Indicator (in-flow, directly below the cards)  -->
         <ProgressRing
           x:Name="LoadMoreIndicator"
           Width="30"
           Height="30"
-          Margin="20"
+          Margin="0,12"
+          HorizontalAlignment="Center"
           Background="LightGray"
           IsActive="True"
           Visibility="Collapsed"
         />
+        </StackPanel>
+      </ScrollViewer>
+      <!--  No Results (centered overlay, shown WITH the header/Scroller visible)  -->
+      <StackPanel
+        x:Name="NoResultsPanel"
+        HorizontalAlignment="Center"
+        VerticalAlignment="Center"
+        Visibility="Collapsed"
+      >
+        <FontIcon FontSize="42" Glyph="" />
+        <TextBlock
+          x:Uid="CardView_NoResults_Title"
+          Margin="0,8,0,8"
+          HorizontalAlignment="Center"
+          VerticalAlignment="Center"
+          FontSize="24"
+          Style="{StaticResource TitleTextBlockStyle}"
+        />
+        <TextBlock
+          x:Uid="CardView_NoResults_Subtitle"
+          HorizontalAlignment="Center"
+          VerticalAlignment="Center"
+          FontSize="16"
+        />
       </StackPanel>
     </Grid>
-  </ScrollViewer>
 </UserControl>

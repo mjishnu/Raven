@@ -18,7 +18,7 @@ public partial class SearchViewModel : ObservableRecipient, ICardViewModel
 
     public int CurrentSkipItem { get; set; }
 
-    public double ScrollPosition { get; set; }
+    public int FirstVisibleIndex { get; set; }
 
     public bool HasMoreItems { get; set; }
 
@@ -116,7 +116,7 @@ public partial class SearchViewModel : ObservableRecipient, ICardViewModel
         Cards.Clear();
         HasCachedResults = false;
         CurrentSkipItem = 0;
-        ScrollPosition = 0;
+        FirstVisibleIndex = 0;
         Query = string.Empty;
         F1Index = 0;
         F2Index = 0;

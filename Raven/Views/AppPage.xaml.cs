@@ -151,6 +151,11 @@ public sealed partial class AppPage : Page
 
         var downloadManager = DownloadManagerService.Instance;
         var downloadItem = downloadManager.GetDownload(productInfo.ProductId);
+
+        // Reflect this app's persisted bypass choice on the toggle when the page is visited; reset
+        // to off when the app has no download item so state never leaks between apps.
+        IgnoreDependencyFilterToggle.IsChecked = downloadItem?.InstallDependenciesSeparately ?? false;
+
         if (downloadItem != null)
         {
             downloadItem.ProductInfo = productInfo;
@@ -267,8 +272,8 @@ public sealed partial class AppPage : Page
             SetInstallButtonState(showProgress: true);
             if (downloadItem != null)
             {
-                // Bind to the active download item for progress updates
-                _activeDownloadItem = downloadItem;
+                // Bind to the active download item for progress updates (BindToDownloadItem owns
+                // _activeDownloadItem and is idempotent if already bound to this item).
                 BindToDownloadItem(downloadItem);
                 UpdateProgressIndeterminate(downloadItem.Status);
             }
@@ -359,8 +364,22 @@ public sealed partial class AppPage : Page
 
     private void BindToDownloadItem(DownloadItem item)
     {
-        // Mark that we're observing downloads
-        DownloadManagerService.Instance.BeginObserving();
+        // A DownloadItem lives in the long-lived DownloadManagerService collection, so a stray
+        // PropertyChanged subscription keeps this page alive (leak). BindToDownloadItem is called
+        // repeatedly (e.g. from UpdateInstallButtonState during an active download), so guard the
+        // subscription and observer count to run exactly once per binding: if we are switching to a
+        // different item, tear down the previous binding first; if we are already bound to this item,
+        // only refresh the transient UI below.
+        var isNewBinding = !ReferenceEquals(_activeDownloadItem, item);
+
+        if (isNewBinding)
+        {
+            UnbindFromDownloadItem();
+            _activeDownloadItem = item;
+
+            // Mark that we're observing downloads
+            DownloadManagerService.Instance.BeginObserving();
+        }
 
         // Reset and then set initial values directly.
         // This avoids stale UI when reusing the same DownloadItem for a Retry where
@@ -388,11 +407,14 @@ public sealed partial class AppPage : Page
             UpdateService.StartStatusAnimation("Status_Installing".GetLocalized());
         }
 
-        // Subscribe to property changes for download item
-        item.PropertyChanged += OnDownloadItemPropertyChanged;
+        if (isNewBinding)
+        {
+            // Subscribe to property changes for download item
+            item.PropertyChanged += OnDownloadItemPropertyChanged;
 
-        // Subscribe to UIUpdateService for status animation
-        UpdateService.PropertyChanged += OnUpdateServicePropertyChanged;
+            // Subscribe to UIUpdateService for status animation
+            UpdateService.PropertyChanged += OnUpdateServicePropertyChanged;
+        }
     }
 
     private void UnbindFromDownloadItem()
@@ -552,12 +574,9 @@ public sealed partial class AppPage : Page
         _isForceInstalling = true;
 
         // Ensure we're observing so status/progress changes propagate immediately.
-        if (!ReferenceEquals(_activeDownloadItem, item))
-        {
-            UnbindFromDownloadItem();
-            _activeDownloadItem = item;
-            BindToDownloadItem(item);
-        }
+        // BindToDownloadItem handles switching from a previously-bound item and is a no-op
+        // (subscription-wise) if already bound to this item.
+        BindToDownloadItem(item);
 
         // Clear any previous install error so status handler can't pick it up.
         item.LastInstallError = null;
@@ -603,7 +622,8 @@ public sealed partial class AppPage : Page
                 mainPackagePath,
                 dependencyPackagePaths: depPaths,
                 progress: installProgress,
-                ignoreVersion: true
+                ignoreVersion: true,
+                installDependenciesSeparately: IgnoreDependencyFilterToggle.IsChecked
             );
 
             UpdateService.StopStatusAnimation();
@@ -881,6 +901,20 @@ public sealed partial class AppPage : Page
         );
     }
 
+    private void IgnoreDependencyFilterToggle_Click(object sender, RoutedEventArgs e)
+    {
+        // The toggle is the source of truth. When the user changes it, mirror the choice onto this
+        // app's download item so a later install/retry (and a future page load) reflect it. We never
+        // push the stored value back onto the toggle except on page load, so the user can always
+        // toggle it off — even after a cancel.
+        if (_currentProductInfo == null)
+            return;
+
+        var item = DownloadManagerService.Instance.GetDownload(_currentProductInfo.ProductId);
+        if (item != null)
+            item.InstallDependenciesSeparately = IgnoreDependencyFilterToggle.IsChecked;
+    }
+
     private void MoreOptionsFlyout_Opening(object? sender, object e)
     {
         var width = MoreOptionsButton.ActualWidth;
@@ -1132,10 +1166,11 @@ public sealed partial class AppPage : Page
             var downloadItem = downloadManager.GetDownload(productId);
             if (downloadItem != null)
             {
-                _activeDownloadItem = downloadItem;
                 BindToDownloadItem(downloadItem);
                 // Persist the action mode so Retry survives an app restart.
                 downloadItem.WasDownloadOnly = isDownloadOnly;
+                // Persist the bypass choice so a force-install retry uses the same strategy.
+                downloadItem.InstallDependenciesSeparately = IgnoreDependencyFilterToggle.IsChecked;
             }
 
             // Always use a fresh CTS per download attempt
@@ -1182,6 +1217,7 @@ public sealed partial class AppPage : Page
             }
 
             FileEntry? urls;
+            DownloadUrlFailureReason? fetchFailure = null;
             try
             {
                 // Ensure the fetch respects cancellation too
@@ -1191,7 +1227,8 @@ public sealed partial class AppPage : Page
                     _downloadCts.Token,
                     market: _localeService.Market,
                     language: _localeService.Language,
-                    ignoreDependencyFilter: IgnoreDependencyFilterToggle.IsChecked
+                    ignoreDependencyFilter: IgnoreDependencyFilterToggle.IsChecked,
+                    onFailure: r => fetchFailure = r
                 );
             }
             catch (OperationCanceledException)
@@ -1230,10 +1267,8 @@ public sealed partial class AppPage : Page
                 downloadManager.UpdateDownloadStatus(productId, DownloadStatus.Failed);
                 UnbindFromDownloadItem();
                 SetInstallButtonState(content: "Retry", enabled: true, showProgress: false);
-                await ShowErrorDialogAsync(
-                    "AppPage_Error_NotSupportedTitle".GetLocalized(),
-                    "AppPage_Error_NotSupportedMsg".GetLocalized()
-                );
+                var (failureTitle, failureMessage) = GetDownloadFailureMessage(fetchFailure);
+                await ShowErrorDialogAsync(failureTitle, failureMessage);
                 return;
             }
 
@@ -1251,7 +1286,8 @@ public sealed partial class AppPage : Page
                 productId,
                 _downloadCts.Token,
                 UpdateService,
-                downloadOnly: isDownloadOnly
+                downloadOnly: isDownloadOnly,
+                installDependenciesSeparately: IgnoreDependencyFilterToggle.IsChecked
             );
 
             downloadManager.UnregisterCancellationToken(productId);
@@ -1352,6 +1388,43 @@ public sealed partial class AppPage : Page
             await ShowErrorDialogAsync(title, msg);
         }
     }
+
+    // Maps a download-URL resolution failure to a specific, actionable dialog title/message.
+    // Falls back to the generic "not supported" copy when the reason is unknown.
+    private static (string Title, string Message) GetDownloadFailureMessage(
+        DownloadUrlFailureReason? reason
+    ) =>
+        reason switch
+        {
+            DownloadUrlFailureReason.StoreQueryFailed => (
+                "AppPage_Error_StoreQueryFailedTitle".GetLocalized(),
+                "AppPage_Error_StoreQueryFailedMsg".GetLocalized()
+            ),
+            DownloadUrlFailureReason.OsVersionIncompatible => (
+                "AppPage_Error_OsIncompatibleTitle".GetLocalized(),
+                "AppPage_Error_OsIncompatibleMsg".GetLocalized()
+            ),
+            DownloadUrlFailureReason.ArchitectureIncompatible => (
+                "AppPage_Error_ArchIncompatibleTitle".GetLocalized(),
+                "AppPage_Error_ArchIncompatibleMsg".GetLocalized()
+            ),
+            DownloadUrlFailureReason.NoInstallerAvailable => (
+                "AppPage_Error_NoInstallerTitle".GetLocalized(),
+                "AppPage_Error_NoInstallerMsg".GetLocalized()
+            ),
+            DownloadUrlFailureReason.DownloadInfoUnavailable => (
+                "AppPage_Error_DownloadInfoTitle".GetLocalized(),
+                "AppPage_Error_DownloadInfoMsg".GetLocalized()
+            ),
+            DownloadUrlFailureReason.UnsupportedInstallerType => (
+                "AppPage_Error_UnsupportedTypeTitle".GetLocalized(),
+                "AppPage_Error_UnsupportedTypeMsg".GetLocalized()
+            ),
+            _ => (
+                "AppPage_Error_NotSupportedTitle".GetLocalized(),
+                "AppPage_Error_NotSupportedMsg".GetLocalized()
+            ),
+        };
 
     private void HandleDownloadError(string productId, string status, DownloadStatus downloadStatus)
     {

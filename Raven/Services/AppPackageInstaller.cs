@@ -100,6 +100,7 @@ public static class AppPackageInstaller
         IEnumerable<string>? dependencyPackagePaths = null,
         IProgress<InstallProgress>? progress = null,
         bool ignoreVersion = false,
+        bool installDependenciesSeparately = false,
         CancellationToken cancellationToken = default,
         ILogger? logger = null
     )
@@ -127,6 +128,22 @@ public static class AppPackageInstaller
         if (ignoreVersion)
             options |= DeploymentOptions.ForceUpdateFromAnyVersion;
 
+        if (installDependenciesSeparately)
+        {
+            await InstallWithSeparateDependenciesAsync(
+                packageManager,
+                packagePath,
+                dependencyUris,
+                progress,
+                options,
+                cancellationToken,
+                logger
+            );
+
+            progress?.Report(new InstallProgress(100, "Completed", "Install"));
+            return;
+        }
+
         try
         {
             await AddPackageAsync(
@@ -151,5 +168,91 @@ public static class AppPackageInstaller
         }
 
         progress?.Report(new InstallProgress(100, "Completed", "Install"));
+    }
+
+    /// <summary>
+    /// Installs each dependency as its own standalone package (best-effort), then installs the main
+    /// package without forcing its dependency array. Used in bypass mode where the dependency set may
+    /// contain extra architectures or superseded framework versions: those install (or fail) on their
+    /// own and the ones that don't apply are simply skipped, instead of failing the whole main install
+    /// — which is what happens when an incompatible package is passed as one of the main's required
+    /// dependencies.
+    /// </summary>
+    private static async Task InstallWithSeparateDependenciesAsync(
+        PackageManager packageManager,
+        string packagePath,
+        IReadOnlyList<Uri> dependencyUris,
+        IProgress<InstallProgress>? progress,
+        DeploymentOptions options,
+        CancellationToken cancellationToken,
+        ILogger? logger
+    )
+    {
+        // Install dependencies first, each as an independent package. Per-package failures are logged
+        // and skipped so an incompatible-arch or older variant never aborts the run.
+        for (var i = 0; i < dependencyUris.Count; i++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var depUri = dependencyUris[i];
+
+            // Offer the other selected packages as available dependencies so a framework that depends
+            // on another selected framework still resolves regardless of install order.
+            var siblings = dependencyUris.Where((_, idx) => idx != i).ToList();
+
+            try
+            {
+                var depResult = await packageManager
+                    .AddPackageAsync(depUri, siblings, options)
+                    .AsTask(cancellationToken);
+
+                if (depResult.ErrorText is { Length: > 0 })
+                    logger?.LogWarning(
+                        "Bypass install: dependency add reported an error for {Dep}: {Error}",
+                        depUri.LocalPath,
+                        depResult.ErrorText
+                    );
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                logger?.LogWarning(
+                    ex,
+                    "Bypass install: dependency add failed or skipped for {Dep}",
+                    depUri.LocalPath
+                );
+            }
+
+            // Reserve the last slice of the bar for the main package.
+            var pct = (int)((i + 1) / (double)(dependencyUris.Count + 1) * 100);
+            progress?.Report(new InstallProgress(pct, "Dependencies", "Install"));
+        }
+
+        // Install the main last with no forced dependency array: the frameworks it needs have just
+        // been registered above, so the deployment engine resolves them from the installed set.
+        try
+        {
+            await AddPackageAsync(
+                packageManager,
+                packagePath,
+                Array.Empty<Uri>(),
+                progress,
+                options,
+                cancellationToken
+            );
+        }
+        catch (Exception ex)
+        {
+            logger?.LogError(
+                ex,
+                "Package install failed (bypass / separate dependencies) | Path={PackagePath} | Dependencies={DependencyCount}",
+                packagePath,
+                dependencyUris.Count
+            );
+            throw;
+        }
     }
 }

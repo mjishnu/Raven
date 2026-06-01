@@ -42,6 +42,10 @@ public sealed partial class UpdatesPage : Page
             updateItem.PropertyChanged -= OnUpdateItemPropertyChanged;
 
         _subscribedProductIds.Clear();
+
+        // Sever this transient page's x:Bind subscriptions to the singleton ViewModel,
+        // which would otherwise root the page forever. Matches the MainPage/SearchPage pattern.
+        Bindings.StopTracking();
     }
 
     private void SubscribeToUpdateItemIfNeeded(UpdateItem item)

@@ -18,6 +18,7 @@ public static class SideloadingCheckService
     private const string PolicyKey = @"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\Appx";
     private const string AppModelUnlockKey = @"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock";
     private const string ValueName = "AllowAllTrustedApps";
+    private const string DeveloperModeValueName = "AllowDevelopmentWithoutDevLicense";
 
     // Build 19041 = Windows 10 2004, where sideloading became enabled by default.
     private const int SideloadingDefaultEnabledBuild = 19041;
@@ -65,6 +66,49 @@ public static class SideloadingCheckService
         catch (Exception ex)
         {
             logger?.LogWarning(ex, "Sideloading: Failed to read registry, assuming enabled");
+            return true;
+        }
+    }
+
+    /// <summary>
+    /// Returns <c>true</c> if full Developer Mode is enabled (required for loose-file
+    /// RegisterPackageAsync with DevelopmentMode). Reads AllowDevelopmentWithoutDevLicense,
+    /// which is distinct from AllowAllTrustedApps (sideloading).
+    ///   1. Group Policy key (highest precedence).
+    ///   2. Local AppModelUnlock key.
+    ///   3. Neither present -> Developer Mode is OFF by default -> false.
+    /// On unexpected error, returns <c>true</c> to avoid blocking the user.
+    /// </summary>
+    public static bool IsDeveloperModeEnabled(ILogger? logger = null)
+    {
+        try
+        {
+            var policyValue = Registry.GetValue(PolicyKey, DeveloperModeValueName, null);
+            if (policyValue is int policyInt)
+            {
+                var enabled = policyInt == 1;
+                logger?.LogInformation(
+                    "DeveloperMode: Group Policy key present, {Value} → {State}",
+                    DeveloperModeValueName, enabled ? "Enabled" : "Disabled");
+                return enabled;
+            }
+
+            var localValue = Registry.GetValue(AppModelUnlockKey, DeveloperModeValueName, null);
+            if (localValue is int localInt)
+            {
+                var enabled = localInt == 1;
+                logger?.LogInformation(
+                    "DeveloperMode: AppModelUnlock key present, {Value} → {State}",
+                    DeveloperModeValueName, enabled ? "Enabled" : "Disabled");
+                return enabled;
+            }
+
+            logger?.LogInformation("DeveloperMode: No registry key found → Disabled");
+            return false;
+        }
+        catch (Exception ex)
+        {
+            logger?.LogWarning(ex, "DeveloperMode: Failed to read registry, assuming enabled");
             return true;
         }
     }

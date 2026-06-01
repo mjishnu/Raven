@@ -124,6 +124,28 @@ public sealed class VirtualGridLayout : VirtualizingLayout
         set => SetValue(ItemsStretchProperty, value);
     }
 
+    // Most recent column count computed during layout. Exposed so the host can map a scroll
+    // offset to a first-visible item index (and back) for scroll-position persistence, which
+    // must stay correct when the column count reflows on resize.
+    public int LastColumnCount { get; private set; }
+
+    // Vertical distance between the tops of two consecutive rows (uniform geometry).
+    public double RowPitch => Math.Max(MinItemHeight, MinValidDimension) + MinRowSpacing;
+
+    // Column count for a given content width, matching CalculateColumnCount's formula.
+    public int GetColumnCountForWidth(double availableWidth)
+    {
+        if (double.IsInfinity(availableWidth) || availableWidth <= 0)
+            return 1;
+
+        double itemPlusSpacing = MinItemWidth + MinColumnSpacing;
+        if (itemPlusSpacing <= MinValidDimension)
+            return 1;
+
+        int cols = (int)Math.Floor((availableWidth + MinColumnSpacing) / itemPlusSpacing);
+        return Math.Clamp(cols, 1, MaxColumns);
+    }
+
     // Constants and helpers
     private static readonly Size s_zeroSize = new(0, 0);
 
@@ -401,6 +423,8 @@ public sealed class VirtualGridLayout : VirtualizingLayout
             s.Columns,
             MinItemWidth
         );
+
+        LastColumnCount = s.Columns;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
