@@ -48,48 +48,99 @@ public static class GetDownloadUrl
             || n.Contains("resource", StringComparison.OrdinalIgnoreCase);
     }
 
-    private static IEnumerable<(
-        FE3Handler.SyncUpdatesResponse.Update Update,
-        string Url
-    )> ReduceFrameworkDependencyFiles(
-        IReadOnlyList<(
-            FE3Handler.SyncUpdatesResponse.Update Update,
-            string Url
-        )> latestVersionGroup,
-        string archRid
+    /// <summary>
+    /// Collapses a framework's versioned PackageIdentityName to a stable "family" key by removing
+    /// dotted numeric segments, so different releases of the same framework
+    /// (e.g. Microsoft.WindowsAppRuntime.1.4 / .1.5 / .1.7 -> microsoft.windowsappruntime) group
+    /// together and only the latest is selected. VCLibs (one version) stays its own family.
+    /// </summary>
+    private static string GetFrameworkFamilyKey(string? packageIdentityName)
+    {
+        if (string.IsNullOrWhiteSpace(packageIdentityName))
+            return string.Empty;
+
+        var segments = packageIdentityName
+            .Split('.', StringSplitOptions.RemoveEmptyEntries)
+            .Where(s => !s.All(char.IsDigit));
+
+        return string.Join('.', segments).ToLowerInvariant();
+    }
+
+    /// <summary>
+    /// Picks the framework dependency file(s) for a single framework family (every architecture and
+    /// version variant grouped under one family key), honouring the architecture priority for the
+    /// chosen main.
+    /// <para>
+    /// Architectures outside the priority list are never returned — an x64 install must not receive
+    /// arm64 packages, regardless of mode.
+    /// </para>
+    /// <para>
+    /// Normal mode returns a single file: the highest-priority architecture that exists (x64, then
+    /// x86, then neutral for an x64 system), at its latest version. Bypass mode
+    /// (<paramref name="includeAllSupportedArchs"/>) returns <i>every</i> supported-architecture
+    /// build of <i>every</i> version FE3 returned (older releases included), so the installer can try
+    /// them all.
+    /// </para>
+    /// </summary>
+    private static IEnumerable<FE3Handler.SyncUpdatesResponse.Update> SelectFrameworkDependencies(
+        IReadOnlyList<FE3Handler.SyncUpdatesResponse.Update> frameworkGroup,
+        string archRid,
+        bool includeAllSupportedArchs
     )
     {
-        if (latestVersionGroup.Count == 0)
-            return latestVersionGroup;
+        if (frameworkGroup.Count == 0)
+            return Array.Empty<FE3Handler.SyncUpdatesResponse.Update>();
 
         // Prefer non-resource packages.
-        var nonResource = latestVersionGroup
-            .Where(a => !IsLikelyResourceOnlyPackage(a.Update.FileName))
+        var nonResource = frameworkGroup
+            .Where(u => !IsLikelyResourceOnlyPackage(u.FileName))
             .ToList();
 
-        var candidates = nonResource.Count > 0 ? nonResource : latestVersionGroup.ToList();
+        var candidates = nonResource.Count > 0 ? nonResource : frameworkGroup.ToList();
         var priorities = Utils.GetArchPriorities(archRid, isPackaged: true);
 
+        if (includeAllSupportedArchs)
+        {
+            // Bypass mode: keep every supported-architecture build of every version. Architectures
+            return candidates
+                .Where(u =>
+                    priorities.Contains(
+                        Utils.ParseArchString(
+                            u.FileName ?? u.PackageIdentityName,
+                            isPackaged: true
+                        )
+                    )
+                )
+                .ToList();
+        }
+
+        // Normal mode: a single file — the highest-priority architecture that exists, latest version.
         foreach (var pref in priorities)
         {
             var matches = candidates
-                .Where(a =>
+                .Where(u =>
                     Utils.ParseArchString(
-                        a.Update.FileName ?? a.Update.PackageIdentityName,
+                        u.FileName ?? u.PackageIdentityName,
                         isPackaged: true
                     ) == pref
                 )
                 .ToList();
 
-            if (matches.Any())
+            if (matches.Count == 0)
+                continue;
+
+            // Latest version of this architecture; shortest filename to avoid edge-case variants.
+            return new[]
             {
-                // If multiple remain, pick the shortest filename to avoid edge-case variants
-                var best = matches.OrderBy(a => (a.Update.FileName ?? string.Empty).Length).First();
-                return new[] { best };
-            }
+                matches
+                    .OrderByDescending(u => u.Version)
+                    .ThenBy(u => (u.FileName ?? string.Empty).Length)
+                    .First(),
+            };
         }
 
-        return new[] { candidates.First() };
+        // No architecturally-compatible build for the chosen main; contribute no dependency
+        return Array.Empty<FE3Handler.SyncUpdatesResponse.Update>();
     }
 
     public static async Task<FileEntry?> fetch(
@@ -153,8 +204,7 @@ public static class GetDownloadUrl
                     var updates = selectionContext.Updates;
                     var priorities = Utils.GetArchPriorities(selectionContext.ArchRid, isPackaged: true);
 
-                    // Get the latest dependencies 
-                    var frameworkLatestGroups = updates
+                    var frameworkGroups = updates
                         .Where(d =>
                             d.IsFramework
                             && d.TargetPlatforms.Any(tp =>
@@ -165,13 +215,8 @@ public static class GetDownloadUrl
                                 )
                             )
                         )
-                        .GroupBy(d => d.PackageIdentityName, StringComparer.OrdinalIgnoreCase)
-                        .Select(g =>
-                            g.GroupBy(u => u.Version)
-                                .OrderByDescending(vg => vg.Key)
-                                .First()
-                                .ToList()
-                        )
+                        .GroupBy(d => GetFrameworkFamilyKey(d.PackageIdentityName))
+                        .Select(g => g.ToList())
                         .ToList();
 
                     // Helper func to fetch the download URL + blockmap for one update and package it into a FileEntry
@@ -234,19 +279,15 @@ public static class GetDownloadUrl
 
                         anyArchMatch = true;
 
-                        // Pick each framework's file to match the chosen main's architecture: prefer
-                        // the main's arch, then fall back through the priority list.
-                        var requiredDepUpdates = frameworkLatestGroups
+                        var depArch = archPref == "neutral" ? selectionContext.ArchRid : archPref;
+
+                        var requiredDepUpdates = frameworkGroups
                             .SelectMany(group =>
-                                ignoreDependencyFilter
-                                    ? group
-                                    : ReduceFrameworkDependencyFiles(
-                                            group
-                                                .Select(u => (Update: u, Url: string.Empty))
-                                                .ToList(),
-                                            archPref
-                                        )
-                                        .Select(r => r.Update)
+                                SelectFrameworkDependencies(
+                                    group,
+                                    depArch,
+                                    includeAllSupportedArchs: ignoreDependencyFilter
+                                )
                             )
                             .Distinct()
                             .ToList();

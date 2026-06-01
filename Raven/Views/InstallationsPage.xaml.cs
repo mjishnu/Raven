@@ -64,6 +64,18 @@ public sealed partial class InstallationsPage : Page
         ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
     }
 
+    protected override void OnNavigatedFrom(Microsoft.UI.Xaml.Navigation.NavigationEventArgs e)
+    {
+        base.OnNavigatedFrom(e);
+
+        // Reliable teardown: Unloaded is NOT guaranteed to fire on navigation, so detach from
+        // the singleton ViewModel here. Also stop the status-animation timer — a running
+        // DispatcherQueueTimer is rooted by the dispatcher and would root this page via the
+        // UpdateService.PropertyChanged handler. (This page uses no x:Bind, so no StopTracking.)
+        ViewModel.PropertyChanged -= OnViewModelPropertyChanged;
+        UpdateService.StopStatusAnimation();
+    }
+
     private void SyncInputsFromViewModel()
     {
         SelectedFileText.Text = ViewModel.SelectedPackagePath ?? string.Empty;

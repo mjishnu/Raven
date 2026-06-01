@@ -52,17 +52,42 @@ class Utils
 
         var lower = name.ToLowerInvariant();
 
-        if (lower.Contains("arm64"))
+        // arm64 must be checked before the bare "arm" token below, since "arm64" contains "arm".
+        if (lower.Contains("arm64") || lower.Contains("aarch64"))
             return "arm64";
-
         if (lower.Contains("x64") || lower.Contains("amd64"))
             return "x64";
         if (lower.Contains("x86") || lower.Contains("x32"))
             return "x86";
+        if (ContainsArchToken(lower, "arm"))
+            return "arm";
         if (isPackaged && lower.Contains("neutral"))
             return "neutral";
 
         return isPackaged ? "neutral" : "x86";
+    }
+
+    /// <summary>
+    /// Returns true if <paramref name="token"/> appears in <paramref name="value"/> bounded by
+    /// non-alphanumeric characters (or string boundaries), so it represents a standalone
+    /// architecture token rather than an incidental substring of a longer word.
+    /// </summary>
+    private static bool ContainsArchToken(string value, string token)
+    {
+        var idx = 0;
+        while ((idx = value.IndexOf(token, idx, StringComparison.Ordinal)) >= 0)
+        {
+            var leftOk = idx == 0 || !char.IsLetterOrDigit(value[idx - 1]);
+            var end = idx + token.Length;
+            var rightOk = end == value.Length || !char.IsLetterOrDigit(value[end]);
+
+            if (leftOk && rightOk)
+                return true;
+
+            idx = end;
+        }
+
+        return false;
     }
 
     public static async Task<Product> ProductOrBundle(

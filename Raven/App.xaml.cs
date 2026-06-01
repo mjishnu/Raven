@@ -16,7 +16,6 @@ using Raven.ViewModels;
 using Raven.Views;
 using Serilog;
 using Serilog.Events;
-using Serilog.Filters;
 
 namespace Raven;
 
