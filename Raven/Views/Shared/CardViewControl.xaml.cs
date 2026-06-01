@@ -12,6 +12,7 @@ using Microsoft.UI.Xaml.Media.Animation;
 using StoreListings.Library;
 using Raven.Contracts.Services;
 using Raven.Helpers;
+using Raven.layouts;
 using Windows.Foundation;
 
 namespace Raven.Views.Shared;
@@ -26,6 +27,20 @@ public sealed partial class CardViewControl : UserControl
     private CancellationTokenSource? _loadingDotsCts;
     private readonly ILocaleService _localeService;
     private readonly ILogger<CardViewControl> _logger;
+
+    // Inner ScrollView of the self-scrolling ItemsView (resolved once its template applies).
+    private ScrollView? _scrollView;
+
+    // True while the list is scrolled to the bottom; lets a resize keep the end pinned.
+    private bool _atEnd;
+
+    // Suppresses scroll-position saves while we programmatically restore/anchor the view.
+    private bool _restorePending;
+    private int _hookAttempts;
+    private bool _cleaned;
+
+    private const double EndThreshold = 4.0;
+    private const double LoadMoreThreshold = 200.0;
     #endregion
 
     #region Constructor
@@ -34,8 +49,8 @@ public sealed partial class CardViewControl : UserControl
         _localeService = App.GetService<ILocaleService>();
         _logger = App.GetService<ILogger<CardViewControl>>();
         InitializeComponent();
-        scrollViewer.ViewChanged += ScrollViewer_ViewChanged;
-        scrollViewer.Loaded += ScrollViewer_Loaded;
+        CardItemsView.Loaded += CardItemsView_Loaded;
+        CardItemsView.SizeChanged += CardItemsView_SizeChanged;
         Unloaded += CardViewControl_Unloaded;
     }
     #endregion
@@ -218,6 +233,9 @@ public sealed partial class CardViewControl : UserControl
         ErrorIcon.Visibility = Visibility.Collapsed;
         LoadingOverlay.Visibility = Visibility.Visible;
         ViewModel.CurrentSkipItem = 0;
+        ViewModel.FirstVisibleIndex = 0;
+        _atEnd = false;
+        ScrollToOffset(0);
 
         _loadingDotsCts?.Cancel();
         _loadingDotsCts?.Dispose();
@@ -384,45 +402,197 @@ public sealed partial class CardViewControl : UserControl
         }
     }
 
-    private async void ScrollViewer_ViewChanged(object? sender, ScrollViewerViewChangedEventArgs e)
+    private void CardItemsView_Loaded(object sender, RoutedEventArgs e)
     {
-        if (!e.IsIntermediate && scrollViewer.VerticalOffset > 0)
+        TryHookScrollView();
+    }
+
+    // The ItemsView owns the scrolling ScrollView, which only exists after its template applies.
+    private void TryHookScrollView()
+    {
+        if (_scrollView != null)
+            return;
+
+        _scrollView = CardItemsView.ScrollView;
+        if (_scrollView != null)
         {
-            ViewModel.ScrollPosition = scrollViewer.VerticalOffset;
+            _scrollView.ViewChanged += ScrollView_ViewChanged;
+            // Returning to a cached page: restore the previous scroll position by item index.
+            if (ViewModel?.HasCachedResults == true)
+            {
+                RestoreScrollPosition();
+            }
+        }
+        else if (_hookAttempts++ < 10)
+        {
+            DispatcherQueue.TryEnqueue(TryHookScrollView);
+        }
+    }
+
+    private async void ScrollView_ViewChanged(ScrollView sender, object args)
+    {
+        if (_restorePending || ViewModel == null)
+            return;
+
+        double offset = sender.VerticalOffset;
+        double scrollable = sender.ScrollableHeight;
+
+        _atEnd = scrollable > 0 && offset >= scrollable - EndThreshold;
+
+        if (offset > 0 && !isLoadingMore)
+        {
+            SaveScrollPosition(sender);
         }
 
         if (
             !isLoadingMore
             && ViewModel.HasMoreItems
-            && scrollViewer.VerticalOffset >= scrollViewer.ScrollableHeight - 200
+            && scrollable > 0
+            && offset >= scrollable - LoadMoreThreshold
         )
         {
             await LoadMoreCards();
         }
     }
 
-    private void ScrollViewer_Loaded(object sender, RoutedEventArgs e)
+    // Persist the first visible item's index rather than a pixel offset, so the position stays
+    // correct after the column count reflows (window resize, snap, fullscreen).
+    private void SaveScrollPosition(ScrollView sender)
     {
-        if (ViewModel.HasCachedResults)
-        {
-            if (ViewModel.ScrollPosition <= 0)
-                return;
+        if (ViewModel == null || CardItemsView.Layout is not VirtualGridLayout layout)
+            return;
 
-            DispatcherQueue.TryEnqueue(async () =>
-            {
-                await Task.Delay(50);
-                scrollViewer.ChangeView(null, ViewModel.ScrollPosition, null, false);
+        double rowPitch = layout.RowPitch;
+        if (rowPitch <= 0)
+            return;
 
-                await Task.Delay(150);
-                scrollViewer.ChangeView(null, ViewModel.ScrollPosition, null, false);
-            });
-        }
+        int columns =
+            layout.LastColumnCount > 0
+                ? layout.LastColumnCount
+                : layout.GetColumnCountForWidth(sender.ViewportWidth);
+        int firstRow = (int)(sender.VerticalOffset / rowPitch);
+        ViewModel.FirstVisibleIndex = firstRow * Math.Max(1, columns);
     }
 
-    private void CardViewControl_Unloaded(object sender, RoutedEventArgs e)
+    private void RestoreScrollPosition()
     {
-        scrollViewer.ViewChanged -= ScrollViewer_ViewChanged;
-        scrollViewer.Loaded -= ScrollViewer_Loaded;
+        if (_scrollView == null || ViewModel == null || ViewModel.FirstVisibleIndex <= 0)
+            return;
+
+        int index = ViewModel.FirstVisibleIndex;
+        _restorePending = true;
+        int attempts = 0;
+
+        void Apply()
+        {
+            if (_scrollView == null || ViewModel == null)
+            {
+                _restorePending = false;
+                return;
+            }
+
+            if (CardItemsView.Layout is not VirtualGridLayout layout || layout.RowPitch <= 0)
+            {
+                if (attempts++ < 10)
+                {
+                    DispatcherQueue.TryEnqueue(Apply);
+                    return;
+                }
+                _restorePending = false;
+                return;
+            }
+
+            int columns =
+                layout.LastColumnCount > 0
+                    ? layout.LastColumnCount
+                    : Math.Max(1, layout.GetColumnCountForWidth(_scrollView.ViewportWidth));
+            double target = (index / columns) * layout.RowPitch;
+
+            // The uniform layout reports its full extent after the first measure; wait for it
+            // so the target offset is reachable rather than being clamped short.
+            if (_scrollView.ScrollableHeight + 0.5 < target && attempts++ < 10)
+            {
+                DispatcherQueue.TryEnqueue(Apply);
+                return;
+            }
+
+            ScrollToOffset(target);
+            _restorePending = false;
+        }
+
+        DispatcherQueue.TryEnqueue(Apply);
+    }
+
+    // Keep the scroll anchored across responsive reflow: the column count (and therefore the
+    // pixel offset of any item) changes with width, so a saved offset would drift. Re-derive it.
+    private void CardItemsView_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        // SizeChanged fires after layout, so the inner ScrollView is reliably available here.
+        // Acts as the fallback hook point if it wasn't ready when Loaded fired.
+        TryHookScrollView();
+
+        if (_scrollView == null || ViewModel == null || CardItemsView.ItemsSource == null)
+            return;
+
+        bool wasAtEnd = _atEnd;
+        int index = ViewModel.FirstVisibleIndex;
+        if (!wasAtEnd && index <= 0)
+            return; // already at the top — nothing to preserve
+
+        _restorePending = true;
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            if (_scrollView == null)
+            {
+                _restorePending = false;
+                return;
+            }
+
+            if (wasAtEnd)
+            {
+                // Was at the bottom before the resize: stay pinned to the (new) end.
+                ScrollToOffset(_scrollView.ScrollableHeight);
+            }
+            else if (CardItemsView.Layout is VirtualGridLayout layout && layout.RowPitch > 0)
+            {
+                int columns = layout.LastColumnCount > 0 ? layout.LastColumnCount : 1;
+                ScrollToOffset((index / columns) * layout.RowPitch);
+            }
+
+            DispatcherQueue.TryEnqueue(() => _restorePending = false);
+        });
+    }
+
+    private void ScrollToOffset(double verticalOffset)
+    {
+        _scrollView?.ScrollTo(
+            0,
+            verticalOffset,
+            new ScrollingScrollOptions(ScrollingAnimationMode.Disabled, ScrollingSnapPointsMode.Ignore)
+        );
+    }
+
+    private void CardViewControl_Unloaded(object sender, RoutedEventArgs e) => Cleanup();
+
+    /// <summary>
+    /// Idempotent teardown. Called from <see cref="CardViewControl_Unloaded"/> AND from the host
+    /// page's OnNavigatedFrom. The page path is the reliable one: WinUI does not guarantee that
+    /// Unloaded fires on every navigation, and when it is skipped the ItemsView stays subscribed
+    /// to the singleton ViewModel's Cards.CollectionChanged, which roots this control and leaks it.
+    /// </summary>
+    public void Cleanup()
+    {
+        if (_cleaned)
+            return;
+        _cleaned = true;
+
+        if (_scrollView != null)
+        {
+            _scrollView.ViewChanged -= ScrollView_ViewChanged;
+            _scrollView = null;
+        }
+        CardItemsView.Loaded -= CardItemsView_Loaded;
+        CardItemsView.SizeChanged -= CardItemsView_SizeChanged;
         Unloaded -= CardViewControl_Unloaded;
 
         _loadingDotsCts?.Cancel();

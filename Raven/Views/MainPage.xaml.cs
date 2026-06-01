@@ -73,4 +73,15 @@ public sealed partial class MainPage : Page
             await CardView.ApplyFilters();
         }
     }
+
+    protected override void OnNavigatedFrom(NavigationEventArgs e)
+    {
+        base.OnNavigatedFrom(e);
+        // Deterministic teardown on the reliable navigation path (Unloaded is not guaranteed).
+        // Detaches the CardView's ItemsView from the singleton VM's CollectionChanged...
+        CardView.Cleanup();
+        // ...and severs this transient page's x:Bind subscriptions to the singleton ViewModel,
+        // which otherwise keep the page (and CardView) alive forever.
+        Bindings.StopTracking();
+    }
 }

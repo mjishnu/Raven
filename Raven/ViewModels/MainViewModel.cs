@@ -21,7 +21,7 @@ public partial class MainViewModel : ObservableRecipient, INavigationAware, ICar
 
     public int CurrentSkipItem { get; set; }
 
-    public double ScrollPosition { get; set; }
+    public int FirstVisibleIndex { get; set; }
 
     public bool HasMoreItems { get; set; }
 
@@ -118,7 +118,7 @@ public partial class MainViewModel : ObservableRecipient, INavigationAware, ICar
         Cards.Clear();
         HasCachedResults = false;
         CurrentSkipItem = 0;
-        ScrollPosition = 0;
+        FirstVisibleIndex = 0;
         F1Index = 0;
         F2Index = 0;
         MediaType = MediaTypeRecommendation.Apps;

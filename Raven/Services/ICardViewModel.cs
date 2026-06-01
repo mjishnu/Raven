@@ -3,7 +3,7 @@ using StoreListings.Library;
 
 public interface ICardViewModel
 {
-    double ScrollPosition { get; set; }
+    int FirstVisibleIndex { get; set; }
     bool HasMoreItems { get; }
     bool HasCachedResults { get; }
     string HeaderText { get; }

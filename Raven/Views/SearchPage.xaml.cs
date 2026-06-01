@@ -69,7 +69,7 @@ public sealed partial class SearchPage : Page
             {
                 if (e.NavigationMode == NavigationMode.New)
                 {
-                    ViewModel.ScrollPosition = 0;
+                    ViewModel.FirstVisibleIndex = 0;
                     // if filter changed
                     if (ViewModel.F1Index != 0 || ViewModel.F2Index != 0)
                     {
@@ -92,5 +92,16 @@ public sealed partial class SearchPage : Page
         {
             CardView.NavigateToProductOrBundle(card.ProductId, card.InstallerType);
         }
+    }
+
+    protected override void OnNavigatedFrom(NavigationEventArgs e)
+    {
+        base.OnNavigatedFrom(e);
+        // Deterministic teardown on the reliable navigation path (Unloaded is not guaranteed).
+        // Detaches the CardView's ItemsView from the singleton VM's CollectionChanged...
+        CardView.Cleanup();
+        // ...and severs this transient page's x:Bind subscriptions to the singleton ViewModel,
+        // which otherwise keep the page (and CardView) alive forever.
+        Bindings.StopTracking();
     }
 }

@@ -111,8 +111,8 @@
       </DataTemplate>
     </ResourceDictionary>
   </UserControl.Resources>
-  <ScrollViewer x:Name="scrollViewer">
-    <Grid>
+  <!--  Root is a plain overlay Grid: content + centered loading/error overlays.  -->
+  <Grid>
       <!--  Loading State  -->
       <StackPanel
         x:Name="LoadingOverlay"
@@ -142,10 +142,17 @@
         <FontIcon FontSize="55" Glyph="" />
         <TextBlock x:Name="ErrorTextBlock" Margin="0,12,0,0" />
       </StackPanel>
-      <!--  Content State  -->
-      <StackPanel x:Name="DisplayItem" Margin="{StaticResource NavigationViewPageContentMargin}">
-        <!--  Header Section  -->
-        <StackPanel Grid.Row="0" Margin="0,24">
+      <!--  Content State: sticky header + self-scrolling, virtualized list.
+            ItemsView owns its own scrolling/virtualization, so it must NOT be wrapped in an
+            outer ScrollViewer (that gives it an infinite viewport and realizes every item).  -->
+      <Grid x:Name="DisplayItem">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto" />
+          <RowDefinition Height="*" />
+          <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <!--  Header Section (sticky)  -->
+        <StackPanel x:Name="HeaderPanel" Grid.Row="0" Margin="56,24,56,24">
           <Grid Margin="0,0,0,27" HorizontalAlignment="Stretch">
             <TextBlock
               x:Name="HeaderTitle"
@@ -232,7 +239,7 @@
         <ItemsView
           x:Name="CardItemsView"
           Grid.Row="1"
-          Padding="10"
+          Padding="56,0,56,12"
           ItemTemplate="{StaticResource NormalItemTemplate}"
           ItemsSource="{x:Bind ItemsSource}"
           Layout="{StaticResource VirtualGridLayout}"
@@ -240,7 +247,7 @@
         <!--  No Results  -->
         <StackPanel
           x:Name="NoResultsPanel"
-          Margin="0,120"
+          Grid.Row="1"
           HorizontalAlignment="Center"
           VerticalAlignment="Center"
           Visibility="Collapsed"
@@ -261,17 +268,18 @@
             FontSize="16"
           />
         </StackPanel>
-        <!--  Loading More Indicator  -->
+        <!--  Loading More Indicator (footer row, sits below the cards while paging)  -->
         <ProgressRing
           x:Name="LoadMoreIndicator"
+          Grid.Row="2"
           Width="30"
           Height="30"
-          Margin="20"
+          Margin="0,12"
+          HorizontalAlignment="Center"
           Background="LightGray"
           IsActive="True"
           Visibility="Collapsed"
         />
-      </StackPanel>
-    </Grid>
-  </ScrollViewer>
+      </Grid>
+  </Grid>
 </UserControl>

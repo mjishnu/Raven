@@ -443,7 +443,19 @@ public sealed class DownloadHelper
                             ParallelCount = 1,
                             BufferBlockSize = config.BufferBlockSize,
                             MaximumBytesPerSecond = config.MaximumBytesPerSecond,
-                            EnableLiveStreaming = true,
+
+                            // Cap the in-memory write-ahead buffer. Without this the library's
+                            // memory queue is unbounded, so a fast network races ahead of the disk
+                            // writer and accumulates most of the file in RAM — a spike that never
+                            // drops after the download (lands on the LOH). 16 MB is ample headroom
+                            // for a sequential, single-chunk download and keeps the footprint flat.
+                            MaximumMemoryBufferBytes = 16 * 1024 * 1024,
+
+                            // Do NOT enable live streaming: it makes the library retain the whole
+                            // downloaded payload in memory to expose it as a MemoryStream. We only
+                            // write to disk and read byte *counts* for progress — the live stream is
+                            // never consumed, so enabling it would just hold ~the entire file in RAM.
+                            EnableLiveStreaming = false,
                         };
 
                         await DownloadAsync(
