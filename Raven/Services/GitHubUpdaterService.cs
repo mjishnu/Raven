@@ -152,9 +152,14 @@ public sealed class GitHubUpdaterService
 
     private static string ResolveSourceDirectory(string extractPath)
     {
-        var directories = Directory.GetDirectories(extractPath);
-        if (directories.Length == 1)
-            return directories[0];
+        // Some archives wrap their payload in a single top-level folder, in which case
+        // the real files live one level down. But a build can also legitimately have a
+        // single top-level directory (e.g. Assets) sitting next to the app files at the
+        // root. Only descend when that directory is the *sole* entry (no files beside
+        // it); otherwise the extract root itself is the payload.
+        var entries = Directory.GetFileSystemEntries(extractPath);
+        if (entries.Length == 1 && Directory.Exists(entries[0]))
+            return entries[0];
 
         return extractPath;
     }

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<assembly manifestVersion="1.0" xmlns="urn:schemas-microsoft-com:asm.v1">
+  <assemblyIdentity version="1.0.0.0" name="Raven.Updater"/>
+  <!--
+    Require elevation so the updater can replace the application's files regardless
+    of where Raven is installed (including protected locations like Program Files).
+    Windows shows a UAC consent prompt when the updater launches; if the user
+    dismisses it, Process.Start throws ERROR_CANCELLED (1223) and the update is
+    skipped. Declaring the level explicitly also bypasses UAC installer detection.
+  -->
+  <trustInfo xmlns="urn:schemas-microsoft-com:asm.v3">
+    <security>
+      <requestedPrivileges>
+        <requestedExecutionLevel level="requireAdministrator" uiAccess="false" />
+      </requestedPrivileges>
+    </security>
+  </trustInfo>
+  <compatibility xmlns="urn:schemas-microsoft-com:compatibility.v1">
+    <application>
+      <supportedOS Id="{8e0f7a12-bfb3-4fe8-b9a5-48fd50a15a9a}"/>
+    </application>
+  </compatibility>
+</assembly>

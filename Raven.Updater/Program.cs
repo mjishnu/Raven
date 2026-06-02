@@ -1,8 +1,12 @@
 using System.Diagnostics;
 using System.Security.Cryptography;
 
+Log.Initialize();
+Log.Write($"Updater started. Args: {string.Join(' ', args)}");
+
 if (!TryParseArguments(args, out var options))
 {
+    Log.Write("Failed to parse arguments. Aborting.");
     return 1;
 }
 
@@ -10,10 +14,12 @@ try
 {
     var updater = new Updater(options);
     updater.Run();
+    Log.Write("Update completed successfully.");
     return 0;
 }
-catch
+catch (Exception ex)
 {
+    Log.Write($"Update FAILED: {ex}");
     return 1;
 }
 
@@ -72,6 +78,54 @@ internal sealed record UpdateOptions(
     string WorkspaceDirectory
 );
 
+/// <summary>
+/// Minimal append-only file logger so update failures are diagnosable. Writes to
+/// %LOCALAPPDATA%\Raven\logs\updater.log (falls back to the temp folder). Never throws.
+/// </summary>
+internal static class Log
+{
+    private static string? _logPath;
+
+    public static void Initialize()
+    {
+        try
+        {
+            var baseDir = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "Raven",
+                "logs"
+            );
+            Directory.CreateDirectory(baseDir);
+            _logPath = Path.Combine(baseDir, "updater.log");
+        }
+        catch
+        {
+            try
+            {
+                _logPath = Path.Combine(Path.GetTempPath(), "raven-updater.log");
+            }
+            catch
+            {
+                _logPath = null;
+            }
+        }
+    }
+
+    public static void Write(string message)
+    {
+        if (_logPath is null)
+            return;
+
+        try
+        {
+            File.AppendAllText(_logPath, $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {message}{Environment.NewLine}");
+        }
+        catch
+        {
+        }
+    }
+}
+
 internal sealed class Updater
 {
     private readonly UpdateOptions _options;
@@ -83,17 +137,24 @@ internal sealed class Updater
 
     public void Run()
     {
-        WaitForProcessExit(_options.ProcessId, TimeSpan.FromMinutes(2));
+        Log.Write($"Source: {_options.SourceDirectory}");
+        Log.Write($"Target: {_options.TargetDirectory}");
+        Log.Write($"Exe:    {_options.ExecutablePath}");
+
+        var exited = WaitForProcessExit(_options.ProcessId, TimeSpan.FromMinutes(2));
+        Log.Write($"Waited for process {_options.ProcessId} to exit: {(exited ? "exited" : "still running / timed out")}");
 
         var sourceFiles = Directory
             .GetFiles(_options.SourceDirectory, "*", SearchOption.AllDirectories)
             .ToList();
+        Log.Write($"Source file count: {sourceFiles.Count}");
 
         EnsureSourceIntegrity(sourceFiles);
 
         var backupRoot = Path.Combine(_options.WorkspaceDirectory, "backup");
         var addedFiles = new List<string>();
         var backedUpFiles = new List<(string target, string backup)>();
+        var copied = 0;
 
         try
         {
@@ -127,10 +188,12 @@ internal sealed class Updater
 
                 CopyWithRetry(sourceFile, targetFile, retries: 5);
                 ValidateCopiedFile(sourceFile, targetFile);
+                copied++;
             }
         }
-        catch
+        catch (Exception ex)
         {
+            Log.Write($"Copy failed after {copied}/{sourceFiles.Count} files: {ex.Message}. Rolling back.");
             RollBack(addedFiles, backedUpFiles);
             throw;
         }
@@ -138,6 +201,8 @@ internal sealed class Updater
         {
             TryDeleteDirectory(backupRoot);
         }
+
+        Log.Write($"Copied {copied} files. Relaunching {_options.ExecutablePath}");
 
         Process.Start(
             new ProcessStartInfo
@@ -151,15 +216,17 @@ internal sealed class Updater
         TryDeleteDirectory(_options.WorkspaceDirectory);
     }
 
-    private static void WaitForProcessExit(int processId, TimeSpan timeout)
+    private static bool WaitForProcessExit(int processId, TimeSpan timeout)
     {
         try
         {
             var process = Process.GetProcessById(processId);
-            process.WaitForExit((int)timeout.TotalMilliseconds);
+            return process.WaitForExit((int)timeout.TotalMilliseconds);
         }
         catch (ArgumentException)
         {
+            // Process already exited (not found).
+            return true;
         }
     }
 
@@ -178,8 +245,9 @@ internal sealed class Updater
                 File.Copy(sourceFile, targetFile, overwrite: true);
                 return;
             }
-            catch when (attempt < retries)
+            catch (Exception ex) when (attempt < retries)
             {
+                Log.Write($"Copy attempt {attempt} for '{Path.GetFileName(targetFile)}' failed: {ex.Message}. Retrying.");
                 Thread.Sleep(300 * attempt);
             }
         }
