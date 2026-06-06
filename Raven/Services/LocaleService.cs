@@ -100,9 +100,6 @@ public class LocaleService : ILocaleService
             // 3. No usable match – fall back to system default
             Windows.Globalization.ApplicationLanguages.PrimaryLanguageOverride =
                 resolved ?? string.Empty;
-
-            // Drive the Store API HTTP client so search/recommendations honour the locale
-            StoreEdgeFDQuery.SetClientLocale(fullTag);
         }
         catch { }
     }
