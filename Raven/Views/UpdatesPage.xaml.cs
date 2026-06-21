@@ -1,4 +1,4 @@
-﻿using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 using StoreListings.Library;
@@ -66,14 +66,14 @@ public sealed partial class UpdatesPage : Page
         {
             ProductId = item.ProductId,
             InstallerType = InstallerType.Packaged,
-            LogoUrl = item.LogoUrl,
+            LogoUrl = item.LogoUrl
         };
         _navigationService.NavigateTo(typeof(AppViewModel).FullName!, navItem);
     }
 
     private void StopCheckButton_Click(object sender, RoutedEventArgs e)
     {
-        ViewModel.CancelCheck();
+        ViewModel.CancelCheckCommand.Execute(null);
     }
 
     private void CancelUpdateButton_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
@@ -102,6 +102,28 @@ public sealed partial class UpdatesPage : Page
     private void SelectAll_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
     {
         ViewModel.ToggleSelectAllCommand.Execute(null);
+    }
+
+    private void FailedItem_Click(object sender, ItemClickEventArgs e)
+    {
+        if (e.ClickedItem is not DownloadItem info) return;
+        
+        _navigationService.NavigateTo(typeof(AppViewModel).FullName!, info.ProductId);
+    }
+
+    private void ClearAllFailed_Click(object sender, RoutedEventArgs e)
+    {
+        ViewModel.ClearAllFailedUpdatesCommand.Execute(null);
+    }
+
+    private void DismissFailedItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { Tag: string productId })
+        {
+            var item = ViewModel.FailedUpdates.FirstOrDefault(f => f.ProductId == productId);
+            if (item != null)
+                ViewModel.ClearFailedUpdateCommand.Execute(item);
+        }
     }
 }
 

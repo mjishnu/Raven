@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -82,13 +82,10 @@ public sealed partial class AppPage : Page
 
         var (productInfo, productId, installerType) = e.Parameter switch
         {
-            ProductData p => (p, (string?)null, InstallerType.Unknown),
-            DownloadItem { ProductInfo: not null } d => (
-                d.ProductInfo,
-                (string?)null,
-                InstallerType.Unknown
-            ),
-            DownloadItem d => (null, d.ProductId, d.InstallerType),
+            ProductData p => (p, p.ProductId, p.InstallerType),
+            DownloadItem { ProductInfo: not null } d => (d.ProductInfo, d.ProductId, d.InstallerType),
+            DownloadItem d => ((ProductData?)null, d.ProductId, d.InstallerType),
+            string pId => ((ProductData?)null, pId, InstallerType.Unknown),
             _ => ((ProductData?)null, (string?)null, InstallerType.Unknown),
         };
 
@@ -176,13 +173,18 @@ public sealed partial class AppPage : Page
                     productInfo.Version
                 );
             }
+
+            if (downloadItem.LastInstallError != null)
+            {
+                _ = ShowInstallationFailedPopupIfAvailableAsync(downloadItem);
+            }
         }
 
         SetLoading(false);
         UpdateInstallButtonState();
     }
 
-    private async Task FetchAndLoadProductAsync(string productId, InstallerType installerType)
+    private async Task FetchAndLoadProductAsync(string productId, InstallerType installerType, bool skipVersionCheck = false)
     {
         SetLoading(true);
 
@@ -192,8 +194,9 @@ public sealed partial class AppPage : Page
                 productId,
                 installerType,
                 _productLoadCts?.Token ?? default,
-                _localeService.Market,
-                _localeService.Language
+                market: _localeService.Market,
+                language: _localeService.Language,
+                skipVersionCheck: skipVersionCheck
             );
 
             var downloadItem = DownloadManagerService.Instance.GetDownload(productId);
@@ -569,23 +572,134 @@ public sealed partial class AppPage : Page
 
             if (IsCurrentProduct(item))
             {
-                var force = await InstallHelper.ShowInstallationErrorOrForceInstallDialogAsync(
-                    this.Content.XamlRoot,
-                    "Install_Dialog_Title".GetLocalized(),
-                    item.LastInstallError
-                );
+                bool isForceInstallable = false;
+                if (item.LastInstallError is System.Runtime.InteropServices.COMException comEx && InstallHelper.IsNewerOrSameVersionInstalled(comEx.HResult))
+                    isForceInstallable = true;
+                else if (item.LastInstallError is InvalidOperationException { InnerException: System.Runtime.InteropServices.COMException inner } && InstallHelper.IsNewerOrSameVersionInstalled(inner.HResult))
+                    isForceInstallable = true;
 
-                if (force && !string.IsNullOrWhiteSpace(mainPackagePath))
+                if (isForceInstallable)
                 {
-                    await RetryForceInstallAsync(item, mainPackagePath);
-                    return;
+                    var force = await InstallHelper.ShowInstallationErrorOrForceInstallDialogAsync(
+                        App.MainWindow.Content.XamlRoot,
+                        "Install_Dialog_Title".GetLocalized(),
+                        item.LastInstallError
+                    );
+
+                    if (force)
+                    {
+                        if (!string.IsNullOrWhiteSpace(mainPackagePath))
+                            await RetryForceInstallAsync(item, mainPackagePath);
+                        else
+                            InstallButton_Click(null!, null!);
+                        return;
+                    }
+                }
+                else
+                {
+                    var retry = await InstallHelper.ShowUpdateFailedRetryDialogAsync(
+                        App.MainWindow.Content.XamlRoot,
+                        "Install_Dialog_Title".GetLocalized(),
+                        item.LastInstallError
+                    );
+                    
+                    if (retry)
+                    {
+                        if (!string.IsNullOrWhiteSpace(mainPackagePath))
+                            await RetryInstallAsync(item, mainPackagePath);
+                        else
+                            InstallButton_Click(null!, null!);
+                        return;
+                    }
                 }
             }
         }
         finally
         {
             // prevent repeating the same popup if state updates fire again
-            item.LastInstallError = null;
+            DownloadManagerService.Instance.ClearDownloadError(item.ProductId);
+        }
+    }
+    private async Task RetryInstallAsync(DownloadItem item, string mainPackagePath)
+    {
+        var productId = item.ProductId;
+        var downloadManager = DownloadManagerService.Instance;
+
+        _isForceInstalling = true;
+
+        BindToDownloadItem(item);
+        item.LastInstallError = null;
+
+        downloadManager.UpdateDownloadStatus(productId, DownloadStatus.Installing);
+        downloadManager.UpdateDownloadProgress(productId, 0);
+        downloadManager.UpdateDownloadStatusText(productId, "Status_Installing".GetLocalized());
+        try
+        {
+            downloadManager.UpdateDownloadBytes(productId, null, null);
+        }
+        catch { }
+
+        downloadManager.UpdateDownloadDetailsText(productId, string.Empty);
+
+        UpdateService.SetProgress(0);
+        UpdateService.SetDetails(string.Empty);
+        StatusText.Text = "Status_Installing".GetLocalized();
+        DetailsText.Text = "0%";
+        SetInstallButtonState(showProgress: true);
+        SetProgressIndeterminate(false);
+        UpdateService.StartStatusAnimation("Status_Installing".GetLocalized());
+
+        var depPaths = item
+            .DownloadedFilePaths.Where(p =>
+                !string.IsNullOrWhiteSpace(p)
+                && File.Exists(p)
+                && !string.Equals(p, mainPackagePath, StringComparison.OrdinalIgnoreCase)
+            )
+            .ToList();
+
+        try
+        {
+            var installProgress = new Progress<AppPackageInstaller.InstallProgress>(p =>
+            {
+                var percent = (int)Math.Clamp(p.Percent, 0, 100);
+                downloadManager.UpdateDownloadProgress(productId, percent);
+            });
+
+            await AppPackageInstaller.InstallAsync(
+                mainPackagePath,
+                dependencyPackagePaths: depPaths,
+                progress: installProgress,
+                ignoreVersion: false,
+                installDependenciesSeparately: IgnoreDependencyFilterToggle.IsChecked
+            );
+
+            UpdateService.StopStatusAnimation();
+            downloadManager.UpdateDownloadStatusText(productId, null);
+            downloadManager.UpdateDownloadStatus(productId, DownloadStatus.Completed);
+        }
+        catch (Exception ex)
+        {
+            UpdateService.StopStatusAnimation();
+            downloadManager.UpdateDownloadStatusText(productId, "Download_Status_InstallFailed".GetLocalizedFormat(ex.Message));
+            downloadManager.UpdateDownloadStatus(productId, DownloadStatus.Failed);
+            _logger.LogError(
+                ex,
+                "Retry install failed | ProductId={ProductId} | MainPackage={MainPackagePath}",
+                item.ProductId,
+                mainPackagePath
+            );
+
+            await InstallHelper.ShowInstallationErrorDialogAsync(
+                this.Content.XamlRoot,
+                "Install_Dialog_Title".GetLocalized(),
+                ex
+            );
+        }
+        finally
+        {
+            _isForceInstalling = false;
+            _overrideAction = null;
+            UpdateInstallButtonState();
         }
     }
 
@@ -1189,6 +1303,9 @@ public sealed partial class AppPage : Page
             var downloadItem = downloadManager.GetDownload(productId);
             if (downloadItem != null)
             {
+                // Clear the update flow flag so failures don't incorrectly appear in the Updates banner
+                downloadItem.IsFromUpdateFlow = false;
+                
                 BindToDownloadItem(downloadItem);
                 // Persist the action mode so Retry survives an app restart.
                 downloadItem.WasDownloadOnly = isDownloadOnly;

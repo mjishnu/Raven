@@ -310,6 +310,27 @@ public class DownloadManagerService
         SaveDownloads();
     }
 
+    public void ClearDownloadError(string productId)
+    {
+        var item = GetDownload(productId);
+        if (item == null)
+            return;
+
+        if (item.LastInstallError == null)
+            return;
+
+        if (IsAnyoneObserving)
+        {
+            RunOnUIThread(() => item.LastInstallError = null);
+        }
+        else
+        {
+            item.LastInstallError = null;
+        }
+
+        SaveDownloads();
+    }
+
     public void UpdateDownloadPath(string productId, string downloadPath)
     {
         var item = GetDownload(productId);
@@ -469,8 +490,6 @@ public class DownloadManagerService
             || string.Equals(item.RevisionId, revisionId, StringComparison.OrdinalIgnoreCase)
         )
             return;
-
-        TouchDownload(productId);
 
         if (IsAnyoneObserving)
         {

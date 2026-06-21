@@ -25,6 +25,14 @@ public partial class DownloadItem : INotifyPropertyChanged
         public string? Hash { get; set; }
     }
 
+    public class PersistedInstallError
+    {
+        public string ExceptionType { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
+        public int HResult { get; set; }
+        public int InnerHResult { get; set; }
+    }
+
     private DateTime _lastAccessedAt = DateTime.Now;
     public DateTime LastAccessedAt
     {
@@ -231,8 +239,74 @@ public partial class DownloadItem : INotifyPropertyChanged
     [JsonIgnore]
     public ProductData? ProductInfo { get; set; }
 
+    public PersistedInstallError? PersistedError { get; set; }
+
     [JsonIgnore]
-    public Exception? LastInstallError { get; set; }
+    public string FailureReason
+    {
+        get
+        {
+            if (LastInstallError == null) return string.Empty;
+            return Raven.Helpers.InstallHelper.GetFriendlyErrorMessage(LastInstallError);
+        }
+    }
+
+    [JsonIgnore]
+    public Exception? LastInstallError
+    {
+        get
+        {
+            if (PersistedError == null) return null;
+            var err = PersistedError;
+            if (err.ExceptionType == nameof(System.Runtime.InteropServices.COMException))
+                return new System.Runtime.InteropServices.COMException(err.Message, err.HResult);
+                
+            if (err.ExceptionType == nameof(UnauthorizedAccessException))
+                return new UnauthorizedAccessException(err.Message);
+
+            if (err.ExceptionType == nameof(InvalidOperationException))
+            {
+                if (err.InnerHResult != 0)
+                    return new InvalidOperationException(err.Message, new System.Runtime.InteropServices.COMException(err.Message, err.InnerHResult));
+                return new InvalidOperationException(err.Message);
+            }
+
+            return new Exception(err.Message) { HResult = err.HResult };
+        }
+        set
+        {
+            if (value == null)
+            {
+                PersistedError = null;
+                OnPropertyChanged(nameof(LastInstallError));
+                OnPropertyChanged(nameof(FailureReason));
+                return;
+            }
+            
+            var persisted = new PersistedInstallError
+            {
+                ExceptionType = value.GetType().Name,
+                Message = value.Message,
+                HResult = value.HResult
+            };
+
+            if (value is InvalidOperationException { InnerException: System.Runtime.InteropServices.COMException inner })
+            {
+                persisted.InnerHResult = inner.HResult;
+            }
+            
+            PersistedError = persisted;
+            OnPropertyChanged(nameof(LastInstallError));
+            OnPropertyChanged(nameof(FailureReason));
+        }
+    }
+
+    /// <summary>
+    /// True when this download was initiated by the Updates page bulk-update flow.
+    /// Used to show the appropriate error dialog on failure (retry vs force-install).
+    /// </summary>
+    [JsonIgnore]
+    public bool IsFromUpdateFlow { get; set; }
 
     private string? _statusTextOverride;
 

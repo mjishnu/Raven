@@ -1,4 +1,4 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using StoreListings.Library;
 
@@ -95,7 +95,7 @@ public partial class AppInfo : INotifyPropertyChanged
     private string? _quickLogoUrl;
 
     /// <summary>Returns the logo URL from the loaded product, falling back to a pre-fill URL set during navigation.</summary>
-    public string? LogoUrl => _logo?.Url ?? _quickLogoUrl;
+    public string? LogoUrl => !string.IsNullOrWhiteSpace(_logo?.Url) ? _logo.Url : _quickLogoUrl;
 
     public void SetQuickLogo(string? url)
     {

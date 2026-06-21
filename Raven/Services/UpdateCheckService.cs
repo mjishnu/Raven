@@ -304,6 +304,7 @@ public static class UpdateCheckService
         };
 
         var downloadItem = downloadManager.AddDownload(productData);
+        downloadItem.IsFromUpdateFlow = true;
 
         var unsubscribeDownloadItem = SubscribeToDownloadItem(item, downloadItem, downloadManager);
 
@@ -361,6 +362,7 @@ public static class UpdateCheckService
                 $"[UpdateCheckService] Update failed for {item.ProductId}: {ex.Message}"
             );
             downloadManager.UpdateDownloadStatus(item.ProductId, DownloadStatus.Failed);
+            downloadItem.LastInstallError = ex;
             downloadManager.RunOnUIThread(() => item.Status = DownloadStatus.Failed);
         }
         finally

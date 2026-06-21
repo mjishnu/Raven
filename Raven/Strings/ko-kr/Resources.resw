@@ -921,4 +921,19 @@ Windows 설정에서 개발자 모드를 켜서 활성화할 수 있습니다.</
   <data name="InstallationsPage_ClearDepsBtn.ToolTipService.ToolTip" xml:space="preserve">
     <value>선택한 종속성 지우기</value>
   </data>
+  <data name="Updates_FailedBanner_Title.Text" xml:space="preserve">
+    <value>실패</value>
+  </data>
+  <data name="Updates_FailedBanner_ClearAll.Text" xml:space="preserve">
+    <value>Clear all</value>
+  </data>
+  <data name="Install_Error_AppInUse" xml:space="preserve">
+    <value>The update couldn't be installed because the app is currently in use. Close the app and try again.</value>
+  </data>
+  <data name="Install_Error_AppInUse_Processes" xml:space="preserve">
+    <value>The following apps need to be closed before the update can be installed:</value>
+  </data>
+  <data name="Install_Btn_Retry" xml:space="preserve">
+    <value>Retry</value>
+  </data>
 </root>

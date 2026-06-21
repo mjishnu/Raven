@@ -96,7 +96,8 @@ class Utils
         InstallerType installerType,
         CancellationToken cancellationToken = default,
         Market market = Market.US,
-        Lang language = Lang.en
+        Lang language = Lang.en,
+        bool skipVersionCheck = false
     )
     {
         if (installerType == InstallerType.Packaged)
@@ -181,13 +182,16 @@ class Utils
             }
             else
             {
-                await ConfirmInstalledUpdateVersionAsync(
-                    productData,
-                    packages,
-                    market,
-                    language,
-                    cancellationToken
-                );
+                if (!skipVersionCheck)
+                {
+                    await ConfirmInstalledUpdateVersionAsync(
+                        productData,
+                        packages,
+                        market,
+                        language,
+                        cancellationToken
+                    );
+                }
 
                 return new Product(productData, null);
             }

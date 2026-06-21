@@ -1,4 +1,4 @@
-﻿using System.Collections.ObjectModel;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Text.Json;
@@ -9,6 +9,8 @@ using Raven.Contracts.Services;
 using Raven.Helpers;
 using Raven.Models;
 using Raven.Services;
+using Raven.Views;
+using StoreListings.Library;
 
 namespace Raven.ViewModels;
 
@@ -24,6 +26,9 @@ public partial class UpdatesViewModel : ObservableObject
 
     [ObservableProperty]
     private ObservableCollection<UpdateItem> _completedUpdates = [];
+
+    [ObservableProperty]
+    private ObservableCollection<DownloadItem> _failedUpdates = [];
 
     [ObservableProperty]
     private bool _isChecking;
@@ -45,7 +50,8 @@ public partial class UpdatesViewModel : ObservableObject
 
     public bool HasUpdates => AvailableUpdates.Count > 0;
     public bool HasCompletedUpdates => CompletedUpdates.Count > 0;
-    public bool ShowUpdatesList => (HasUpdates || HasCompletedUpdates) && !IsChecking;
+    public bool HasFailedUpdates => FailedUpdates.Count > 0;
+    public bool ShowUpdatesList => (HasUpdates || HasCompletedUpdates || HasFailedUpdates) && !IsChecking;
     public bool ShowEmptyState => !HasUpdates && !HasCompletedUpdates && !IsChecking && !IsUpdating;
     public bool IsAllSelected
     {
@@ -91,6 +97,56 @@ public partial class UpdatesViewModel : ObservableObject
             OnPropertyChanged(nameof(ShowEmptyState));
             OnPropertyChanged(nameof(ShowUpdatesList));
         };
+
+        FailedUpdates.CollectionChanged += (_, _) =>
+        {
+            OnPropertyChanged(nameof(HasFailedUpdates));
+            OnPropertyChanged(nameof(ShowUpdatesList));
+            OnPropertyChanged(nameof(ShowEmptyState));
+        };
+
+        DownloadManagerService.Instance.Downloads.CollectionChanged += OnDownloadsChanged;
+        foreach (var download in DownloadManagerService.Instance.Downloads)
+        {
+            download.PropertyChanged += OnDownloadItemPropertyChanged;
+            if (download.LastInstallError != null && download.IsFromUpdateFlow)
+                FailedUpdates.Add(download);
+        }
+    }
+
+    private void OnDownloadsChanged(object? sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+    {
+        if (e.NewItems != null)
+        {
+            foreach (DownloadItem item in e.NewItems)
+            {
+                item.PropertyChanged += OnDownloadItemPropertyChanged;
+                if (item.LastInstallError != null && item.IsFromUpdateFlow && !FailedUpdates.Contains(item))
+                    DispatcherQueue?.TryEnqueue(() => FailedUpdates.Add(item));
+            }
+        }
+        if (e.OldItems != null)
+        {
+            foreach (DownloadItem item in e.OldItems)
+            {
+                item.PropertyChanged -= OnDownloadItemPropertyChanged;
+                DispatcherQueue?.TryEnqueue(() => FailedUpdates.Remove(item));
+            }
+        }
+    }
+
+    private void OnDownloadItemPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (sender is DownloadItem item && e.PropertyName == nameof(DownloadItem.LastInstallError))
+        {
+            DispatcherQueue?.TryEnqueue(() =>
+            {
+                if (item.LastInstallError != null && item.IsFromUpdateFlow && !FailedUpdates.Contains(item))
+                    FailedUpdates.Add(item);
+                else if (item.LastInstallError == null)
+                    FailedUpdates.Remove(item);
+            });
+        }
     }
 
     partial void OnIsCheckingChanged(bool value)
@@ -123,7 +179,32 @@ public partial class UpdatesViewModel : ObservableObject
             await CheckForUpdatesAsync();
     }
 
-    public void CancelCheck() => _checkCts?.Cancel();
+    [RelayCommand]
+    private void CancelCheck()
+    {
+        _checkCts?.Cancel();
+    }
+
+    [RelayCommand]
+    private void ClearAllFailedUpdates()
+    {
+        var items = FailedUpdates.ToList();
+        foreach (var item in items)
+        {
+            DownloadManagerService.Instance.ClearDownloadError(item.ProductId);
+        }
+    }
+
+    [RelayCommand]
+    private void ClearFailedUpdate(DownloadItem item)
+    {
+        DownloadManagerService.Instance.ClearDownloadError(item.ProductId);
+    }
+
+    public void ClearFailedUpdateByProductId(string productId)
+    {
+        DownloadManagerService.Instance.ClearDownloadError(productId);
+    }
 
     [RelayCommand]
     private void ToggleSelectAll()
@@ -137,17 +218,24 @@ public partial class UpdatesViewModel : ObservableObject
     private async Task CheckForUpdatesAsync()
     {
         Debug.WriteLine("[Updates] CheckForUpdatesAsync START");
-        IsChecking = true;
-
+        
         foreach (var item in AvailableUpdates)
             item.PropertyChanged -= OnUpdateItemPropertyChanged;
         AvailableUpdates.Clear();
 
+        // Clear the Failed Updates banner visually without removing the persisted errors
+        // By setting IsFromUpdateFlow to false, they are automatically removed from FailedUpdates
+        foreach (var failedItem in FailedUpdates.ToList())
+        {
+            failedItem.IsFromUpdateFlow = false;
+        }
+        FailedUpdates.Clear();
+
         _checkCts?.Cancel();
         _checkCts?.Dispose();
         _checkCts = new CancellationTokenSource();
-
-        LoadCompletedUpdates();
+        var cts = _checkCts;
+        IsChecking = true;
 
         // Set text immediately — no waiting for the first HTTP response.
         // Dots initialise with punctuation spaces (U+2008) so the width is
@@ -231,6 +319,11 @@ public partial class UpdatesViewModel : ObservableObject
         var toUpdate = AvailableUpdates.Where(x => x.IsSelected && !x.IsProgressVisible).ToList();
         if (toUpdate.Count == 0)
             return;
+
+        foreach (var updateItem in toUpdate)
+        {
+            ClearFailedUpdateByProductId(updateItem.ProductId);
+        }
 
         bool freshStart = !IsUpdating;
         IsUpdating = true;

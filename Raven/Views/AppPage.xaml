@@ -137,7 +137,11 @@
                                     Height="80"
                                     Margin="0,0,12,0"
                                     CornerRadius="10">
-                                    <Image Source="{x:Bind AppData.LogoUrl, Mode=OneWay}" Stretch="Fill" />
+                                    <Image Stretch="Fill">
+                                        <Image.Source>
+                                            <BitmapImage UriSource="{x:Bind AppData.LogoUrl, Mode=OneWay, Converter={StaticResource StringToUriConverter}}" />
+                                        </Image.Source>
+                                    </Image>
                                 </Border>
                                 <StackPanel>
                                     <!--  App Name and Publisher  -->

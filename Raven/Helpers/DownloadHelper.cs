@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Net;
 using Microsoft.Extensions.Logging;
 using Downloader;
@@ -577,10 +577,9 @@ public sealed class DownloadHelper
                         }
 
                     hadError = true;
-                    downloadManager.UpdateDownloadStatusText(
-                        productId,
-                        "Download_Status_Stalled".GetLocalized()
-                    );
+                    var msg = "Download_Status_Stalled".GetLocalized();
+                    downloadItem.LastInstallError = new TimeoutException(msg);
+                    downloadManager.UpdateDownloadStatusText(productId, msg);
                     break;
                 }
                 catch (OperationCanceledException)
@@ -625,6 +624,7 @@ public sealed class DownloadHelper
                 catch (Exception ex)
                 {
                     hadError = true;
+                    downloadItem.LastInstallError = ex;
                     downloadManager.UpdateDownloadStatusText(productId, "Download_Status_Error".GetLocalizedFormat(ex.Message));
                     downloadManager.UpdateDownloadDetailsText(
                         productId,
@@ -640,6 +640,8 @@ public sealed class DownloadHelper
             if (!downloaded)
             {
                 hadError = true;
+                if (downloadItem.LastInstallError == null)
+                    downloadItem.LastInstallError = new Exception("Download_Status_FailedRetries".GetLocalized());
                 downloadManager.UpdateDownloadStatusText(
                     productId,
                     "Download_Status_FailedRetries".GetLocalized()
