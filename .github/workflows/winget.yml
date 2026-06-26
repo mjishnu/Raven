@@ -12,6 +12,7 @@ on:
 jobs:
   publish:
     runs-on: windows-latest
+    if: ${{ !github.event.release.prerelease }}
     steps:
       - name: Submit update to WinGet
         uses: vedantmgoyal9/winget-releaser@main
