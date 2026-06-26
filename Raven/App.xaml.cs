@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
@@ -22,11 +22,17 @@ namespace Raven;
 
 public partial class App : Application
 {
-    public IHost Host { get; }
+    public IHost Host
+    {
+        get;
+    }
 
     private readonly ILogger<App> _logger;
 
-    public static IServiceProvider Services { get; private set; }
+    public static IServiceProvider Services
+    {
+        get; private set;
+    }
 
     public static WindowEx MainWindow { get; private set; } = null!;
 
@@ -48,7 +54,10 @@ public partial class App : Application
         return service;
     }
 
-    public static UIElement? AppTitlebar { get; set; }
+    public static UIElement? AppTitlebar
+    {
+        get; set;
+    }
 
     public App()
     {
@@ -231,9 +240,32 @@ public partial class App : Application
         e.SetObserved();
     }
 
-    protected override async void OnLaunched(LaunchActivatedEventArgs args)
+    private void MainInstance_Activated(object? sender, Microsoft.Windows.AppLifecycle.AppActivationArguments e)
+    {
+        if (MainWindow is not null)
+        {
+            _ = MainWindow.DispatcherQueue.TryEnqueue(() =>
+            {
+                WindowExtensions.Restore(MainWindow);
+                WindowExtensions.SetForegroundWindow(MainWindow);
+            });
+        }
+    }
+
+    protected async override void OnLaunched(LaunchActivatedEventArgs args)
     {
         base.OnLaunched(args);
+
+        var mainInstance = Microsoft.Windows.AppLifecycle.AppInstance.FindOrRegisterForKey("raven_main_instance");
+        if (!mainInstance.IsCurrent)
+        {
+            var activatedEventArgs = Microsoft.Windows.AppLifecycle.AppInstance.GetCurrent().GetActivatedEventArgs();
+            await mainInstance.RedirectActivationToAsync(activatedEventArgs);
+            Current.Exit();
+            return;
+        }
+
+        mainInstance.Activated += MainInstance_Activated;
 
         MainWindow = new MainWindow();
 
@@ -251,18 +283,21 @@ public partial class App : Application
     {
         try
         {
-            var assemblyVersion = Assembly.GetExecutingAssembly().GetName().Version;
-            var osVersion = SystemInfo.GetExactWindowsVersion();
+            if (_logger.IsEnabled(LogLevel.Information))
+            {
+                var assemblyVersion = Assembly.GetExecutingAssembly().GetName().Version;
+                var osVersion = SystemInfo.GetExactWindowsVersion();
 
-            _logger.LogInformation(
-                "Startup | AppVersion={AppVersion} | Runtime={Runtime} | OS={OSVersion} | Arch={Architecture} | BaseDir={BaseDir} | LogsDir={LogsDir}",
-                assemblyVersion?.ToString() ?? "unknown",
-                RuntimeInformation.FrameworkDescription,
-                osVersion,
-                RuntimeInformation.OSArchitecture,
-                AppContext.BaseDirectory,
-                AppLogPaths.LogDirectory
-            );
+                _logger.LogInformation(
+                    "Startup | AppVersion={AppVersion} | Runtime={Runtime} | OS={OSVersion} | Arch={Architecture} | BaseDir={BaseDir} | LogsDir={LogsDir}",
+                    assemblyVersion?.ToString() ?? "unknown",
+                    RuntimeInformation.FrameworkDescription,
+                    osVersion,
+                    RuntimeInformation.OSArchitecture,
+                    AppContext.BaseDirectory,
+                    AppLogPaths.LogDirectory
+                );
+            }
         }
         catch (Exception ex)
         {
