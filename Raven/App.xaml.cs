@@ -74,11 +74,6 @@ public partial class App : Application
 
     private static IHost BuildHost()
     {
-        // Plain HostBuilder instead of CreateDefaultBuilder: this app uses none of the
-        // defaults' extras (env-specific config, env-var overrides, user secrets, default
-        // logging providers — Serilog replaces the logger factory anyway), and the defaults
-        // cost startup time plus a FileSystemWatcher on the install directory held for the
-        // app's lifetime (pointless under WindowsApps where the files can never change).
         var builder = new HostBuilder()
             .UseContentRoot(AppContext.BaseDirectory)
             .ConfigureAppConfiguration(cfg =>
@@ -240,32 +235,9 @@ public partial class App : Application
         e.SetObserved();
     }
 
-    private void MainInstance_Activated(object? sender, Microsoft.Windows.AppLifecycle.AppActivationArguments e)
-    {
-        if (MainWindow is not null)
-        {
-            _ = MainWindow.DispatcherQueue.TryEnqueue(() =>
-            {
-                WindowExtensions.Restore(MainWindow);
-                WindowExtensions.SetForegroundWindow(MainWindow);
-            });
-        }
-    }
-
     protected async override void OnLaunched(LaunchActivatedEventArgs args)
     {
         base.OnLaunched(args);
-
-        var mainInstance = Microsoft.Windows.AppLifecycle.AppInstance.FindOrRegisterForKey("raven_main_instance");
-        if (!mainInstance.IsCurrent)
-        {
-            var activatedEventArgs = Microsoft.Windows.AppLifecycle.AppInstance.GetCurrent().GetActivatedEventArgs();
-            await mainInstance.RedirectActivationToAsync(activatedEventArgs);
-            Current.Exit();
-            return;
-        }
-
-        mainInstance.Activated += MainInstance_Activated;
 
         MainWindow = new MainWindow();
 
