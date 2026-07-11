@@ -4,8 +4,6 @@ using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.Windows.AppLifecycle;
 
-using WinUIEx;
-
 namespace Raven;
 
 public static class Program
@@ -17,34 +15,27 @@ public static class Program
     private const uint MB_ICONWARNING = 0x00000030;
 
     [STAThread]
-    static async Task<int> Main(string[] args)
+    private static void Main(string[] args)
     {
         WinRT.ComWrappersSupport.InitializeComWrappers();
 
-        var keyInstance = AppInstance.FindOrRegisterForKey("raven_main_instance");
-
-        if (!keyInstance.IsCurrent)
-        {
-            var activationArgs = AppInstance.GetCurrent().GetActivatedEventArgs();
-            await keyInstance.RedirectActivationToAsync(activationArgs);
-            return 0;
-        }
+        var isRedirect = DecideRedirection();
+        if (isRedirect)
+            return;
 
         var mutex = new Mutex(true, "Raven_SingleInstance_Mutex", out var isNewInstance);
         if (!isNewInstance)
         {
-            MessageBoxW(
+            _ = MessageBoxW(
                 0,
                 "Another instance of Raven is already running.\nPlease close it before launching this one.",
                 "Raven",
                 MB_OK | MB_ICONWARNING);
-            return 0;
+            return;
         }
 
         try
         {
-            keyInstance.Activated += OnActivated;
-
             Application.Start((p) =>
             {
                 var context = new DispatcherQueueSynchronizationContext(
@@ -52,13 +43,31 @@ public static class Program
                 SynchronizationContext.SetSynchronizationContext(context);
                 new App();
             });
-
-            return 0;
         }
         finally
         {
             mutex.ReleaseMutex();
         }
+    }
+
+    /// <summary>
+    /// Handles single-instance redirection. Must run synchronously BEFORE
+    /// Application.Start so the STA thread is not yet running a message loop.
+    /// Returns true if this process is a secondary instance and should exit.
+    /// </summary>
+    private static bool DecideRedirection()
+    {
+        var keyInstance = AppInstance.FindOrRegisterForKey("raven_main_instance");
+
+        if (!keyInstance.IsCurrent)
+        {
+            var activationArgs = AppInstance.GetCurrent().GetActivatedEventArgs();
+            keyInstance.RedirectActivationToAsync(activationArgs).AsTask().Wait();
+            return true;
+        }
+
+        keyInstance.Activated += OnActivated;
+        return false;
     }
 
     private static void OnActivated(object? sender, AppActivationArguments e)

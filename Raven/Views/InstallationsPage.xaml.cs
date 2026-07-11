@@ -13,8 +13,14 @@ namespace Raven.Views;
 public sealed partial class InstallationsPage : Page
 {
     private readonly ILogger _installLogger;
-    public UIUpdateService UpdateService { get; }
-    public InstallationsViewModel ViewModel { get; }
+    public UIUpdateService UpdateService
+    {
+        get;
+    }
+    public InstallationsViewModel ViewModel
+    {
+        get;
+    }
 
     public InstallationsPage()
         : this(App.GetService<ILoggerFactory>())
@@ -118,6 +124,10 @@ public sealed partial class InstallationsPage : Page
     {
         if (installing)
         {
+            // Move focus to the page itself before disabling the active button.
+            // This prevents WinUI from automatically advancing focus to the CustomFolderText box.
+            this.Focus(FocusState.Programmatic);
+
             var percent = (int)Math.Clamp(ViewModel.ProgressPercent, 0, 100);
             ProgressPanel.Visibility = Visibility.Visible;
             InstallProgressBar.Value = percent;
@@ -315,7 +325,7 @@ public sealed partial class InstallationsPage : Page
     private void BrowseFolderButton_Click(object sender, RoutedEventArgs e)
     {
         var hwnd = WindowNative.GetWindowHandle(App.MainWindow);
-        var folder = NativeFolderPicker.PickFolder(
+        var folder = NativeFilePicker.PickFolder(
             hwnd, "InstallationsPage_FolderPicker_Title".GetLocalized());
         if (!string.IsNullOrWhiteSpace(folder))
         {
@@ -409,9 +419,12 @@ public sealed partial class InstallationsPage : Page
             return;
         }
 
-        _installLogger.LogInformation(
-            "Custom install start | Path={Path} | Folder={Folder} | RemoveSig={RemoveSig} | Deps={Deps}",
-            path, folder, ViewModel.RemoveSignature, ViewModel.DependencyPaths.Count);
+        if (_installLogger.IsEnabled(LogLevel.Information))
+        {
+            _installLogger.LogInformation(
+                "Custom install start | Path={Path} | Folder={Folder} | RemoveSig={RemoveSig} | Deps={Deps}",
+                path, folder, ViewModel.RemoveSignature, ViewModel.DependencyPaths.Count);
+        }
 
         // Drive the install through the VM; the page handler reflects progress + completion onto
         // whichever page instance is shown (so it survives navigation).
@@ -458,7 +471,7 @@ public sealed partial class InstallationsPage : Page
             await ShowCustomInstallErrorAsync(dialogTitle, installException);
     }
 
-    private async Task ShowCustomInstallErrorAsync(string title, Exception ex)
+    private static async Task ShowCustomInstallErrorAsync(string title, Exception ex)
     {
         var xamlRoot = GetDialogXamlRoot();
         if (xamlRoot is null)
@@ -483,7 +496,7 @@ public sealed partial class InstallationsPage : Page
         await InstallHelper.ShowInstallationErrorDialogAsync(xamlRoot, title, ex);
     }
 
-    private async Task ShowDeveloperModeRequiredDialogAsync()
+    private static async Task ShowDeveloperModeRequiredDialogAsync()
     {
         var xamlRoot = GetDialogXamlRoot();
         if (xamlRoot is null)
@@ -506,11 +519,14 @@ public sealed partial class InstallationsPage : Page
 
     private async Task PerformInstallAsync(string path, bool ignoreVersion)
     {
-        _installLogger.LogInformation(
-            "Install start | Path={Path} | IgnoreVersion={IgnoreVersion}",
-            path,
-            ignoreVersion
-        );
+        if (_installLogger.IsEnabled(LogLevel.Information))
+        {
+            _installLogger.LogInformation(
+                "Install start | Path={Path} | IgnoreVersion={IgnoreVersion}",
+                path,
+                ignoreVersion
+            );
+        }
 
         // Drive the install through the VM; the page handler reflects progress + completion.
         ViewModel.ProgressPercent = 0;
@@ -532,11 +548,14 @@ public sealed partial class InstallationsPage : Page
                 logger: _installLogger
             );
             succeeded = true;
-            _installLogger.LogInformation(
-                "Install success | Path={Path} | IgnoreVersion={IgnoreVersion}",
-                path,
-                ignoreVersion
-            );
+            if (_installLogger.IsEnabled(LogLevel.Information))
+            {
+                _installLogger.LogInformation(
+                    "Install success | Path={Path} | IgnoreVersion={IgnoreVersion}",
+                    path,
+                    ignoreVersion
+                );
+            }
         }
         catch (Exception ex) when (ex is COMException or UnauthorizedAccessException)
         {
@@ -583,7 +602,7 @@ public sealed partial class InstallationsPage : Page
                 "Install_Dialog_Title".GetLocalized(),
                 installException
             );
-            
+
             if (forceRetry)
             {
                 await PerformInstallAsync(path, ignoreVersion: true);
