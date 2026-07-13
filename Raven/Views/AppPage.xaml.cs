@@ -653,12 +653,16 @@ public sealed partial class AppPage : Page
         SetProgressIndeterminate(false);
         UpdateService.StartStatusAnimation("Status_Installing".GetLocalized());
 
-        var depPaths = item
-            .DownloadedFilePaths.Where(p =>
-                !string.IsNullOrWhiteSpace(p)
+        var depsDir = !string.IsNullOrWhiteSpace(item.DownloadPath)
+            ? Path.Combine(item.DownloadPath, "Dependencies")
+            : null;
+
+        var depPaths = item.DownloadedFiles
+            .Select(f => f.Path)
+            .Where(p => !string.IsNullOrWhiteSpace(p)
                 && File.Exists(p)
-                && !string.Equals(p, mainPackagePath, StringComparison.OrdinalIgnoreCase)
-            )
+                && depsDir != null
+                && p.StartsWith(depsDir, StringComparison.OrdinalIgnoreCase))
             .ToList();
 
         try
@@ -743,12 +747,16 @@ public sealed partial class AppPage : Page
         SetProgressIndeterminate(false);
         UpdateService.StartStatusAnimation("Status_Installing".GetLocalized());
 
-        var depPaths = item
-            .DownloadedFilePaths.Where(p =>
-                !string.IsNullOrWhiteSpace(p)
+        var forceDepsDir = !string.IsNullOrWhiteSpace(item.DownloadPath)
+            ? Path.Combine(item.DownloadPath, "Dependencies")
+            : null;
+
+        var depPaths = item.DownloadedFiles
+            .Select(f => f.Path)
+            .Where(p => !string.IsNullOrWhiteSpace(p)
                 && File.Exists(p)
-                && !string.Equals(p, mainPackagePath, StringComparison.OrdinalIgnoreCase)
-            )
+                && forceDepsDir != null
+                && p.StartsWith(forceDepsDir, StringComparison.OrdinalIgnoreCase))
             .ToList();
 
         try

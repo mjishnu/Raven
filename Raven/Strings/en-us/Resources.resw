@@ -925,10 +925,10 @@ You can enable it by turning on Developer Mode in Windows Settings.</value>
     <value>Some updates failed</value>
   </data>
   <data name="Install_Error_AppInUse" xml:space="preserve">
-    <value>The update couldn't be installed because the app is currently in use. Close the app and try again.</value>
+    <value>The App couldn't be installed because it's resources are currently being used. Close them and try again.</value>
   </data>
   <data name="Install_Error_AppInUse_Processes" xml:space="preserve">
-    <value>The following apps need to be closed before the update can be installed:</value>
+    <value>The following apps need to be closed before the app can be installed:</value>
   </data>
   <data name="Install_Btn_Retry" xml:space="preserve">
     <value>Retry</value>

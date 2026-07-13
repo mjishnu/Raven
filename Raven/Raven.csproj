@@ -24,6 +24,7 @@
     <!-- Disabled due to .NET 9 runtime regression on older Windows 10 (https://github.com/dotnet/docs/issues/42600) -->
 		<CETCompat>false</CETCompat>
 		<DefineConstants>DISABLE_XAML_GENERATED_MAIN</DefineConstants>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 	</PropertyGroup>
 	<ItemGroup>
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />

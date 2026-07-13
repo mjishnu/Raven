@@ -17,8 +17,14 @@ public enum CustomInstallError
 
 public sealed class CustomInstallException : Exception
 {
-    public CustomInstallError Reason { get; }
-    public string? FolderName { get; }
+    public CustomInstallError Reason
+    {
+        get;
+    }
+    public string? FolderName
+    {
+        get;
+    }
 
     public CustomInstallException(CustomInstallError reason, string message, string? folderName = null)
         : base(message)
@@ -84,7 +90,9 @@ public static class CustomAppPackageInstaller
 
                 logger?.LogInformation(
                     "Custom install: selected bundle package {File} (arch {Arch}) for {Rid}",
-                    selected.FileName, selected.Architecture, archRid);
+                    selected.FileName,
+                    selected.Architecture,
+                    archRid);
 
                 var innerPkgPath = Path.Combine(outerDir, selected.FileName);
                 if (!File.Exists(innerPkgPath))
@@ -167,9 +175,11 @@ public static class CustomAppPackageInstaller
                         .AddPackageAsync(depUri, siblingDeps, DeploymentOptions.ForceApplicationShutdown)
                         .AsTask(cancellationToken);
                     if (depResult.ErrorText is { Length: > 0 })
+                    {
                         logger?.LogWarning(
                             "Custom install: dependency add reported an error for {Dep}: {Error}",
                             depUri.LocalPath, depResult.ErrorText);
+                    }
                 }
                 catch (OperationCanceledException)
                 {
@@ -185,7 +195,7 @@ public static class CustomAppPackageInstaller
             var manifestUri = new Uri(Path.Combine(target, "AppxManifest.xml"));
             var op = packageManager.RegisterPackageAsync(
                 manifestUri,
-                Array.Empty<Uri>(),
+               [],
                 DeploymentOptions.DevelopmentMode | DeploymentOptions.ForceApplicationShutdown);
 
             op.Progress = (_, p) =>

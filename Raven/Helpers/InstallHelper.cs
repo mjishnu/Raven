@@ -6,7 +6,7 @@ using System.Text.RegularExpressions;
 
 namespace Raven.Helpers;
 
-public static class InstallHelper
+public static partial class InstallHelper
 {
     private const int ERROR_PACKAGED_SERVICE_REQUIRES_ADMIN = unchecked((int)0x80073D28);
     private const int ERROR_INSTALL_CONFLICTING_PACKAGE = unchecked((int)0x80073D06);
@@ -96,10 +96,7 @@ public static class InstallHelper
     public static string GetFriendlyErrorMessage(Exception exception)
     {
         var comEx = TryGetDeploymentCOMException(exception);
-        if (comEx != null)
-            return GetFriendlyMsixError(comEx.HResult, exception.Message);
-
-        return exception.Message;
+        return comEx != null ? GetFriendlyMsixError(comEx.HResult, exception.Message) : exception.Message;
     }
 
     // ──────────────────────────────────────────────────────
@@ -156,7 +153,12 @@ public static class InstallHelper
             var dialog = new ContentDialog
             {
                 Title = title,
-                Content = GetFriendlyMsixError(comEx.HResult, exception.Message),
+                Content = new TextBlock
+                {
+                    Text = GetFriendlyMsixError(comEx.HResult, exception.Message),
+                    TextWrapping = TextWrapping.Wrap,
+                    IsTextSelectionEnabled = true
+                },
                 PrimaryButtonText = "Install_Btn_ForceInstall".GetLocalized(),
                 CloseButtonText = "Common_OK".GetLocalized(),
                 DefaultButton = ContentDialogButton.Primary,
@@ -181,15 +183,23 @@ public static class InstallHelper
         if (string.IsNullOrWhiteSpace(message))
             return [];
 
-        // Match patterns like "The following processes need to be closed: spotify.exe (PID: 1234)"
-        var match = Regex.Match(message, @"processes need to be closed:?\s*(.*?)(?:\r|\n|$)", RegexOptions.IgnoreCase);
-        if (!match.Success)
-            return [];
+        var results = new List<string>();
 
-        return Regex.Matches(match.Groups[1].Value, @"([a-zA-Z0-9_\-\.]+?\.exe)", RegexOptions.IgnoreCase)
-            .Select(m => m.Groups[1].Value)
-            .Distinct()
-            .ToList();
+
+        // Extract package full names from the error message. Windows lists blocking
+        // packages by their full name (Name_Version_Arch__PublisherId) in 0x80073D02
+        // errors.
+        var pkgMatches = PackageFullNameRegex().Matches(message);
+
+        foreach (Match m in pkgMatches)
+        {
+            var fullName = m.Groups[1].Value;
+            var nameEnd = fullName.IndexOf('_');
+            var displayName = nameEnd > 0 ? fullName[..nameEnd] : fullName;
+            results.Add(displayName);
+        }
+
+        return results.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
     }
 
     public static async Task<bool> ShowUpdateFailedRetryDialogAsync(
@@ -213,7 +223,8 @@ public static class InstallHelper
             content.Children.Add(new TextBlock
             {
                 Text = "Install_Error_AppInUse".GetLocalized(),
-                TextWrapping = TextWrapping.Wrap
+                TextWrapping = TextWrapping.Wrap,
+                IsTextSelectionEnabled = true
             });
 
             if (blockingProcs.Count > 0)
@@ -222,7 +233,8 @@ public static class InstallHelper
                 {
                     Text = "Install_Error_AppInUse_Processes".GetLocalized(),
                     TextWrapping = TextWrapping.Wrap,
-                    Margin = new Thickness(0, 8, 0, 0)
+                    Margin = new Thickness(0, 8, 0, 0),
+                    IsTextSelectionEnabled = true
                 });
 
                 var procList = new StackPanel { Spacing = 4, Margin = new Thickness(12, 4, 0, 0) };
@@ -231,7 +243,8 @@ public static class InstallHelper
                     procList.Children.Add(new TextBlock
                     {
                         Text = $"• {proc}",
-                        FontWeight = Microsoft.UI.Text.FontWeights.SemiBold
+                        FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
+                        IsTextSelectionEnabled = true
                     });
                 }
                 content.Children.Add(procList);
@@ -245,7 +258,8 @@ public static class InstallHelper
             Text = GetFriendlyErrorMessage(exception),
             TextWrapping = TextWrapping.Wrap,
             Margin = new Thickness(0, isAppInUseError ? 8 : 0, 0, 0),
-            Foreground = isAppInUseError ? (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextFillColorSecondaryBrush"] : (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextFillColorPrimaryBrush"]
+            Foreground = isAppInUseError ? (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextFillColorSecondaryBrush"] : (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextFillColorPrimaryBrush"],
+            IsTextSelectionEnabled = true
         });
 
         var dialog = new ContentDialog
@@ -275,7 +289,12 @@ public static class InstallHelper
         var dialog = new ContentDialog
         {
             Title = title,
-            Content = GetFriendlyMsixError(cex.HResult, cex.Message),
+            Content = new TextBlock
+            {
+                Text = GetFriendlyMsixError(cex.HResult, cex.Message),
+                TextWrapping = TextWrapping.Wrap,
+                IsTextSelectionEnabled = true
+            },
             PrimaryButtonText = "Install_Btn_RunAsAdmin".GetLocalized(),
             CloseButtonText = "Common_OK".GetLocalized(),
             XamlRoot = xamlRoot,
@@ -302,10 +321,19 @@ public static class InstallHelper
         var dialog = new ContentDialog
         {
             Title = title,
-            Content = content,
+            Content = new TextBlock
+            {
+                Text = content,
+                TextWrapping = TextWrapping.Wrap,
+                IsTextSelectionEnabled = true
+            },
             CloseButtonText = "Common_OK".GetLocalized(),
             XamlRoot = xamlRoot,
         };
         await dialog.ShowAsync();
     }
+
+
+    [GeneratedRegex(@"([A-Za-z0-9\.\-]+_[\d\.]+_[a-z0-9]+__[a-z0-9]{13})", RegexOptions.IgnoreCase)]
+    private static partial Regex PackageFullNameRegex();
 }
