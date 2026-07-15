@@ -602,16 +602,17 @@ public sealed partial class AppPage : Page
                     return;
                 }
 
-                var retry = await InstallHelper.ShowUpdateFailedRetryDialogAsync(
+                var retryAction = await InstallHelper.ShowUpdateFailedRetryDialogAsync(
                     App.MainWindow.Content.XamlRoot,
                     "Install_Dialog_Title".GetLocalized(),
                     item.LastInstallError
                 );
                 
-                if (retry)
+                if (retryAction == RetryInstallAction.RetryNormal || retryAction == RetryInstallAction.RetryDeferred)
                 {
+                    bool deferRegistration = retryAction == RetryInstallAction.RetryDeferred;
                     if (!string.IsNullOrWhiteSpace(mainPackagePath))
-                        await RetryInstallAsync(item, mainPackagePath);
+                        await RetryInstallAsync(item, mainPackagePath, deferRegistration);
                     else
                         InstallButton_Click(null!, null!);
                 }
@@ -624,7 +625,7 @@ public sealed partial class AppPage : Page
             DownloadManagerService.Instance.ClearDownloadError(item.ProductId);
         }
     }
-    private async Task RetryInstallAsync(DownloadItem item, string mainPackagePath)
+    private async Task RetryInstallAsync(DownloadItem item, string mainPackagePath, bool deferRegistration = false)
     {
         var productId = item.ProductId;
         var downloadManager = DownloadManagerService.Instance;
@@ -678,7 +679,8 @@ public sealed partial class AppPage : Page
                 dependencyPackagePaths: depPaths,
                 progress: installProgress,
                 ignoreVersion: false,
-                installDependenciesSeparately: IgnoreDependencyFilterToggle.IsChecked
+                installDependenciesSeparately: IgnoreDependencyFilterToggle.IsChecked,
+                deferRegistration: deferRegistration
             );
 
             UpdateService.StopStatusAnimation();
@@ -711,7 +713,7 @@ public sealed partial class AppPage : Page
         }
     }
 
-    private async Task RetryForceInstallAsync(DownloadItem item, string mainPackagePath)
+    private async Task RetryForceInstallAsync(DownloadItem item, string mainPackagePath, bool deferRegistration = false)
     {
         var productId = item.ProductId;
         var downloadManager = DownloadManagerService.Instance;
@@ -772,7 +774,8 @@ public sealed partial class AppPage : Page
                 dependencyPackagePaths: depPaths,
                 progress: installProgress,
                 ignoreVersion: true,
-                installDependenciesSeparately: IgnoreDependencyFilterToggle.IsChecked
+                installDependenciesSeparately: IgnoreDependencyFilterToggle.IsChecked,
+                deferRegistration: deferRegistration
             );
 
             UpdateService.StopStatusAnimation();

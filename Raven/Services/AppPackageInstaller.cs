@@ -21,21 +21,47 @@ public static class AppPackageInstaller
         return SupportedExtensions.Any(e => ext.Equals(e, StringComparison.OrdinalIgnoreCase));
     }
 
+    /// <summary>
+    /// Builds an <see cref="AddPackageOptions"/> with the specified flags and dependency URIs.
+    /// </summary>
+    private static AddPackageOptions BuildAddPackageOptions(
+        bool forceAppShutdown,
+        bool forceUpdateFromAnyVersion,
+        bool deferRegistration,
+        IEnumerable<Uri>? dependencyPackageUris = null
+    )
+    {
+        var options = new AddPackageOptions
+        {
+            ForceAppShutdown = forceAppShutdown,
+            ForceUpdateFromAnyVersion = forceUpdateFromAnyVersion,
+            DeferRegistrationWhenPackagesAreInUse = deferRegistration,
+        };
+
+        if (dependencyPackageUris != null)
+        {
+            foreach (var dep in dependencyPackageUris)
+            {
+                options.DependencyPackageUris.Add(dep);
+            }
+        }
+
+        return options;
+    }
+
     private static async Task AddPackageAsync(
         PackageManager packageManager,
         string packagePath,
-        IReadOnlyCollection<Uri> dependencyPackageUris,
         IProgress<InstallProgress>? progress,
-        DeploymentOptions deploymentOptions,
+        AddPackageOptions addPackageOptions,
         CancellationToken cancellationToken
     )
     {
         var packageUri = new Uri(Path.GetFullPath(packagePath));
 
-        var deploymentOperation = packageManager.AddPackageAsync(
+        var deploymentOperation = packageManager.AddPackageByUriAsync(
             packageUri,
-            dependencyPackageUris,
-            deploymentOptions
+            addPackageOptions
         );
 
         deploymentOperation.Progress = (_, p) =>
@@ -101,6 +127,7 @@ public static class AppPackageInstaller
         IProgress<InstallProgress>? progress = null,
         bool ignoreVersion = false,
         bool installDependenciesSeparately = false,
+        bool deferRegistration = false,
         CancellationToken cancellationToken = default,
         ILogger? logger = null
     )
@@ -124,10 +151,6 @@ public static class AppPackageInstaller
 
         var packageManager = new PackageManager();
 
-        var options = DeploymentOptions.ForceApplicationShutdown;
-        if (ignoreVersion)
-            options |= DeploymentOptions.ForceUpdateFromAnyVersion;
-
         if (installDependenciesSeparately)
         {
             await InstallWithSeparateDependenciesAsync(
@@ -135,7 +158,8 @@ public static class AppPackageInstaller
                 packagePath,
                 dependencyUris,
                 progress,
-                options,
+                forceUpdateFromAnyVersion: ignoreVersion,
+                deferRegistration,
                 cancellationToken,
                 logger
             );
@@ -144,14 +168,20 @@ public static class AppPackageInstaller
             return;
         }
 
+        var addPackageOptions = BuildAddPackageOptions(
+            forceAppShutdown: true,
+            forceUpdateFromAnyVersion: ignoreVersion,
+            deferRegistration,
+            dependencyUris
+        );
+
         try
         {
             await AddPackageAsync(
                 packageManager,
                 packagePath,
-                dependencyUris,
                 progress,
-                options,
+                addPackageOptions,
                 cancellationToken
             );
         }
@@ -183,7 +213,8 @@ public static class AppPackageInstaller
         string packagePath,
         IReadOnlyList<Uri> dependencyUris,
         IProgress<InstallProgress>? progress,
-        DeploymentOptions options,
+        bool forceUpdateFromAnyVersion,
+        bool deferRegistration,
         CancellationToken cancellationToken,
         ILogger? logger
     )
@@ -200,10 +231,17 @@ public static class AppPackageInstaller
             // on another selected framework still resolves regardless of install order.
             var siblings = dependencyUris.Where((_, idx) => idx != i).ToList();
 
+            var depOptions = BuildAddPackageOptions(
+                forceAppShutdown: true,
+                forceUpdateFromAnyVersion,
+                deferRegistration,
+                siblings
+            );
+
             try
             {
                 var depResult = await packageManager
-                    .AddPackageAsync(depUri, siblings, options)
+                    .AddPackageByUriAsync(depUri, depOptions)
                     .AsTask(cancellationToken);
 
                 if (depResult.ErrorText is { Length: > 0 })
@@ -233,14 +271,19 @@ public static class AppPackageInstaller
 
         // Install the main last with no forced dependency array: the frameworks it needs have just
         // been registered above, so the deployment engine resolves them from the installed set.
+        var mainOptions = BuildAddPackageOptions(
+            forceAppShutdown: true,
+            forceUpdateFromAnyVersion,
+            deferRegistration
+        );
+
         try
         {
             await AddPackageAsync(
                 packageManager,
                 packagePath,
-                Array.Empty<Uri>(),
                 progress,
-                options,
+                mainOptions,
                 cancellationToken
             );
         }

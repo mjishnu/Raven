@@ -6,6 +6,13 @@ using System.Text.RegularExpressions;
 
 namespace Raven.Helpers;
 
+public enum RetryInstallAction
+{
+    Cancel,
+    RetryNormal,
+    RetryDeferred
+}
+
 public static partial class InstallHelper
 {
     private const int ERROR_PACKAGED_SERVICE_REQUIRES_ADMIN = unchecked((int)0x80073D28);
@@ -202,16 +209,19 @@ public static partial class InstallHelper
         return results.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
     }
 
-    public static async Task<bool> ShowUpdateFailedRetryDialogAsync(
+    public static async Task<RetryInstallAction> ShowUpdateFailedRetryDialogAsync(
         XamlRoot xamlRoot,
         string title,
         Exception exception
     )
     {
         var content = new StackPanel { Spacing = 8 };
-        var blockingProcs = ParseBlockingProcesses(exception);
 
+        // Even though we don't display the processes anymore, we can still parse them
+        // to detect if it's an app-in-use error.
+        var blockingProcs = ParseBlockingProcesses(exception);
         bool isAppInUseError = blockingProcs.Count > 0;
+        
         if (!isAppInUseError)
         {
             var comEx = TryGetDeploymentCOMException(exception);
@@ -249,31 +259,54 @@ public static partial class InstallHelper
                 }
                 content.Children.Add(procList);
             }
-        }
 
-        // Always show the actual error message, either as the main text (if not app-in-use)
-        // or as secondary text (if it is app-in-use) just in case it contains more context.
-        content.Children.Add(new TextBlock
+            content.Children.Add(new TextBlock
+            {
+                Text = "Install_Error_DeferredInstallDescription".GetLocalized(),
+                TextWrapping = TextWrapping.Wrap,
+                Margin = new Thickness(0, 8, 0, 0),
+                Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextFillColorSecondaryBrush"],
+                IsTextSelectionEnabled = true
+            });
+        }
+        else
         {
-            Text = GetFriendlyErrorMessage(exception),
-            TextWrapping = TextWrapping.Wrap,
-            Margin = new Thickness(0, isAppInUseError ? 8 : 0, 0, 0),
-            Foreground = isAppInUseError ? (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextFillColorSecondaryBrush"] : (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextFillColorPrimaryBrush"],
-            IsTextSelectionEnabled = true
-        });
+            // Always show the actual error message, as the main text (if not app-in-use)
+            content.Children.Add(new TextBlock
+            {
+                Text = GetFriendlyErrorMessage(exception),
+                TextWrapping = TextWrapping.Wrap,
+                IsTextSelectionEnabled = true
+            });
+        }
 
         var dialog = new ContentDialog
         {
             Title = title,
             Content = content,
-            PrimaryButtonText = "Install_Btn_Retry".GetLocalized(),
-            CloseButtonText = "Common_OK".GetLocalized(),
-            DefaultButton = ContentDialogButton.Primary,
+            CloseButtonText = "Common_Cancel".GetLocalized(),
             XamlRoot = xamlRoot,
         };
 
+        if (isAppInUseError)
+        {
+            dialog.PrimaryButtonText = "Install_Btn_DeferredInstall".GetLocalized();
+            dialog.DefaultButton = ContentDialogButton.Primary;
+        }
+        else
+        {
+            dialog.PrimaryButtonText = "Install_Btn_Retry".GetLocalized();
+            dialog.DefaultButton = ContentDialogButton.Primary;
+        }
+
         var result = await dialog.ShowAsync();
-        return result == ContentDialogResult.Primary;
+
+        if (result == ContentDialogResult.Primary)
+        {
+            return isAppInUseError ? RetryInstallAction.RetryDeferred : RetryInstallAction.RetryNormal;
+        }
+
+        return RetryInstallAction.Cancel;
     }
 
     // ──────────────────────────────────────────────────────

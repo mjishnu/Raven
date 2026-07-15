@@ -936,4 +936,11 @@ Windows 설정에서 개발자 모드를 켜서 활성화할 수 있습니다.</
   <data name="Install_Btn_Retry" xml:space="preserve">
     <value>Retry</value>
   </data>
+
+  <data name="Install_Btn_DeferredInstall" xml:space="preserve">
+    <value>Deferred Install</value>
+  </data>
+  <data name="Install_Error_DeferredInstallDescription" xml:space="preserve">
+    <value>The application is currently running. We will securely prepare the update now, and it will be applied automatically the next time the app is closed or restarted.</value>
+  </data>
 </root>

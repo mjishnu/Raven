@@ -931,4 +931,11 @@ A Windows beállításokban a Fejlesztői mód bekapcsolásával engedélyezheti
 	<data name="Install_Btn_Retry" xml:space="preserve">
     <value>Újra</value>
   </data>
+
+  <data name="Install_Btn_DeferredInstall" xml:space="preserve">
+    <value>Deferred Install</value>
+  </data>
+  <data name="Install_Error_DeferredInstallDescription" xml:space="preserve">
+    <value>The application is currently running. We will securely prepare the update now, and it will be applied automatically the next time the app is closed or restarted.</value>
+  </data>
 </root>
