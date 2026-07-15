@@ -1,7 +1,7 @@
-using System.Runtime.InteropServices;
-using System.Security.Principal;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using System.Runtime.InteropServices;
+using System.Security.Principal;
 using System.Text.RegularExpressions;
 
 namespace Raven.Helpers;
@@ -216,12 +216,8 @@ public static partial class InstallHelper
     )
     {
         var content = new StackPanel { Spacing = 8 };
-
-        // Even though we don't display the processes anymore, we can still parse them
-        // to detect if it's an app-in-use error.
         var blockingProcs = ParseBlockingProcesses(exception);
         bool isAppInUseError = blockingProcs.Count > 0;
-        
         if (!isAppInUseError)
         {
             var comEx = TryGetDeploymentCOMException(exception);

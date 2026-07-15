@@ -6,10 +6,10 @@ using Microsoft.Windows.AppLifecycle;
 
 namespace Raven;
 
-public static class Program
+public static partial class Program
 {
-    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
-    private static extern int MessageBoxW(nint hWnd, string text, string caption, uint type);
+    [LibraryImport("user32.dll", StringMarshalling = StringMarshalling.Utf16)]
+    private static partial int MessageBoxW(nint hWnd, string text, string caption, uint type);
 
     private const uint MB_OK = 0x00000000;
     private const uint MB_ICONWARNING = 0x00000030;
@@ -18,6 +18,24 @@ public static class Program
     private static void Main(string[] args)
     {
         WinRT.ComWrappersSupport.InitializeComWrappers();
+
+        var argsList = new List<string>(args);
+        var pidIndex = argsList.IndexOf("--wait-for-pid");
+        if (pidIndex >= 0 && pidIndex + 1 < argsList.Count)
+        {
+            if (int.TryParse(argsList[pidIndex + 1], out int pid))
+            {
+                try
+                {
+                    var process = System.Diagnostics.Process.GetProcessById(pid);
+                    process.WaitForExit(10000);
+                }
+                catch
+                {
+                    // Ignore, process might have already exited
+                }
+            }
+        }
 
         var isRedirect = DecideRedirection();
         if (isRedirect)
@@ -41,7 +59,7 @@ public static class Program
                 var context = new DispatcherQueueSynchronizationContext(
                     DispatcherQueue.GetForCurrentThread());
                 SynchronizationContext.SetSynchronizationContext(context);
-                new App();
+                _ = new App();
             });
         }
         finally

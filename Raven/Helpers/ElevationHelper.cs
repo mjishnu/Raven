@@ -12,12 +12,16 @@ public static class ElevationHelper
             if (string.IsNullOrWhiteSpace(exePath))
                 return false;
 
+            var argsList = args != null ? new List<string>(args) : new List<string>();
+            argsList.Add("--wait-for-pid");
+            argsList.Add(Environment.ProcessId.ToString());
+
             var startInfo = new ProcessStartInfo
             {
                 FileName = exePath,
                 UseShellExecute = true,
                 Verb = "runas",
-                Arguments = args is { Length: > 0 } ? string.Join(' ', args.Select(QuoteArg)) : string.Empty,
+                Arguments = string.Join(' ', argsList.Select(QuoteArg)),
             };
 
             Process.Start(startInfo);
