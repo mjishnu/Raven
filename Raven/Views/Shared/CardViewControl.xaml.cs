@@ -257,13 +257,17 @@ public sealed partial class CardViewControl : UserControl
             success = false;
             errorText = ex.Message;
             loadException = ex;
-            _logger.LogError(
-                ex,
-                "Failed to load cards | ExceptionType={ExceptionType} | HResult=0x{HResult:X8} | Header={Header}",
-                ex.GetType().FullName,
-                ex.HResult,
-                HeaderText
-            );
+
+            if (!IsNetworkError(ex))
+            {
+                _logger.LogError(
+                    ex,
+                    "Failed to load cards | ExceptionType={ExceptionType} | HResult=0x{HResult:X8} | Header={Header}",
+                    ex.GetType().FullName,
+                    ex.HResult,
+                    HeaderText
+                );
+            }
         }
         finally
         {
