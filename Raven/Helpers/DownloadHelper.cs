@@ -196,8 +196,16 @@ public sealed class DownloadHelper
 
         totalFiles = Math.Max(1, flattened.Count);
         currentFileIndex = 1;
-
         var mainUrl = entry.Url;
+
+        var expectedPaths = flattened.Select(f =>
+        {
+            var isMain = f.Url.Equals(mainUrl, StringComparison.OrdinalIgnoreCase);
+            var targetDir = isMain ? baseDownloadDir : depsDownloadDir;
+            return Path.Combine(targetDir, Path.GetFileName(f.FileName));
+        }).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        downloadManager.RemoveObsoleteJsonEntries(productId, expectedPaths);
 
         var baseStatus = "Download_Status_DownloadingFiles".GetLocalizedFormat(currentFileIndex, totalFiles, FilesLabel());
 
@@ -265,11 +273,10 @@ public sealed class DownloadHelper
                         )
                         ?.Hash;
 
-                    localMatches =
-                        !string.IsNullOrWhiteSpace(storedHash) && HashMatches(storedHash);
+                    localMatches = !string.IsNullOrWhiteSpace(storedHash) && HashMatches(storedHash);
                     if (localMatches)
                     {
-                        downloadManager.AddDownloadedFilePath(productId, destinationPath);
+                        downloadManager.AddDownloadedFilePath(productId, destinationPath, isMain);
                         continue;
                     }
                 }
@@ -284,15 +291,11 @@ public sealed class DownloadHelper
 
                 localMatches =
                     !string.IsNullOrWhiteSpace(storedHash)
-                    && string.Equals(
-                        storedHash.Trim(),
-                        file.Digest.Trim(),
-                        StringComparison.OrdinalIgnoreCase
-                    );
+                    && HashMatches(storedHash);
 
                 if (localMatches)
                 {
-                    downloadManager.AddDownloadedFilePath(productId, destinationPath);
+                    downloadManager.AddDownloadedFilePath(productId, destinationPath, isMain);
                     continue;
                 }
             }
@@ -547,70 +550,24 @@ public sealed class DownloadHelper
                     // which would cause the integrity-cache check to skip
                     // re-downloading a partially written file.
                     var confirmedHash = isUnpackaged ? file.Sha256 : file.Digest;
-                    downloadManager.AddDownloadedFile(productId, destinationPath, confirmedHash);
+                    downloadManager.AddDownloadedFile(productId, destinationPath, confirmedHash, isMain);
                     downloaded = true;
                     break;
                 }
-                catch (OperationCanceledException) when (!token.IsCancellationRequested)
-                {
-                    // Stall timeout / per-attempt cancel: retry.
-                    if (attempt < MAX_RETRIES_PER_FILE)
-                    {
-                        var delayMs = GetRetryDelayMs(null, attempt, MAX_BACKOFF_MS);
-                            downloadManager.UpdateDownloadDetailsText(
-                                productId,
-                                "Download_Status_RestartingIn".GetLocalizedFormat(delayMs / 1000.0)
-                            );
-                            // A user cancel during the backoff delay must not escape the method:
-                            // it would skip the animator/status-animation stops below, leaving a
-                            // DispatcherQueueTimer running (and ticking PropertyChanged) forever.
-                            try
-                            {
-                                await Task.Delay(delayMs, token).ConfigureAwait(false);
-                            }
-                            catch (OperationCanceledException)
-                            {
-                                cancelled = true;
-                                break;
-                            }
-                            continue;
-                        }
-
-                    hadError = true;
-                    var msg = "Download_Status_Stalled".GetLocalized();
-                    downloadItem.LastInstallError = new TimeoutException(msg);
-                    downloadManager.UpdateDownloadStatusText(productId, msg);
-                    break;
-                }
-                catch (OperationCanceledException)
+                catch (OperationCanceledException) when (token.IsCancellationRequested)
                 {
                     cancelled = true;
                     break;
                 }
-                catch (WebException ex) when (attempt < MAX_RETRIES_PER_FILE)
-                {
-                    var delayMs = GetRetryDelayMs(ex, attempt, MAX_BACKOFF_MS);
-                    downloadManager.UpdateDownloadDetailsText(
-                        productId,
-                        "Download_Status_NetworkIssue".GetLocalizedFormat(delayMs / 1000.0)
-                    );
-                    try
-                    {
-                        await Task.Delay(delayMs, token).ConfigureAwait(false);
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        cancelled = true;
-                        break;
-                    }
-                }
                 catch (Exception ex) when (attempt < MAX_RETRIES_PER_FILE)
                 {
-                    var delayMs = GetRetryDelayMs(null, attempt, MAX_BACKOFF_MS);
+                    var delayMs = GetRetryDelayMs(ex, attempt, MAX_BACKOFF_MS);
+
                     downloadManager.UpdateDownloadDetailsText(
                         productId,
-                        "Download_Status_RetryError".GetLocalizedFormat(ex.Message, delayMs / 1000.0)
+                        "Download_Status_Retry".GetLocalizedFormat(attempt, MAX_RETRIES_PER_FILE)
                     );
+
                     try
                     {
                         await Task.Delay(delayMs, token).ConfigureAwait(false);
@@ -624,12 +581,17 @@ public sealed class DownloadHelper
                 catch (Exception ex)
                 {
                     hadError = true;
-                    downloadItem.LastInstallError = ex;
-                    downloadManager.UpdateDownloadStatusText(productId, "Download_Status_Error".GetLocalizedFormat(ex.Message));
-                    downloadManager.UpdateDownloadDetailsText(
-                        productId,
-                        "Download_Status_NetworkError".GetLocalized()
-                    );
+                    if (ex is OperationCanceledException)
+                    {
+                        downloadItem.LastInstallError = new TimeoutException("Download_Status_Stalled".GetLocalized());
+                    }
+                    else
+                    {
+                        downloadItem.LastInstallError = ex;
+                    }
+                    
+                    downloadManager.UpdateDownloadStatusText(productId, null);
+                    downloadManager.UpdateDownloadDetailsText(productId, null);
                     break;
                 }
             }
@@ -850,7 +812,7 @@ public sealed class DownloadHelper
                 depPaths.Count
             );
             downloadItem.LastInstallError = ex;
-            downloadManager.UpdateDownloadStatusText(productId, "Download_Status_InstallFailed".GetLocalizedFormat(ex.Message));
+            downloadManager.UpdateDownloadStatusText(productId, null);
             downloadManager.UpdateDownloadStatus(productId, Raven.Models.DownloadStatus.Failed);
         }
     }
@@ -860,16 +822,18 @@ public sealed class DownloadHelper
         return PackagedAppDiscovery.IsInstalled(packageFamilyName);
     }
 
-    private static int GetRetryDelayMs(WebException? webEx, int attempt, int maxBackoffMs)
+    private static int GetRetryDelayMs(Exception ex, int attempt, int maxBackoffMs)
     {
-        int baseDelayMs = (int)Math.Min(maxBackoffMs, 1000 * Math.Pow(2, attempt - 1));
+        var baseDelayMs = (int)Math.Min(maxBackoffMs, 1000 * Math.Pow(2, attempt - 1));
 
-        if (webEx?.Response is HttpWebResponse resp)
+        if (ex is WebException webEx && webEx.Response is HttpWebResponse resp)
         {
             // Honor Retry-After when present (common for 429/503).
             var retryAfter = resp.Headers["Retry-After"];
             if (int.TryParse(retryAfter, out var seconds) && seconds > 0)
+            {
                 return (int)Math.Min(maxBackoffMs, seconds * 1000);
+            }
         }
 
         // Add small jitter to avoid thundering herd.

@@ -23,6 +23,7 @@ public partial class DownloadItem : INotifyPropertyChanged
     {
         public string Path { get; set; } = string.Empty;
         public string? Hash { get; set; }
+        public bool IsMainPackage { get; set; }
     }
 
     public class PersistedInstallError

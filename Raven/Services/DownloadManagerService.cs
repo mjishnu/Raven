@@ -533,10 +533,10 @@ public class DownloadManagerService
         }
     }
 
-    public void AddDownloadedFilePath(string productId, string filePath) =>
-        AddDownloadedFile(productId, filePath, hash: null);
+    public void AddDownloadedFilePath(string productId, string filePath, bool isMainPackage = false) =>
+        AddDownloadedFile(productId, filePath, hash: null, isMainPackage);
 
-    public void AddDownloadedFile(string productId, string filePath, string? hash)
+    public void AddDownloadedFile(string productId, string filePath, string? hash, bool isMainPackage = false)
     {
         lock (_lock)
         {
@@ -551,11 +551,12 @@ public class DownloadManagerService
             if (existing is null)
             {
                 item.DownloadedFiles.Add(
-                    new DownloadItem.DownloadedFile { Path = filePath, Hash = hash }
+                    new DownloadItem.DownloadedFile { Path = filePath, Hash = hash, IsMainPackage = isMainPackage }
                 );
             }
             else
             {
+                existing.IsMainPackage = isMainPackage;
                 if (!string.IsNullOrWhiteSpace(hash))
                     existing.Hash = hash;
             }
@@ -579,6 +580,22 @@ public class DownloadManagerService
                 string.Equals(f.Path, filePath, StringComparison.OrdinalIgnoreCase)
             );
             return entry?.Hash;
+        }
+    }
+
+    public void RemoveObsoleteJsonEntries(string productId, HashSet<string> validPaths)
+    {
+        lock (_lock)
+        {
+            var item = Downloads.FirstOrDefault(d => d.ProductId == productId);
+            if (item == null)
+                return;
+
+            int removed = item.DownloadedFiles.RemoveAll(f => !validPaths.Contains(f.Path));
+            if (removed > 0)
+            {
+                SaveDownloadsThrottled();
+            }
         }
     }
 

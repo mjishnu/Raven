@@ -15,9 +15,15 @@ namespace Raven.Views;
 
 public sealed partial class AppPage : Page
 {
-    public AppViewModel ViewModel { get; }
+    public AppViewModel ViewModel
+    {
+        get;
+    }
     public AppInfo AppData { get; set; } = new();
-    public UIUpdateService UpdateService { get; }
+    public UIUpdateService UpdateService
+    {
+        get;
+    }
     private readonly ILocaleService _localeService;
     private readonly ILogger<AppPage> _logger;
 
@@ -44,12 +50,12 @@ public sealed partial class AppPage : Page
     // Maps an internal action key to its localised display string.
     private static string GetLocalizedAction(string key) => key switch
     {
-        "Install"  => "AppPage_Btn_Install".GetLocalized(),
-        "Update"   => "AppPage_Btn_Update".GetLocalized(),
-        "Open"     => "AppPage_Btn_Open".GetLocalized(),
-        "Retry"    => "AppPage_Btn_Retry".GetLocalized(),
+        "Install" => "AppPage_Btn_Install".GetLocalized(),
+        "Update" => "AppPage_Btn_Update".GetLocalized(),
+        "Open" => "AppPage_Btn_Open".GetLocalized(),
+        "Retry" => "AppPage_Btn_Retry".GetLocalized(),
         "Download" => "AppPage_Btn_Download".GetLocalized(),
-        _          => key,
+        _ => key,
     };
 
     private static readonly string[] UnpackagedExtensions = [".exe", ".msi"];
@@ -568,7 +574,7 @@ public sealed partial class AppPage : Page
 
         try
         {
-            var mainPackagePath = PickMainPackage(item.DownloadedFilePaths);
+            var mainPackagePath = PickMainPackage(item.DownloadedFiles);
 
             if (IsCurrentProduct(item))
             {
@@ -607,7 +613,7 @@ public sealed partial class AppPage : Page
                     "Install_Dialog_Title".GetLocalized(),
                     item.LastInstallError
                 );
-                
+
                 if (retryAction == RetryInstallAction.RetryNormal || retryAction == RetryInstallAction.RetryDeferred)
                 {
                     bool deferRegistration = retryAction == RetryInstallAction.RetryDeferred;
@@ -1232,33 +1238,26 @@ public sealed partial class AppPage : Page
         return InstallableExtensions.Any(e => ext.Equals(e, StringComparison.OrdinalIgnoreCase));
     }
 
-    private static string? PickMainPackage(IEnumerable<string> paths)
+    private static string? PickMainPackage(IEnumerable<DownloadItem.DownloadedFile> files)
     {
-        // Prefer bundles first, then single packages.
-        var list = paths.Where(IsInstallablePackage).ToList();
-        return list.OrderByDescending(p =>
-                p.EndsWith(".msixbundle", StringComparison.OrdinalIgnoreCase)
-            )
-            .ThenByDescending(p => p.EndsWith(".appxbundle", StringComparison.OrdinalIgnoreCase))
-            .ThenByDescending(p => p.EndsWith(".msix", StringComparison.OrdinalIgnoreCase))
-            .ThenByDescending(p => p.EndsWith(".appx", StringComparison.OrdinalIgnoreCase))
-            .FirstOrDefault();
+        var explicitlyMarked = files.FirstOrDefault(f => f.IsMainPackage);
+        if (explicitlyMarked != null && File.Exists(explicitlyMarked.Path))
+        {
+            return explicitlyMarked.Path;
+        }
+
+        return null;
     }
 
-    private static string? PickUnpackagedInstaller(IEnumerable<string> paths)
+    private static string? PickUnpackagedInstaller(IEnumerable<DownloadItem.DownloadedFile> files)
     {
-        var existing = paths
-            .Where(p =>
-                !string.IsNullOrWhiteSpace(p)
-                && File.Exists(p)
-                && UnpackagedExtensions.Any(e => p.EndsWith(e, StringComparison.OrdinalIgnoreCase))
-            )
-            .ToList();
+        var explicitlyMarked = files.FirstOrDefault(f => f.IsMainPackage);
+        if (explicitlyMarked != null && File.Exists(explicitlyMarked.Path))
+        {
+            return explicitlyMarked.Path;
+        }
 
-        return existing
-            .OrderByDescending(p => p.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
-            .ThenByDescending(p => p.EndsWith(".msi", StringComparison.OrdinalIgnoreCase))
-            .FirstOrDefault();
+        return null;
     }
 
     private async void InstallButton_Click(SplitButton sender, SplitButtonClickEventArgs e)
@@ -1320,7 +1319,7 @@ public sealed partial class AppPage : Page
             {
                 // Clear the update flow flag so failures don't incorrectly appear in the Updates banner
                 downloadItem.IsFromUpdateFlow = false;
-                
+
                 BindToDownloadItem(downloadItem);
                 // Persist the action mode so Retry survives an app restart.
                 downloadItem.WasDownloadOnly = isDownloadOnly;
@@ -1530,15 +1529,15 @@ public sealed partial class AppPage : Page
                     "AppPage_Error_NotInstalledWin32".GetLocalized(),
                 Win32AppDiscovery.LaunchFailureReason.MissingLaunchTarget =>
                     "AppPage_Error_MissingLaunchTarget".GetLocalized(),
-                    Win32AppDiscovery.LaunchFailureReason.LaunchTargetNotFoundOnDisk =>
-                        "AppPage_Error_MissingLaunchFile".GetLocalized(),
-                    _ => "AppPage_Error_CantOpen".GetLocalized(),
-                };
+                Win32AppDiscovery.LaunchFailureReason.LaunchTargetNotFoundOnDisk =>
+                    "AppPage_Error_MissingLaunchFile".GetLocalized(),
+                _ => "AppPage_Error_CantOpen".GetLocalized(),
+            };
 
-                if (!string.IsNullOrWhiteSpace(win32Launch.InstalledVersion))
-                {
-                    msg += "AppPage_Error_InstalledVersion".GetLocalizedFormat(win32Launch.InstalledVersion);
-                }
+            if (!string.IsNullOrWhiteSpace(win32Launch.InstalledVersion))
+            {
+                msg += "AppPage_Error_InstalledVersion".GetLocalizedFormat(win32Launch.InstalledVersion);
+            }
 
             await ShowErrorDialogAsync(title, msg);
         }
@@ -1592,13 +1591,24 @@ public sealed partial class AppPage : Page
 
     private async Task<bool> LaunchUnpackagedInstallerAsync(DownloadItem downloadItem)
     {
-        var installerPath = PickUnpackagedInstaller(downloadItem.DownloadedFilePaths);
+        var installerPath = PickUnpackagedInstaller(downloadItem.DownloadedFiles);
         if (string.IsNullOrWhiteSpace(installerPath))
         {
-            await ShowErrorDialogAsync(
-                "AppPage_Error_InstallerMissingTitle".GetLocalized(),
-                "AppPage_Error_InstallerMissingMsg".GetLocalized()
-            );
+            var missingDialog = new ContentDialog
+            {
+                Title = "AppPage_Error_InstallerMissingTitle".GetLocalized(),
+                Content = "AppPage_Error_InstallerMissingMsg".GetLocalized(),
+                PrimaryButtonText = "AppPage_Btn_Retry".GetLocalized(),
+                CloseButtonText = "Common_Cancel".GetLocalized(),
+                DefaultButton = ContentDialogButton.Primary,
+                XamlRoot = Content.XamlRoot,
+            };
+
+            var missingResult = await missingDialog.ShowAsync();
+            if (missingResult == ContentDialogResult.Primary)
+            {
+                InstallButton_Click(null!, null!);
+            }
             return false;
         }
 

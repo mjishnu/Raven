@@ -158,7 +158,7 @@ public partial class App : Application
     private static void ConfigureLogging(LoggerConfiguration loggerConfiguration)
     {
         const string outputTemplate =
-            "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff} {Level:u3}] {SourceContext} {Message:lj}{NewLine}{Exception}";
+            "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff} {Level:u3}] {SourceContext} {Message:lj}{NewLine}{Exception}--------------------------------------------------------------------------------{NewLine}";
 
         loggerConfiguration
             .MinimumLevel.Information()
@@ -173,7 +173,7 @@ public partial class App : Application
                 .WriteTo.File(
                     AppLogPaths.RuntimeLogFilePath,
                     rollingInterval: RollingInterval.Day,
-                    retainedFileCountLimit: 14,
+                    retainedFileCountLimit: 5,
                     shared: true,
                     outputTemplate: outputTemplate
                 )
@@ -183,7 +183,7 @@ public partial class App : Application
                         .WriteTo.File(
                             AppLogPaths.InstallLogFilePath,
                             rollingInterval: RollingInterval.Day,
-                            retainedFileCountLimit: 14,
+                            retainedFileCountLimit: 5,
                             shared: true,
                             outputTemplate: outputTemplate
                         )
@@ -196,7 +196,7 @@ public partial class App : Application
                         .WriteTo.File(
                             AppLogPaths.CrashLogFilePath,
                             rollingInterval: RollingInterval.Day,
-                            retainedFileCountLimit: 30,
+                            retainedFileCountLimit: 5,
                             shared: true,
                             outputTemplate: outputTemplate
                         )

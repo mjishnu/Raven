@@ -522,7 +522,7 @@ Installed version: {0}</value>
     <value>Installer missing</value>
   </data>
   <data name="AppPage_Error_InstallerMissingMsg" xml:space="preserve">
-    <value>The unpackaged installer could not be found on disk.</value>
+    <value>The unpackaged installer (EXE/MSI) could not be found on disk.</value>
   </data>
   <data name="AppPage_Manual_Install_Title" xml:space="preserve">
     <value>Manual installation required</value>
@@ -581,23 +581,8 @@ Installed version: {0}</value>
   <data name="Download_Status_NoProgress" xml:space="preserve">
     <value>No progress detected. Restarting...</value>
   </data>
-  <data name="Download_Status_RestartingIn" xml:space="preserve">
-    <value>Restarting... retrying in {0:F1}s...</value>
-  </data>
   <data name="Download_Status_Stalled" xml:space="preserve">
     <value>Error: Download stalled and exhausted retries.</value>
-  </data>
-  <data name="Download_Status_NetworkIssue" xml:space="preserve">
-    <value>Temporary network/server issue. Retrying in {0:F1}s...</value>
-  </data>
-  <data name="Download_Status_RetryError" xml:space="preserve">
-    <value>Error: {0}. Retrying in {1:F1}s...</value>
-  </data>
-  <data name="Download_Status_Error" xml:space="preserve">
-    <value>Error: {0}</value>
-  </data>
-  <data name="Download_Status_NetworkError" xml:space="preserve">
-    <value>Check network or disk space.</value>
   </data>
   <data name="Download_Status_FailedRetries" xml:space="preserve">
     <value>Error: Download failed after retries.</value>
@@ -610,9 +595,6 @@ Installed version: {0}</value>
   </data>
   <data name="Download_Status_MissingPackage" xml:space="preserve">
     <value>Install failed: main package missing.</value>
-  </data>
-  <data name="Download_Status_InstallFailed" xml:space="preserve">
-    <value>Install failed: {0}</value>
   </data>
   <data name="Install_Error_ConflictingVersion" xml:space="preserve">
     <value>A newer or the same version is already installed.</value>
@@ -627,13 +609,28 @@ Installed version: {0}</value>
     <value>Package not found. Check the selected/downloaded file path.</value>
   </data>
   <data name="Install_Error_DeploymentFailure" xml:space="preserve">
-    <value>Windows deployment failed. Check system policies or try again.</value>
+    <value>Windows deployment failed. {0}</value>
   </data>
   <data name="Install_Error_AdminRequired" xml:space="preserve">
     <value>This package includes a packaged service and must be installed with administrator privileges. Relaunch the app as administrator and try again.</value>
   </data>
   <data name="Install_Error_GenericDeployment" xml:space="preserve">
     <value>Windows deployment error (0x{0:X8}). {1}</value>
+  </data>
+  <data name="Install_Error_PackageCorrupt" xml:space="preserve">
+    <value>The package file is corrupt or incomplete. Try re-downloading it.</value>
+  </data>
+  <data name="Install_Error_MissingDependency" xml:space="preserve">
+    <value>A required component or dependency is missing. Try installing the app from the Microsoft Store instead.</value>
+  </data>
+  <data name="Install_Error_SignatureInvalid" xml:space="preserve">
+    <value>The package signature is invalid or untrusted.</value>
+  </data>
+  <data name="Install_Error_NotSigned" xml:space="preserve">
+    <value>The package is not digitally signed.</value>
+  </data>
+  <data name="Install_Error_NotSupported" xml:space="preserve">
+    <value>This operation is not supported on your system.</value>
   </data>
   <data name="Install_Error_AccessDenied" xml:space="preserve">
     <value>Failed: Access denied. Try running as administrator or ensure sideloading policy allows app packages. {0}</value>

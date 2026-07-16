@@ -3,6 +3,21 @@ using Windows.Management.Deployment;
 
 namespace Raven.Services;
 
+public class PackageDeploymentException : InvalidOperationException
+{
+    public int OuterHResult { get; }
+    public int? ExtendedHResult { get; }
+    public string? DeploymentErrorText { get; }
+
+    public PackageDeploymentException(int outerHresult, int? extendedHresult, string? deploymentErrorText, string message, Exception? innerException = null)
+        : base(message, innerException)
+    {
+        OuterHResult = outerHresult;
+        ExtendedHResult = extendedHresult;
+        DeploymentErrorText = deploymentErrorText;
+    }
+}
+
 public static class AppPackageInstaller
 {
     public sealed record InstallProgress(int Percent, string? State, string? Activity);
@@ -92,7 +107,7 @@ public static class AppPackageInstaller
             // DeploymentResult attached to the async operation. Extract it so callers
             // (and logs) see the real reason for the failure.
             string? deploymentErrorText = null;
-            string? extendedErrorCode = null;
+            int? extendedHResult = null;
 
             try
             {
@@ -100,7 +115,7 @@ public static class AppPackageInstaller
                 if (result?.ErrorText is { Length: > 0 })
                     deploymentErrorText = result.ErrorText;
                 if (result?.ExtendedErrorCode != null)
-                    extendedErrorCode = $"0x{result.ExtendedErrorCode.HResult:X8}";
+                    extendedHResult = result.ExtendedErrorCode.HResult;
             }
             catch
             {
@@ -109,12 +124,8 @@ public static class AppPackageInstaller
 
             if (!string.IsNullOrWhiteSpace(deploymentErrorText))
             {
-                var message = $"Package deployment failed (HRESULT 0x{ex.HResult:X8}";
-                if (extendedErrorCode != null)
-                    message += $", Extended: {extendedErrorCode}";
-                message += $"): {deploymentErrorText}";
-
-                throw new InvalidOperationException(message, ex);
+                var friendlyMessage = Raven.Helpers.InstallHelper.GetFriendlyMsixError(ex.HResult, deploymentErrorText, extendedHResult);
+                throw new PackageDeploymentException(ex.HResult, extendedHResult, deploymentErrorText, friendlyMessage, ex);
             }
 
             throw;
@@ -184,6 +195,19 @@ public static class AppPackageInstaller
                 addPackageOptions,
                 cancellationToken
             );
+        }
+        catch (PackageDeploymentException pde)
+        {
+            logger?.LogError(
+                pde,
+                "Package install failed | Path={PackagePath} | Dependencies={DependencyCount} | Error={Error} | HRESULT=0x{HResult:X8} | Extended=0x{ExtendedHResult:X8}",
+                packagePath,
+                dependencyUris.Count,
+                pde.Message,
+                pde.OuterHResult,
+                pde.ExtendedHResult ?? 0
+            );
+            throw;
         }
         catch (Exception ex)
         {
@@ -286,6 +310,19 @@ public static class AppPackageInstaller
                 mainOptions,
                 cancellationToken
             );
+        }
+        catch (PackageDeploymentException pde)
+        {
+            logger?.LogError(
+                pde,
+                "Package install failed (bypass / separate dependencies) | Path={PackagePath} | Dependencies={DependencyCount} | Error={Error} | HRESULT=0x{HResult:X8} | Extended=0x{ExtendedHResult:X8}",
+                packagePath,
+                dependencyUris.Count,
+                pde.Message,
+                pde.OuterHResult,
+                pde.ExtendedHResult ?? 0
+            );
+            throw;
         }
         catch (Exception ex)
         {

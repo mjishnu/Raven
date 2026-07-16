@@ -75,7 +75,28 @@ public static partial class InstallHelper
     //  Friendly error messages
     // ──────────────────────────────────────────────────────
 
-    public static string GetFriendlyMsixError(int hresult, string message)
+    public static string? GetFriendlyExtendedError(int extendedHresult)
+    {
+        const int ERROR_FILE_CORRUPT = unchecked((int)0x80070570);
+        const int ERROR_NOT_FOUND = unchecked((int)0x80070490);
+        const int ERROR_SIGNATURE_INVALID = unchecked((int)0x80080204);
+        const int ERROR_NOT_SIGNED = unchecked((int)0x800B0100);
+        const int ERROR_ACCESS_DENIED = unchecked((int)0x80070005);
+        const int ERROR_NOT_SUPPORTED = unchecked((int)0x80070032);
+
+        return extendedHresult switch
+        {
+            ERROR_FILE_CORRUPT => "Install_Error_PackageCorrupt".GetLocalized(),
+            ERROR_NOT_FOUND => "Install_Error_MissingDependency".GetLocalized(),
+            ERROR_SIGNATURE_INVALID => "Install_Error_SignatureInvalid".GetLocalized(),
+            ERROR_NOT_SIGNED => "Install_Error_NotSigned".GetLocalized(),
+            ERROR_ACCESS_DENIED => "Install_Error_AccessDenied".GetLocalizedFormat(""),
+            ERROR_NOT_SUPPORTED => "Install_Error_NotSupported".GetLocalized(),
+            _ => null,
+        };
+    }
+
+    public static string GetFriendlyMsixError(int hresult, string message, int? extendedHresult = null)
     {
         const int ERROR_DEPLOYMENT_IN_PROGRESS = unchecked((int)0x80073D01);
         const int ERROR_INVALID_PACKAGE = unchecked((int)0x80073CF3);
@@ -93,7 +114,9 @@ public static partial class InstallHelper
             ERROR_PACKAGE_NOT_FOUND =>
                 "Install_Error_PackageNotFound".GetLocalized(),
             ERROR_DEPLOYMENT_FAILURE =>
-                "Install_Error_DeploymentFailure".GetLocalized(),
+                "Install_Error_DeploymentFailure".GetLocalizedFormat(
+                    extendedHresult.HasValue ? GetFriendlyExtendedError(extendedHresult.Value) ?? "" : ""
+                ).Trim(),
             ERROR_PACKAGED_SERVICE_REQUIRES_ADMIN =>
                 "Install_Error_AdminRequired".GetLocalized(),
             _ => "Install_Error_GenericDeployment".GetLocalizedFormat(hresult, message),
@@ -102,6 +125,9 @@ public static partial class InstallHelper
 
     public static string GetFriendlyErrorMessage(Exception exception)
     {
+        if (exception is Services.PackageDeploymentException pde)
+            return pde.Message;
+
         var comEx = TryGetDeploymentCOMException(exception);
         return comEx != null ? GetFriendlyMsixError(comEx.HResult, exception.Message) : exception.Message;
     }
