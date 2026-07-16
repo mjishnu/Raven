@@ -6,6 +6,7 @@
     xmlns:helper="using:Raven.Helpers"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:models="using:StoreListings.Library"
+    xmlns:shared="using:Raven.Views.Shared"
     mc:Ignorable="d">
     <Page.Resources>
         <ResourceDictionary>
@@ -546,6 +547,10 @@
                 </StackPanel>
             </Grid>
         </ScrollViewer>
+        <!--  Error State  -->
+        <shared:ErrorPanelControl
+            x:Name="ErrorPanel"
+            Visibility="Collapsed" />
         <!--  Lightbox overlay  -->
         <Grid x:Name="LightboxOverlay" Visibility="Collapsed">
             <Rectangle Tapped="LightboxBackdrop_Tapped">

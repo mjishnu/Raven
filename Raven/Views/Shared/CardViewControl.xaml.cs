@@ -231,7 +231,7 @@ public sealed partial class CardViewControl : UserControl
     {
         Scroller.Visibility = Visibility.Collapsed;
         NoResultsPanel.Visibility = Visibility.Collapsed;
-        ErrorIcon.Visibility = Visibility.Collapsed;
+        ErrorPanel.Visibility = Visibility.Collapsed;
         LoadingOverlay.Visibility = Visibility.Visible;
         ViewModel.CurrentSkipItem = 0;
         ViewModel.FirstVisibleIndex = 0;
@@ -245,6 +245,7 @@ public sealed partial class CardViewControl : UserControl
 
         var success = true;
         var errorText = "";
+        Exception loadException = null;
         isLoadingMore = true;
         try
         {
@@ -255,6 +256,7 @@ public sealed partial class CardViewControl : UserControl
         {
             success = false;
             errorText = ex.Message;
+            loadException = ex;
             _logger.LogError(
                 ex,
                 "Failed to load cards | ExceptionType={ExceptionType} | HResult=0x{HResult:X8} | Header={Header}",
@@ -287,8 +289,20 @@ public sealed partial class CardViewControl : UserControl
         else
         {
             LoadingOverlay.Visibility = Visibility.Collapsed;
-            ErrorIcon.Visibility = Visibility.Visible;
-            ErrorTextBlock.Text = "CardView_Error_LoadFailed".GetLocalizedFormat(errorText);
+            ErrorPanel.Visibility = Visibility.Visible;
+            
+            if (loadException != null && IsNetworkError(loadException))
+            {
+                ErrorPanel.Glyph = "\uF384";
+                ErrorPanel.Title = "No Internet Connection";
+                ErrorPanel.Subtitle = "Please check your network settings and try again.";
+            }
+            else
+            {
+                ErrorPanel.Glyph = "\uEBA0";
+                ErrorPanel.Title = "CardView_Error_LoadFailed".GetLocalizedFormat(errorText);
+                ErrorPanel.Subtitle = string.Empty;
+            }
         }
         isLoadingMore = false;
     }
@@ -636,7 +650,7 @@ public sealed partial class CardViewControl : UserControl
     public async void NavigateToProductOrBundle(string productId, InstallerType installerType)
     {
         Scroller.Visibility = Visibility.Collapsed;
-        ErrorIcon.Visibility = Visibility.Collapsed;
+        ErrorPanel.Visibility = Visibility.Collapsed;
         LoadingOverlay.Visibility = Visibility.Visible;
 
         _loadingDotsCts?.Cancel();
@@ -682,8 +696,20 @@ public sealed partial class CardViewControl : UserControl
         catch (Exception ex)
         {
             LoadingOverlay.Visibility = Visibility.Collapsed;
-            ErrorIcon.Visibility = Visibility.Visible;
-            ErrorTextBlock.Text = "CardView_Error_OpenFailed".GetLocalizedFormat(ex.Message);
+            ErrorPanel.Visibility = Visibility.Visible;
+            
+            if (IsNetworkError(ex))
+            {
+                ErrorPanel.Glyph = "\uF384";
+                ErrorPanel.Title = "No Internet Connection";
+                ErrorPanel.Subtitle = "Please check your network settings and try again.";
+            }
+            else
+            {
+                ErrorPanel.Glyph = "\uEBA0";
+                ErrorPanel.Title = "CardView_Error_OpenFailed".GetLocalizedFormat(ex.Message);
+                ErrorPanel.Subtitle = string.Empty;
+            }
             Debug.WriteLine($"Failed to load product: {ex.Message}");
         }
         finally
@@ -704,5 +730,14 @@ public sealed partial class CardViewControl : UserControl
         ViewModel.Filter1 = SelectedFilterIndex1;
         ViewModel.Filter2 = SelectedFilterIndex2;
         await InitialLoadCards();
+    }
+
+    private bool IsNetworkError(Exception ex)
+    {
+        if (ex is System.Net.Http.HttpRequestException || ex is System.Net.Sockets.SocketException)
+            return true;
+        if (ex.InnerException != null)
+            return IsNetworkError(ex.InnerException);
+        return false;
     }
 }

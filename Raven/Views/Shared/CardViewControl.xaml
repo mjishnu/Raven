@@ -7,6 +7,7 @@
   xmlns:layout="using:Raven.layouts"
   xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
   xmlns:model="using:StoreListings.Library"
+  xmlns:shared="using:Raven.Views.Shared"
 >
   <UserControl.Resources>
     <ResourceDictionary>
@@ -151,15 +152,9 @@
         </StackPanel>
       </StackPanel>
       <!--  Error State  -->
-      <StackPanel
-        x:Name="ErrorIcon"
-        HorizontalAlignment="Center"
-        VerticalAlignment="Center"
-        Visibility="Collapsed"
-      >
-        <FontIcon FontSize="55" Glyph="" />
-        <TextBlock x:Name="ErrorTextBlock" Margin="0,12,0,0" />
-      </StackPanel>
+      <shared:ErrorPanelControl
+        x:Name="ErrorPanel"
+        Visibility="Collapsed" />
       <!--  Content State: one ScrollViewer hosts header + virtualized ItemsRepeater + inline loader.
             ItemsRepeater virtualizes off this ScrollViewer's effective viewport, so the header is
             scroll content (scrolls away) and the loader sits inline below the cards.  -->

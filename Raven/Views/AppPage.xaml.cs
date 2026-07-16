@@ -226,10 +226,22 @@ public sealed partial class AppPage : Page
         catch (Exception ex)
         {
             SetLoading(false);
-            await ShowErrorDialogAsync(
-                "AppPage_Error_LoadTitle".GetLocalized(),
-                "AppPage_Error_LoadMessage".GetLocalizedFormat(ex.Message)
-            );
+            
+            if (Utils.IsNetworkError(ex))
+            {
+                DisplayItem.Visibility = Visibility.Collapsed;
+                ErrorPanel.Visibility = Visibility.Visible;
+                ErrorPanel.Glyph = "\uF384";
+                ErrorPanel.Title = "No Internet Connection";
+                ErrorPanel.Subtitle = "Please check your network settings and try again.";
+            }
+            else
+            {
+                await ShowErrorDialogAsync(
+                    "AppPage_Error_LoadTitle".GetLocalized(),
+                    "AppPage_Error_LoadMessage".GetLocalizedFormat(ex.Message)
+                );
+            }
         }
     }
 
@@ -237,6 +249,11 @@ public sealed partial class AppPage : Page
     {
         LoadingOverlay.Visibility = isLoading ? Visibility.Visible : Visibility.Collapsed;
         DisplayItem.Visibility = isLoading ? Visibility.Collapsed : Visibility.Visible;
+        
+        if (isLoading)
+        {
+            ErrorPanel.Visibility = Visibility.Collapsed;
+        }
 
         if (isLoading)
         {

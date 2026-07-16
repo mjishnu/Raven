@@ -14,6 +14,14 @@ namespace Raven.Helpers;
 
 class Utils
 {
+    public static bool IsNetworkError(Exception ex)
+    {
+        if (ex is System.Net.Http.HttpRequestException || ex is System.Net.Sockets.SocketException)
+            return true;
+        if (ex.InnerException != null)
+            return IsNetworkError(ex.InnerException);
+        return false;
+    }
     /// <summary>
     /// Returns the architecture priority order based on system architecture and installer type.
     /// </summary>
