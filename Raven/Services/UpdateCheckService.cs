@@ -362,7 +362,7 @@ public static class UpdateCheckService
                 $"[UpdateCheckService] Update failed for {item.ProductId}: {ex.Message}"
             );
             downloadManager.UpdateDownloadStatus(item.ProductId, DownloadStatus.Failed);
-            downloadItem.LastInstallError = ex;
+            downloadManager.UpdateDownloadLastError(item.ProductId, ex);
             downloadManager.RunOnUIThread(() => item.Status = DownloadStatus.Failed);
         }
         finally

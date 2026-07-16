@@ -631,6 +631,22 @@ public class DownloadManagerService
         }
     }
 
+    public void UpdateDownloadLastError(string productId, Exception? ex)
+    {
+        var item = TouchDownload(productId);
+        if (item != null)
+        {
+            if (IsAnyoneObserving)
+            {
+                RunOnUIThread(() => item.LastInstallError = ex);
+            }
+            else
+            {
+                item.LastInstallError = ex;
+            }
+        }
+    }
+
     public void UpdateDownloadStatus(string productId, DownloadStatus status)
     {
         TouchDownload(productId);

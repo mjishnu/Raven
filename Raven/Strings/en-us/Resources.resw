@@ -576,7 +576,7 @@ Installed version: {0}</value>
     <value>Downloading ({0}/{1}) {2}</value>
   </data>
   <data name="Download_Status_Retry" xml:space="preserve">
-    <value>Retry {0}/{1}</value>
+    <value>Retry ({0}/{1})</value>
   </data>
   <data name="Download_Status_NoProgress" xml:space="preserve">
     <value>No progress detected. Restarting...</value>

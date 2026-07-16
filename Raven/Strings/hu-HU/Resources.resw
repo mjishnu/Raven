@@ -574,7 +574,7 @@
     <value>Letöltés ({0}/{1}) {2}</value>
   </data>
 	<data name="Download_Status_Retry" xml:space="preserve">
-    <value>Újrapróbálkozás {0}/{1}</value>
+    <value>Újrapróbálkozás ({0}/{1})</value>
   </data>
 	<data name="Download_Status_NoProgress" xml:space="preserve">
     <value>Nem észlelhető előrelépés. Újraindítás…</value>

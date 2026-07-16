@@ -583,11 +583,11 @@ public sealed class DownloadHelper
                     hadError = true;
                     if (ex is OperationCanceledException)
                     {
-                        downloadItem.LastInstallError = new TimeoutException("Download_Status_Stalled".GetLocalized());
+                        downloadManager.UpdateDownloadLastError(productId, new TimeoutException("Download_Status_Stalled".GetLocalized()));
                     }
                     else
                     {
-                        downloadItem.LastInstallError = ex;
+                        downloadManager.UpdateDownloadLastError(productId, ex);
                     }
                     
                     downloadManager.UpdateDownloadStatusText(productId, null);
@@ -603,7 +603,7 @@ public sealed class DownloadHelper
             {
                 hadError = true;
                 if (downloadItem.LastInstallError == null)
-                    downloadItem.LastInstallError = new Exception("Download_Status_FailedRetries".GetLocalized());
+                    downloadManager.UpdateDownloadLastError(productId, new Exception("Download_Status_FailedRetries".GetLocalized()));
                 downloadManager.UpdateDownloadStatusText(
                     productId,
                     "Download_Status_FailedRetries".GetLocalized()
@@ -811,7 +811,7 @@ public sealed class DownloadHelper
                 mainPackagePath,
                 depPaths.Count
             );
-            downloadItem.LastInstallError = ex;
+            downloadManager.UpdateDownloadLastError(productId, ex);
             downloadManager.UpdateDownloadStatusText(productId, null);
             downloadManager.UpdateDownloadStatus(productId, Raven.Models.DownloadStatus.Failed);
         }
