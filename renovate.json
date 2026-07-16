@@ -4,23 +4,10 @@
     "config:recommended"
   ],
   "timezone": "Asia/Kolkata",
-  "schedule": [
-    "before 1am"
-  ],
   "dependencyDashboard": false,
+  "platformAutomerge": true,
+  "ignoreTests": true,
   "packageRules": [
-    {
-      "matchManagers": [
-        "github-actions"
-      ],
-      "groupName": "github-actions dependencies"
-    },
-    {
-      "matchManagers": [
-        "nuget"
-      ],
-      "groupName": "nuget dependencies"
-    },
     {
       "matchUpdateTypes": [
         "minor",
@@ -29,6 +16,48 @@
         "digest"
       ],
       "automerge": true
+    },
+    {
+      "matchManagers": [
+        "github-actions"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch",
+        "pin",
+        "digest"
+      ],
+      "groupName": "github-actions minor/patch dependencies"
+    },
+    {
+      "matchManagers": [
+        "github-actions"
+      ],
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "groupName": "github-actions major dependencies"
+    },
+    {
+      "matchManagers": [
+        "nuget"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch",
+        "pin",
+        "digest"
+      ],
+      "groupName": "nuget minor/patch dependencies"
+    },
+    {
+      "matchManagers": [
+        "nuget"
+      ],
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "groupName": "nuget major dependencies"
     }
   ]
 }
