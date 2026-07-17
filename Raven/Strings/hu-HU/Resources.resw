@@ -120,9 +120,6 @@
   <data name="AppDisplayName" xml:space="preserve">
     <value>Raven</value>
   </data>
-  <data name="AppDescription" xml:space="preserve">
-    <value>Windows Store alkalmazásböngésző és csomagkezelő.</value>
-  </data>
   <data name="Shell_Main.Content" xml:space="preserve">
     <value>Kezdőlap</value>
   </data>
@@ -140,9 +137,6 @@
   </data>
   <data name="Shell_App.Content" xml:space="preserve">
     <value>Alkalmazások</value>
-  </data>
-  <data name="Shell_Bundles.Content" xml:space="preserve">
-    <value>Csomagok</value>
   </data>
   <data name="Shell_SearchBox.PlaceholderText" xml:space="preserve">
     <value>Keresés</value>
@@ -236,9 +230,6 @@
   </data>
   <data name="Settings_AppUpdates.Text" xml:space="preserve">
     <value>Alkalmazásfrissítések</value>
-  </data>
-  <data name="Settings_AppUpdatesDescription.Text" xml:space="preserve">
-    <value>Ellenőrizze a GitHubot a legújabb kiadásért, és automatikusan frissítse a Ravent.</value>
   </data>
   <data name="Settings_AppUpdatesButton.Content" xml:space="preserve">
     <value>Ellenőrizze a frissítéseket</value>
@@ -696,20 +687,11 @@
   <data name="Install_Status_Installing" xml:space="preserve">
     <value>Telepítés</value>
   </data>
-  <data name="Install_Status_Installed" xml:space="preserve">
-    <value>Telepítve.</value>
-  </data>
-  <data name="Install_Status_Error" xml:space="preserve">
-    <value>Hiba</value>
-  </data>
   <data name="Install_Dialog_Title" xml:space="preserve">
     <value>Telepítés sikertelen</value>
   </data>
   <data name="InstallationsPage_FilePicker_Error" xml:space="preserve">
     <value>Fájlválasztó hiba</value>
-  </data>
-  <data name="InstallationsPage_FilePicker_CommDlgError" xml:space="preserve">
-    <value>A GetOpenFileName nem sikerült. CommDlgExtendedError=0x{0:X}</value>
   </data>
   <data name="InstallationsPage_Filter_AppPackages" xml:space="preserve">
     <value>Alkalmazáscsomagok (*.msix;*.appx;*.msixbundle;*.appxbundle)</value>
@@ -933,8 +915,5 @@ A Windows beállításokban a Fejlesztői mód bekapcsolásával engedélyezheti
   </data>
   <data name="Install_Error_DeferredInstallDescription" xml:space="preserve">
     <value>The application is currently running. We will securely prepare the update now, and it will be applied automatically the next time the app is closed or restarted.</value>
-  </data>
-  <data name="Updates_FailedBanner_ClearAll.Text" xml:space="preserve">
-    <value>Clear all</value>
   </data>
 </root>

@@ -120,9 +120,6 @@
   <data name="AppDisplayName" xml:space="preserve">
     <value>Raven</value>
   </data>
-  <data name="AppDescription" xml:space="preserve">
-    <value>A Windows Store app browser and package manager.</value>
-  </data>
   <data name="Shell_Main.Content" xml:space="preserve">
     <value>Home</value>
   </data>
@@ -140,9 +137,6 @@
   </data>
   <data name="Shell_App.Content" xml:space="preserve">
     <value>Apps</value>
-  </data>
-  <data name="Shell_Bundles.Content" xml:space="preserve">
-    <value>Bundles</value>
   </data>
   <data name="Shell_SearchBox.PlaceholderText" xml:space="preserve">
     <value>Search</value>
@@ -236,9 +230,6 @@
   </data>
   <data name="Settings_AppUpdates.Text" xml:space="preserve">
     <value>Application updates</value>
-  </data>
-  <data name="Settings_AppUpdatesDescription.Text" xml:space="preserve">
-    <value>Check GitHub for the latest release and update Raven automatically.</value>
   </data>
   <data name="Settings_AppUpdatesButton.Content" xml:space="preserve">
     <value>Check for updates</value>
@@ -698,20 +689,11 @@ Installed version: {0}</value>
   <data name="Install_Status_Installing" xml:space="preserve">
     <value>Installing</value>
   </data>
-  <data name="Install_Status_Installed" xml:space="preserve">
-    <value>Installed.</value>
-  </data>
-  <data name="Install_Status_Error" xml:space="preserve">
-    <value>Error</value>
-  </data>
   <data name="Install_Dialog_Title" xml:space="preserve">
     <value>Installation failed</value>
   </data>
   <data name="InstallationsPage_FilePicker_Error" xml:space="preserve">
     <value>File picker error</value>
-  </data>
-  <data name="InstallationsPage_FilePicker_CommDlgError" xml:space="preserve">
-    <value>GetOpenFileName failed. CommDlgExtendedError=0x{0:X}</value>
   </data>
   <data name="InstallationsPage_Filter_AppPackages" xml:space="preserve">
     <value>App packages (*.msix;*.appx;*.msixbundle;*.appxbundle)</value>
@@ -936,14 +918,8 @@ You can enable it by turning on Developer Mode in Windows Settings.</value>
   <data name="Install_Error_DeferredInstallDescription" xml:space="preserve">
     <value>Deferred Install will prepare the app now, and it will be installed automatically when its resources are released or the system is restarted.</value>
   </data>
-  <data name="Install_Btn_InstallMainPackageOnly" xml:space="preserve">
-    <value>Install Main Package Only</value>
-  </data>
   <data name="Install_Error_DependencyProvidedButNotUsed" xml:space="preserve">
     <value>One or more dependencies provided were not required by the main package. You can try installing only the main package.</value>
-  </data>
-  <data name="InstallationsPage_InstallDependenciesSeparately.Content" xml:space="preserve">
-    <value>Install dependencies separately</value>
   </data>
   <data name="Install_Btn_InstallDependenciesSeparately" xml:space="preserve">
     <value>Install dependencies separately</value>
@@ -951,7 +927,7 @@ You can enable it by turning on Developer Mode in Windows Settings.</value>
   <data name="AppPage_InstallDependenciesSeparately.Text" xml:space="preserve">
     <value>Separate Install</value>
   </data>
-  <data name="Updates_FailedBanner_ClearAll.Text" xml:space="preserve">
-    <value>Clear all</value>
+  <data name="InstallationsPage_InstallDependenciesSeparately.Content" xml:space="preserve">
+    <value>Install dependencies separately</value>
   </data>
 </root>
