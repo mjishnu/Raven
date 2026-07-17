@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <root>
-	<!-- 
+  <!-- 
     Microsoft ResX Schema 
     
     Version 2.0
@@ -59,561 +59,560 @@
             : using a System.ComponentModel.TypeConverter
             : and then encoded with base64 encoding.
     -->
-	<xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
-		<xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
-		<xsd:element name="root" msdata:IsDataSet="true">
-			<xsd:complexType>
-				<xsd:choice maxOccurs="unbounded">
-					<xsd:element name="metadata">
-						<xsd:complexType>
-							<xsd:sequence>
-								<xsd:element name="value" type="xsd:string" minOccurs="0" />
-							</xsd:sequence>
-							<xsd:attribute name="name" use="required" type="xsd:string" />
-							<xsd:attribute name="type" type="xsd:string" />
-							<xsd:attribute name="mimetype" type="xsd:string" />
-							<xsd:attribute ref="xml:space" />
-						</xsd:complexType>
-					</xsd:element>
-					<xsd:element name="assembly">
-						<xsd:complexType>
-							<xsd:attribute name="alias" type="xsd:string" />
-							<xsd:attribute name="name" type="xsd:string" />
-						</xsd:complexType>
-					</xsd:element>
-					<xsd:element name="data">
-						<xsd:complexType>
-							<xsd:sequence>
-								<xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-								<xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
-							</xsd:sequence>
-							<xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
-							<xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
-							<xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
-							<xsd:attribute ref="xml:space" />
-						</xsd:complexType>
-					</xsd:element>
-					<xsd:element name="resheader">
-						<xsd:complexType>
-							<xsd:sequence>
-								<xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
-							</xsd:sequence>
-							<xsd:attribute name="name" type="xsd:string" use="required" />
-						</xsd:complexType>
-					</xsd:element>
-				</xsd:choice>
-			</xsd:complexType>
-		</xsd:element>
-	</xsd:schema>
-	<resheader name="resmimetype">
-		<value>text/microsoft-resx</value>
-	</resheader>
-	<resheader name="version">
-		<value>2.0</value>
-	</resheader>
-	<resheader name="reader">
-		<value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-	</resheader>
-	<resheader name="writer">
-		<value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
-	</resheader>
-	<data name="AppDisplayName" xml:space="preserve">
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AppDisplayName" xml:space="preserve">
     <value>Raven</value>
   </data>
-	<data name="AppDescription" xml:space="preserve">
+  <data name="AppDescription" xml:space="preserve">
     <value>Windows Store alkalmazásböngésző és csomagkezelő.</value>
   </data>
-	<data name="Shell_Main.Content" xml:space="preserve">
+  <data name="Shell_Main.Content" xml:space="preserve">
     <value>Kezdőlap</value>
   </data>
-	<data name="Shell_Advanced_Search.Content" xml:space="preserve">
+  <data name="Shell_Advanced_Search.Content" xml:space="preserve">
     <value>Részletes Keresés</value>
   </data>
-	<data name="Shell_Install.Content" xml:space="preserve">
+  <data name="Shell_Install.Content" xml:space="preserve">
     <value>Telepítés</value>
   </data>
-	<data name="Shell_Updates.Content" xml:space="preserve">
+  <data name="Shell_Updates.Content" xml:space="preserve">
     <value>Frissítések</value>
   </data>
-	<data name="Shell_Downloads.Content" xml:space="preserve">
+  <data name="Shell_Downloads.Content" xml:space="preserve">
     <value>Letöltések</value>
   </data>
-	<data name="Shell_App.Content" xml:space="preserve">
+  <data name="Shell_App.Content" xml:space="preserve">
     <value>Alkalmazások</value>
   </data>
-	<data name="Shell_Bundles.Content" xml:space="preserve">
+  <data name="Shell_Bundles.Content" xml:space="preserve">
     <value>Csomagok</value>
   </data>
-	<data name="Shell_SearchBox.PlaceholderText" xml:space="preserve">
+  <data name="Shell_SearchBox.PlaceholderText" xml:space="preserve">
     <value>Keresés</value>
   </data>
-	<data name="Shell_AppTitleBarText.Text" xml:space="preserve">
+  <data name="Shell_AppTitleBarText.Text" xml:space="preserve">
     <value>Raven</value>
   </data>
-	<data name="Settings_Title.Text" xml:space="preserve">
+  <data name="Settings_Title.Text" xml:space="preserve">
     <value>Beállítások</value>
   </data>
-	<data name="Settings_Theme.Text" xml:space="preserve">
+  <data name="Settings_Theme.Text" xml:space="preserve">
     <value>Téma</value>
   </data>
-	<data name="Settings_Theme_Light.Content" xml:space="preserve">
+  <data name="Settings_Theme_Light.Content" xml:space="preserve">
     <value>Világos</value>
   </data>
-	<data name="Settings_Theme_Dark.Content" xml:space="preserve">
+  <data name="Settings_Theme_Dark.Content" xml:space="preserve">
     <value>Sötét</value>
   </data>
-	<data name="Settings_Theme_Default.Content" xml:space="preserve">
+  <data name="Settings_Theme_Default.Content" xml:space="preserve">
     <value>Rendszer alapértelmezett</value>
   </data>
-	<data name="Settings_LocaleAndRegion.Text" xml:space="preserve">
+  <data name="Settings_LocaleAndRegion.Text" xml:space="preserve">
     <value>Nyelv és régió</value>
   </data>
-	<data name="Settings_Language.Text" xml:space="preserve">
+  <data name="Settings_Language.Text" xml:space="preserve">
     <value>Nyelv</value>
   </data>
-	<data name="Settings_Market.Text" xml:space="preserve">
+  <data name="Settings_Market.Text" xml:space="preserve">
     <value>Áruház (Régió)</value>
   </data>
-	<data name="Settings_RelaunchInfoBar.Title" xml:space="preserve">
+  <data name="Settings_RelaunchInfoBar.Title" xml:space="preserve">
     <value>Újraindítás szükséges</value>
   </data>
-	<data name="Settings_RelaunchInfoBar.Message" xml:space="preserve">
+  <data name="Settings_RelaunchInfoBar.Message" xml:space="preserve">
     <value>Indítsa újra a Raven programot a nyelvi módosítások alkalmazásához.</value>
   </data>
-	<data name="Settings_RelaunchButton.Content" xml:space="preserve">
+  <data name="Settings_RelaunchButton.Content" xml:space="preserve">
     <value>Újraindítás</value>
   </data>
-	<data name="Settings_Architecture.Text" xml:space="preserve">
+  <data name="Settings_Architecture.Text" xml:space="preserve">
     <value>Architektúra</value>
   </data>
-	<data name="Settings_ArchitectureDescription.Text" xml:space="preserve">
+  <data name="Settings_ArchitectureDescription.Text" xml:space="preserve">
     <value>Válassza ki a rendszer architektúráját</value>
   </data>
-	<data name="Settings_Reset.Text" xml:space="preserve">
+  <data name="Settings_Reset.Text" xml:space="preserve">
     <value>Visszaállítás</value>
   </data>
-	<data name="Settings_ResetDescription.Text" xml:space="preserve">
+  <data name="Settings_ResetDescription.Text" xml:space="preserve">
     <value>Raven visszaállítása az alapértelmezett beállításokra.</value>
   </data>
-	<data name="Settings_ResetButton.Content" xml:space="preserve">
+  <data name="Settings_ResetButton.Content" xml:space="preserve">
     <value>Alkalmazás visszaállítása</value>
   </data>
-	<data name="Settings_ResetDialogTitle" xml:space="preserve">
+  <data name="Settings_ResetDialogTitle" xml:space="preserve">
     <value>Visszaállítja az alkalmazás adatait?</value>
   </data>
-	<data name="Settings_ResetDialogContent" xml:space="preserve">
+  <data name="Settings_ResetDialogContent" xml:space="preserve">
     <value>Ezzel eltávolítja az összes letöltött fájlt és a gyorsítótárazott letöltési adatot, és visszaállítja az alapértelmezett nyelvet, régiót és architektúrát. Az alkalmazás automatikusan újraindul. Ez a művelet nem vonható vissza.</value>
   </data>
-	<data name="Settings_ResetDialogPrimary" xml:space="preserve">
+  <data name="Settings_ResetDialogPrimary" xml:space="preserve">
     <value>Visszaállítás</value>
   </data>
-	<data name="Settings_ResetDialogCancel" xml:space="preserve">
+  <data name="Settings_ResetDialogCancel" xml:space="preserve">
     <value>Mégse</value>
   </data>
-	<data name="Settings_About.Text" xml:space="preserve">
+  <data name="Settings_About.Text" xml:space="preserve">
     <value>Raven névjegye</value>
   </data>
-	<data name="Settings_AboutDescription.Text" xml:space="preserve">
+  <data name="Settings_AboutDescription.Text" xml:space="preserve">
     <value>Egy nyílt forráskódú, adatvédelem-központú alternatív kliens a Microsoft Store-hoz, amely lehetővé teszi az áruház alkalmazásainak böngészését, letöltését, telepítését és frissítését.</value>
   </data>
-	<data name="SettingsPage_GitHubRepoLink.Content" xml:space="preserve">
+  <data name="SettingsPage_GitHubRepoLink.Content" xml:space="preserve">
     <value>GitHub-tárhely</value>
   </data>
-	<data name="SettingsPage_DiscordLink.Content" xml:space="preserve">
+  <data name="SettingsPage_DiscordLink.Content" xml:space="preserve">
     <value>Discord közösség</value>
   </data>
-	<data name="SettingsPage_LicenseLink.Content" xml:space="preserve">
+  <data name="SettingsPage_LicenseLink.Content" xml:space="preserve">
     <value>Licenc</value>
   </data>
-	<data name="Settings_DiagnosticsLogs.Text" xml:space="preserve">
+  <data name="Settings_DiagnosticsLogs.Text" xml:space="preserve">
     <value>Diagnosztikai naplók</value>
   </data>
-	<data name="Settings_DiagnosticsLogsDescription.Text" xml:space="preserve">
+  <data name="Settings_DiagnosticsLogsDescription.Text" xml:space="preserve">
     <value>Nyissa meg a naplókat tartalmazó mappát a hibakereséshez.</value>
   </data>
-	<data name="Settings_DiagnosticsLogsButton.Content" xml:space="preserve">
+  <data name="Settings_DiagnosticsLogsButton.Content" xml:space="preserve">
     <value>Nyissa meg a naplók mappát</value>
   </data>
-	<data name="Settings_AppUpdates.Text" xml:space="preserve">
+  <data name="Settings_AppUpdates.Text" xml:space="preserve">
     <value>Alkalmazásfrissítések</value>
   </data>
-	<data name="Settings_AppUpdatesDescription.Text" xml:space="preserve">
+  <data name="Settings_AppUpdatesDescription.Text" xml:space="preserve">
     <value>Ellenőrizze a GitHubot a legújabb kiadásért, és automatikusan frissítse a Ravent.</value>
   </data>
-	<data name="Settings_AppUpdatesButton.Content" xml:space="preserve">
+  <data name="Settings_AppUpdatesButton.Content" xml:space="preserve">
     <value>Ellenőrizze a frissítéseket</value>
   </data>
-	<data name="Settings_UpdaterConfirmTitle" xml:space="preserve">
+  <data name="Settings_UpdaterConfirmTitle" xml:space="preserve">
     <value>Frissítés elérhető</value>
   </data>
-	<data name="Settings_UpdaterConfirmContent" xml:space="preserve">
+  <data name="Settings_UpdaterConfirmContent" xml:space="preserve">
     <value>A(z) {0} verzió készen áll a telepítésre. Az alkalmazás újraindul a frissítés alkalmazásához.</value>
   </data>
-	<data name="Settings_UpdaterConfirmPrimary" xml:space="preserve">
+  <data name="Settings_UpdaterConfirmPrimary" xml:space="preserve">
     <value>Telepítés</value>
   </data>
-	<data name="Settings_UpdaterAlreadyLatestTitle" xml:space="preserve">
+  <data name="Settings_UpdaterAlreadyLatestTitle" xml:space="preserve">
     <value>Ön naprakész</value>
   </data>
-	<data name="Settings_UpdaterAlreadyLatestContent" xml:space="preserve">
+  <data name="Settings_UpdaterAlreadyLatestContent" xml:space="preserve">
     <value>már telepítve van a legújabb verzió.</value>
   </data>
-	<data name="Settings_UpdaterErrorTitle" xml:space="preserve">
+  <data name="Settings_UpdaterErrorTitle" xml:space="preserve">
     <value>Valami elromlott</value>
   </data>
-	<data name="Settings_UpdaterErrorContent" xml:space="preserve">
+  <data name="Settings_UpdaterErrorContent" xml:space="preserve">
     <value>A frissítést nem lehetett befejezni. {0}</value>
   </data>
-	<data name="Settings_UpdaterDialogClose" xml:space="preserve">
+  <data name="Settings_UpdaterDialogClose" xml:space="preserve">
     <value>Bezárás</value>
   </data>
-	<data name="Settings_UpdaterDialogCancel" xml:space="preserve">
+  <data name="Settings_UpdaterDialogCancel" xml:space="preserve">
     <value>Mégse</value>
   </data>
-	<data name="Settings_UpdaterCheckingTitle" xml:space="preserve">
+  <data name="Settings_UpdaterCheckingTitle" xml:space="preserve">
     <value>Frissítések keresése</value>
   </data>
-	<data name="Settings_UpdaterCheckingContent" xml:space="preserve">
+  <data name="Settings_UpdaterCheckingContent" xml:space="preserve">
     <value>A legújabb verziót keresem.</value>
   </data>
-	<data name="Settings_UpdaterCheckCanceledContent" xml:space="preserve">
+  <data name="Settings_UpdaterCheckCanceledContent" xml:space="preserve">
     <value>Az ellenőrzés megszakítva. Próbálja meg újra bármikor.</value>
   </data>
-	<data name="Settings_UpdaterStartupCheckbox" xml:space="preserve">
+  <data name="Settings_UpdaterStartupCheckbox" xml:space="preserve">
     <value>Indításkor ellenőrizze a frissítéseket</value>
   </data>
-	<data name="Settings_UpdaterProgressPercent" xml:space="preserve">
+  <data name="Settings_UpdaterProgressPercent" xml:space="preserve">
     <value>{0}%</value>
   </data>
-	<data name="Settings_UpdaterInstallingTitle" xml:space="preserve">
+  <data name="Settings_UpdaterInstallingTitle" xml:space="preserve">
     <value>Frissítés telepítése</value>
   </data>
-	<data name="CardView_Loading.Text" xml:space="preserve">
+  <data name="CardView_Loading.Text" xml:space="preserve">
     <value>Betöltés</value>
   </data>
-	<data name="CardView_Filters.Text" xml:space="preserve">
+  <data name="CardView_Filters.Text" xml:space="preserve">
     <value>Szűrők</value>
   </data>
-	<data name="CardView_ApplyBtn.Content" xml:space="preserve">
+  <data name="CardView_ApplyBtn.Content" xml:space="preserve">
     <value>Alkalmaz</value>
   </data>
-	<data name="CardView_NoResults_Title.Text" xml:space="preserve">
+  <data name="CardView_NoResults_Title.Text" xml:space="preserve">
     <value>Nincs találat</value>
   </data>
-	<data name="CardView_NoResults_Subtitle.Text" xml:space="preserve">
+  <data name="CardView_NoResults_Subtitle.Text" xml:space="preserve">
     <value>Próbáljon ki más kulcsszavakat, vagy távolítsa el a keresési szűrőket</value>
   </data>
-	<data name="CardView_Error_LoadFailed" xml:space="preserve">
+  <data name="CardView_Error_LoadFailed" xml:space="preserve">
     <value>Nem sikerült betölteni a kártyákat: {0}</value>
   </data>
-	<data name="CardView_Error_OpenFailed" xml:space="preserve">
+  <data name="CardView_Error_OpenFailed" xml:space="preserve">
     <value>Nem sikerült megnyitni az elemet: {0}</value>
   </data>
-	<data name="Filter_Apps" xml:space="preserve">
+  <data name="Filter_Apps" xml:space="preserve">
     <value>Alkalmazások</value>
   </data>
-	<data name="Filter_Games" xml:space="preserve">
+  <data name="Filter_Games" xml:space="preserve">
     <value>Játékok</value>
   </data>
-	<data name="Filter_TopFree" xml:space="preserve">
+  <data name="Filter_TopFree" xml:space="preserve">
     <value>Legjobb ingyenes</value>
   </data>
-	<data name="Filter_TopPaid" xml:space="preserve">
+  <data name="Filter_TopPaid" xml:space="preserve">
     <value>Legjobb fizetős</value>
   </data>
-	<data name="Filter_TopTrending" xml:space="preserve">
+  <data name="Filter_TopTrending" xml:space="preserve">
     <value>Legnépszerűbb</value>
   </data>
-	<data name="Filter_Specials" xml:space="preserve">
+  <data name="Filter_Specials" xml:space="preserve">
     <value>Akciók</value>
   </data>
-	<data name="Filter_BestSelling" xml:space="preserve">
+  <data name="Filter_BestSelling" xml:space="preserve">
     <value>Legkelendőbb</value>
   </data>
-	<data name="AdvancedSearch_Header.Text" xml:space="preserve">
+  <data name="AdvancedSearch_Header.Text" xml:space="preserve">
     <value>Speciális keresés</value>
   </data>
-	<data name="AdvancedSearch_SearchHint.Text" xml:space="preserve">
+  <data name="AdvancedSearch_SearchHint.Text" xml:space="preserve">
     <value>Keresés URL, termékkód vagy csomagcsalád név alapján</value>
   </data>
-	<data name="AdvancedSearch_TypeUrl.Content" xml:space="preserve">
+  <data name="AdvancedSearch_TypeUrl.Content" xml:space="preserve">
     <value>URL</value>
   </data>
-	<data name="AdvancedSearch_TypeProductId.Content" xml:space="preserve">
+  <data name="AdvancedSearch_TypeProductId.Content" xml:space="preserve">
     <value>Termékazonosító</value>
   </data>
-	<data name="AdvancedSearch_TypePfn.Content" xml:space="preserve">
+  <data name="AdvancedSearch_TypePfn.Content" xml:space="preserve">
     <value>Csomagcsalád neve</value>
   </data>
-	<data name="AdvancedSearch_SearchBtn.Text" xml:space="preserve">
+  <data name="AdvancedSearch_SearchBtn.Text" xml:space="preserve">
     <value>Keresés</value>
   </data>
-	<data name="AdvancedSearch_LookingUp.Text" xml:space="preserve">
+  <data name="AdvancedSearch_LookingUp.Text" xml:space="preserve">
     <value>Termék keresése</value>
   </data>
-	<data name="AdvancedSearch_UrlCard_Title.Text" xml:space="preserve">
+  <data name="AdvancedSearch_UrlCard_Title.Text" xml:space="preserve">
     <value>URL</value>
   </data>
-	<data name="AdvancedSearch_UrlCard_Desc.Text" xml:space="preserve">
+  <data name="AdvancedSearch_UrlCard_Desc.Text" xml:space="preserve">
     <value>Illesszen be egy Microsoft Store termék URL-t a termék automatikus kinyeréséhez és kereséséhez.</value>
   </data>
-	<data name="AdvancedSearch_UrlCard_Example.Text" xml:space="preserve">
+  <data name="AdvancedSearch_UrlCard_Example.Text" xml:space="preserve">
     <value>például: https://apps.microsoft.com/detail/9WZDNCRFHVJL</value>
   </data>
-	<data name="AdvancedSearch_ProductIdCard_Title.Text" xml:space="preserve">
+  <data name="AdvancedSearch_ProductIdCard_Title.Text" xml:space="preserve">
     <value>Termékazonosító</value>
   </data>
-	<data name="AdvancedSearch_ProductIdCard_Desc.Text" xml:space="preserve">
+  <data name="AdvancedSearch_ProductIdCard_Desc.Text" xml:space="preserve">
     <value>Adja meg a termék alfanumerikus áruházazonosítóját, hogy közvetlenül a termék oldalára navigáljon.</value>
   </data>
-	<data name="AdvancedSearch_ProductIdCard_Example.Text" xml:space="preserve">
+  <data name="AdvancedSearch_ProductIdCard_Example.Text" xml:space="preserve">
     <value>Például: 9WZDNCRFHVJL</value>
   </data>
-	<data name="AdvancedSearch_PfnCard_Title.Text" xml:space="preserve">
+  <data name="AdvancedSearch_PfnCard_Title.Text" xml:space="preserve">
     <value>Csomagcsalád neve</value>
   </data>
-	<data name="AdvancedSearch_PfnCard_Desc.Text" xml:space="preserve">
+  <data name="AdvancedSearch_PfnCard_Desc.Text" xml:space="preserve">
     <value>Adja meg az alkalmazás csomagcsalád nevét a webáruházi oldalának megkereséséhez.</value>
   </data>
-	<data name="AdvancedSearch_PfnCard_Example.Text" xml:space="preserve">
+  <data name="AdvancedSearch_PfnCard_Example.Text" xml:space="preserve">
     <value>Például: Microsoft.WindowsTerminal_8wekyb3d8bbwe</value>
   </data>
-	<data name="AdvancedSearch_Placeholder_Url" xml:space="preserve">
+  <data name="AdvancedSearch_Placeholder_Url" xml:space="preserve">
     <value>https://apps.microsoft.com/detail/...</value>
   </data>
-	<data name="AdvancedSearch_Placeholder_ProductId" xml:space="preserve">
+  <data name="AdvancedSearch_Placeholder_ProductId" xml:space="preserve">
     <value>Például: 9WZDNCRFHVJL</value>
   </data>
-	<data name="AdvancedSearch_Placeholder_Pfn" xml:space="preserve">
+  <data name="AdvancedSearch_Placeholder_Pfn" xml:space="preserve">
     <value>Például: Microsoft.WindowsTerminal_8wekyb3d8bbwe</value>
   </data>
-	<data name="AdvancedSearch_Placeholder_Default" xml:space="preserve">
+  <data name="AdvancedSearch_Placeholder_Default" xml:space="preserve">
     <value>Adjon meg egy értéket a kereséshez</value>
   </data>
-	<data name="AdvancedSearch_Error_EmptyQuery" xml:space="preserve">
+  <data name="AdvancedSearch_Error_EmptyQuery" xml:space="preserve">
     <value>Kérjük, adjon meg egy értéket a kereséshez.</value>
   </data>
-	<data name="AdvancedSearch_Error_InvalidUrl" xml:space="preserve">
+  <data name="AdvancedSearch_Error_InvalidUrl" xml:space="preserve">
     <value>Nem sikerült termékazonosítót kinyerni ebből a URL-ből. Győződjön meg róla, hogy érvényes Microsoft Store URL-ről van szó.</value>
   </data>
-	<data name="AdvancedSearch_Error_NoPfnResult" xml:space="preserve">
+  <data name="AdvancedSearch_Error_NoPfnResult" xml:space="preserve">
     <value>Ehhez a csomagcsaládhoz nem található termék.</value>
   </data>
-	<data name="AdvancedSearch_Error_FailedLookup" xml:space="preserve">
+  <data name="AdvancedSearch_Error_FailedLookup" xml:space="preserve">
     <value>Nem sikerült megtalálni a következő terméket: {0}</value>
   </data>
-	<data name="AppPage_Loading.Text" xml:space="preserve">
+  <data name="AppPage_Loading.Text" xml:space="preserve">
     <value>Betöltés</value>
   </data>
-	<data name="AppPage_BypassFilters.Text" xml:space="preserve">
+  <data name="AppPage_BypassFilters.Text" xml:space="preserve">
     <value>Megkerülő szűrők</value>
   </data>
-	<data name="AppPage_CheckUpdates.Text" xml:space="preserve">
+  <data name="AppPage_CheckUpdates.Text" xml:space="preserve">
     <value>Frissítések ellenőrzése</value>
   </data>
-	<data name="AppPage_Screenshots.Text" xml:space="preserve">
+  <data name="AppPage_Screenshots.Text" xml:space="preserve">
     <value>Képernyőképek</value>
   </data>
-	<data name="AppPage_Description.Text" xml:space="preserve">
+  <data name="AppPage_Description.Text" xml:space="preserve">
     <value>Leírás</value>
   </data>
-	<data name="AppPage_MoreDetails.Text" xml:space="preserve">
+  <data name="AppPage_MoreDetails.Text" xml:space="preserve">
     <value>További részletek</value>
   </data>
-	<data name="AppPage_AppSize.Text" xml:space="preserve">
+  <data name="AppPage_AppSize.Text" xml:space="preserve">
     <value>Alkalmazás mérete:</value>
   </data>
-	<data name="AppPage_Version.Text" xml:space="preserve">
+  <data name="AppPage_Version.Text" xml:space="preserve">
     <value>Verzió:</value>
   </data>
-	<data name="AppPage_LastUpdated.Text" xml:space="preserve">
+  <data name="AppPage_LastUpdated.Text" xml:space="preserve">
     <value>Utolsó frissítés:</value>
   </data>
-	<data name="AppPage_Error_LoadTitle" xml:space="preserve">
+  <data name="AppPage_Error_LoadTitle" xml:space="preserve">
     <value>Hiba az alkalmazás betöltésekor</value>
   </data>
-	<data name="AppPage_Error_LoadMessage" xml:space="preserve">
+  <data name="AppPage_Error_LoadMessage" xml:space="preserve">
     <value>Nem sikerült betölteni az alkalmazás részleteit: {0}</value>
   </data>
-	<data name="AppPage_Error_CheckUpdatesTitle" xml:space="preserve">
+  <data name="AppPage_Error_CheckUpdatesTitle" xml:space="preserve">
     <value>Frissítések ellenőrzése</value>
   </data>
-	<data name="AppPage_Error_VersionCheckMsg" xml:space="preserve">
+  <data name="AppPage_Error_VersionCheckMsg" xml:space="preserve">
     <value>Nem sikerült lekérni a legújabb verziót. Lehet, hogy az alkalmazás nem elérhető, vagy az ellenőrzés sikertelen volt.</value>
   </data>
-	<data name="AppPage_Error_UpdateCheckFailed" xml:space="preserve">
+  <data name="AppPage_Error_UpdateCheckFailed" xml:space="preserve">
     <value>Frissítések ellenőrzése sikertelen: {0}</value>
   </data>
-	<data name="AppPage_Error_OperationCanceled" xml:space="preserve">
+  <data name="AppPage_Error_OperationCanceled" xml:space="preserve">
     <value>A művelet megszakítva.</value>
   </data>
-	<data name="AppPage_Error_NotSupportedTitle" xml:space="preserve">
+  <data name="AppPage_Error_NotSupportedTitle" xml:space="preserve">
     <value>Alkalmazás nem támogatott</value>
   </data>
-	<data name="AppPage_Error_NotSupportedMsg" xml:space="preserve">
+  <data name="AppPage_Error_NotSupportedMsg" xml:space="preserve">
     <value>Ez az alkalmazás nem támogatott. Próbáljon ki egy másik alkalmazást, vagy ellenőrizze később újra.</value>
   </data>
-	<data name="AppPage_Error_StoreQueryFailedTitle" xml:space="preserve">
+  <data name="AppPage_Error_StoreQueryFailedTitle" xml:space="preserve">
     <value>Nem sikerült elérni az áruházat</value>
   </data>
-	<data name="AppPage_Error_StoreQueryFailedMsg" xml:space="preserve">
+  <data name="AppPage_Error_StoreQueryFailedMsg" xml:space="preserve">
     <value>Jelenleg nem tudtuk lekérni az alkalmazás letöltési adatait. Ellenőrizze az internetkapcsolatot, és próbálja újra.</value>
   </data>
-	<data name="AppPage_Error_OsIncompatibleTitle" xml:space="preserve">
+  <data name="AppPage_Error_OsIncompatibleTitle" xml:space="preserve">
     <value>Alkalmazás nem támogatott</value>
   </data>
-	<data name="AppPage_Error_OsIncompatibleMsg" xml:space="preserve">
+  <data name="AppPage_Error_OsIncompatibleMsg" xml:space="preserve">
     <value>Ez az alkalmazás egy újabb Windows-verziót igényel, mint amit ez az eszköz használ.</value>
   </data>
-	<data name="AppPage_Error_ArchIncompatibleTitle" xml:space="preserve">
+  <data name="AppPage_Error_ArchIncompatibleTitle" xml:space="preserve">
     <value>Alkalmazás nem támogatott</value>
   </data>
-	<data name="AppPage_Error_ArchIncompatibleMsg" xml:space="preserve">
+  <data name="AppPage_Error_ArchIncompatibleMsg" xml:space="preserve">
     <value>Ez az alkalmazás nem kínál olyan verziót, amely kompatibilis lenne az eszköze processzorával (CPU architektúrájával).</value>
   </data>
-	<data name="AppPage_Error_NoInstallerTitle" xml:space="preserve">
+  <data name="AppPage_Error_NoInstallerTitle" xml:space="preserve">
     <value>Alkalmazás nem elérhető</value>
   </data>
-	<data name="AppPage_Error_NoInstallerMsg" xml:space="preserve">
+  <data name="AppPage_Error_NoInstallerMsg" xml:space="preserve">
     <value>Ehhez az alkalmazáshoz jelenleg nincs telepíthető csomag kiadva. Ellenőrizze később újra.</value>
   </data>
-	<data name="AppPage_Error_DownloadInfoTitle" xml:space="preserve">
+  <data name="AppPage_Error_DownloadInfoTitle" xml:space="preserve">
     <value>Letöltés nem elérhető</value>
   </data>
-	<data name="AppPage_Error_DownloadInfoMsg" xml:space="preserve">
+  <data name="AppPage_Error_DownloadInfoMsg" xml:space="preserve">
     <value>Jelenleg nem tudtunk letöltési linket szerezni ehhez az alkalmazáshoz. Próbálja meg újra később.</value>
   </data>
-	<data name="AppPage_Error_UnsupportedTypeTitle" xml:space="preserve">
+  <data name="AppPage_Error_UnsupportedTypeTitle" xml:space="preserve">
     <value>Alkalmazás nem támogatott</value>
   </data>
-	<data name="AppPage_Error_UnsupportedTypeMsg" xml:space="preserve">
+  <data name="AppPage_Error_UnsupportedTypeMsg" xml:space="preserve">
     <value>Ez az alkalmazás olyan telepítő típust használ, amelyet a Raven még nem támogat.</value>
   </data>
-	<data name="AppPage_Error_FailedToInstall" xml:space="preserve">
+  <data name="AppPage_Error_FailedToInstall" xml:space="preserve">
     <value>Sikertelen telepítés.</value>
   </data>
-	<data name="AppPage_Error_UnableToOpenTitle" xml:space="preserve">
+  <data name="AppPage_Error_UnableToOpenTitle" xml:space="preserve">
     <value>Az alkalmazás megnyitása nem sikerült</value>
   </data>
-	<data name="AppPage_Error_NotInstalledPackaged" xml:space="preserve">
+  <data name="AppPage_Error_NotInstalledPackaged" xml:space="preserve">
     <value>Ez az alkalmazáscsomag nem található a Windows csomagkezelőjében. Lehetséges, hogy nincs telepítve.</value>
   </data>
-	<data name="AppPage_Error_NoAppEntries" xml:space="preserve">
+  <data name="AppPage_Error_NoAppEntries" xml:space="preserve">
     <value>Az alkalmazáscsomag telepítve van, de nem található indítható alkalmazásbejegyzés.</value>
   </data>
-	<data name="AppPage_Error_CantOpen" xml:space="preserve">
+  <data name="AppPage_Error_CantOpen" xml:space="preserve">
     <value>Az alkalmazást nem lehetett megnyitni. Próbálja meg újratelepíteni az alkalmazást.</value>
   </data>
-	<data name="AppPage_Error_NotInstalledWin32" xml:space="preserve">
+  <data name="AppPage_Error_NotInstalledWin32" xml:space="preserve">
     <value>Ez az alkalmazás nem található a Windows eltávolítási beállításjegyzékében. Lehetséges, hogy nincs telepítve.</value>
   </data>
-	<data name="AppPage_Error_MissingLaunchTarget" xml:space="preserve">
+  <data name="AppPage_Error_MissingLaunchTarget" xml:space="preserve">
     <value>Úgy tűnik, hogy az alkalmazás telepítve van, de az indítási cél nem található (Start menü/DisplayIcon). Lehet, hogy az alkalmazást helytelenül telepítették.</value>
   </data>
-	<data name="AppPage_Error_MissingLaunchFile" xml:space="preserve">
+  <data name="AppPage_Error_MissingLaunchFile" xml:space="preserve">
     <value>Úgy tűnik, hogy az alkalmazás telepítve van, de a futtató fájlja nem található a lemezen. Lehet, hogy az alkalmazást áthelyezték vagy helytelenül telepítették.</value>
   </data>
-	<data name="AppPage_Error_InstalledVersion" xml:space="preserve">
+  <data name="AppPage_Error_InstalledVersion" xml:space="preserve">
     <value>Telepített verzió: {0}</value>
   </data>
-	<data name="AppPage_Error_InstallerMissingTitle" xml:space="preserve">
+  <data name="AppPage_Error_InstallerMissingTitle" xml:space="preserve">
     <value>Telepítő hiányzik</value>
   </data>
-	<data name="AppPage_Error_InstallerMissingMsg" xml:space="preserve">
+  <data name="AppPage_Error_InstallerMissingMsg" xml:space="preserve">
     <value>A kicsomagolatlan telepítő nem található a lemezen.</value>
   </data>
-	<data name="AppPage_Manual_Install_Title" xml:space="preserve">
+  <data name="AppPage_Manual_Install_Title" xml:space="preserve">
     <value>Kézi telepítés szükséges</value>
   </data>
-	<data name="AppPage_Manual_Install_Msg" xml:space="preserve">
+  <data name="AppPage_Manual_Install_Msg" xml:space="preserve">
     <value>Ez az alkalmazás csomagolatlan telepítőt (EXE/MSI) használ. Most megnyílik, és további lépésekre lehet szükség a telepítés befejezéséhez.</value>
   </data>
-	<data name="AppPage_Btn_OpenInstaller" xml:space="preserve">
+  <data name="AppPage_Btn_OpenInstaller" xml:space="preserve">
     <value>Telepítő megnyitása</value>
   </data>
-	<data name="AppPage_Error_UnableToOpenInstallerTitle" xml:space="preserve">
+  <data name="AppPage_Error_UnableToOpenInstallerTitle" xml:space="preserve">
     <value>Nem lehet megnyitni a telepítőt</value>
   </data>
-	<data name="Common_Cancel" xml:space="preserve">
+  <data name="Common_Cancel" xml:space="preserve">
     <value>Mégse</value>
   </data>
-	<data name="Status_Pending" xml:space="preserve">
+  <data name="Status_Pending" xml:space="preserve">
     <value>Függőben</value>
   </data>
-	<data name="Status_Downloading" xml:space="preserve">
+  <data name="Status_Downloading" xml:space="preserve">
     <value>Letöltés…</value>
   </data>
-	<data name="Status_Installing" xml:space="preserve">
+  <data name="Status_Installing" xml:space="preserve">
     <value>Telepítés…</value>
   </data>
-	<data name="Status_Cancelling" xml:space="preserve">
+  <data name="Status_Cancelling" xml:space="preserve">
     <value>Megszakítás…</value>
   </data>
-	<data name="Status_Failed" xml:space="preserve">
+  <data name="Status_Failed" xml:space="preserve">
     <value>Sikertelen</value>
   </data>
-	<data name="Status_Cancelled" xml:space="preserve">
+  <data name="Status_Cancelled" xml:space="preserve">
     <value>Megszakítva</value>
   </data>
-	<data name="Status_Completed" xml:space="preserve">
+  <data name="Status_Completed" xml:space="preserve">
     <value>Befejezett</value>
   </data>
-	<data name="Status_Unknown" xml:space="preserve">
+  <data name="Status_Unknown" xml:space="preserve">
     <value>Ismeretlen</value>
   </data>
-	<data name="Status_Updated" xml:space="preserve">
+  <data name="Status_Updated" xml:space="preserve">
     <value>Frissített</value>
   </data>
-	<data name="Download_File" xml:space="preserve">
+  <data name="Download_File" xml:space="preserve">
     <value>fájl</value>
   </data>
-	<data name="Download_Files" xml:space="preserve">
+  <data name="Download_Files" xml:space="preserve">
     <value>fájlok</value>
   </data>
-	<data name="Download_Status_DownloadingFiles" xml:space="preserve">
+  <data name="Download_Status_DownloadingFiles" xml:space="preserve">
     <value>Letöltés ({0}/{1}) {2}</value>
   </data>
-	<data name="Download_Status_Retry" xml:space="preserve">
+  <data name="Download_Status_Retry" xml:space="preserve">
     <value>Újrapróbálkozás ({0}/{1})</value>
   </data>
-	<data name="Download_Status_NoProgress" xml:space="preserve">
+  <data name="Download_Status_NoProgress" xml:space="preserve">
     <value>Nem észlelhető előrelépés. Újraindítás…</value>
   </data>
-	<data name="Download_Status_Stalled" xml:space="preserve">
+  <data name="Download_Status_Stalled" xml:space="preserve">
     <value>Hiba: A letöltés megakadt, és a megengedett újrapróbálkozások száma véget ért.</value>
   </data>
-
-	<data name="Download_Status_FailedRetries" xml:space="preserve">
+  <data name="Download_Status_FailedRetries" xml:space="preserve">
     <value>Hiba: A letöltés sikertelen volt a próbálkozások után.</value>
   </data>
-	<data name="Download_Status_Canceled" xml:space="preserve">
+  <data name="Download_Status_Canceled" xml:space="preserve">
     <value>Letöltés megszakítva.</value>
   </data>
-	<data name="Download_Status_Completed" xml:space="preserve">
+  <data name="Download_Status_Completed" xml:space="preserve">
     <value>Letöltés befejeződött.</value>
   </data>
-	<data name="Download_Status_MissingPackage" xml:space="preserve">
+  <data name="Download_Status_MissingPackage" xml:space="preserve">
     <value>A telepítés sikertelen: a fő csomag hiányzik.</value>
   </data>
-	<data name="Install_Error_ConflictingVersion" xml:space="preserve">
+  <data name="Install_Error_ConflictingVersion" xml:space="preserve">
     <value>Egy újabb vagy ugyanaz a verzió már telepítve van.</value>
   </data>
-	<data name="Install_Error_DeploymentInProgress" xml:space="preserve">
+  <data name="Install_Error_DeploymentInProgress" xml:space="preserve">
     <value>Egy másik telepítés folyamatban van. Várjon, amíg befejeződik, és próbálkozzon újra.</value>
   </data>
-	<data name="Install_Error_InvalidPackage" xml:space="preserve">
+  <data name="Install_Error_InvalidPackage" xml:space="preserve">
     <value>Érvénytelen vagy nem támogatott csomag. Győződjön meg róla, hogy a csomag és a függőségek támogatottak a rendszeréhez.</value>
   </data>
-	<data name="Install_Error_PackageNotFound" xml:space="preserve">
+  <data name="Install_Error_PackageNotFound" xml:space="preserve">
     <value>A csomagot nem találjuk. Ellenőrizze a kiválasztott/letöltött fájl útvonalát.</value>
   </data>
-	<data name="Install_Error_DeploymentFailure" xml:space="preserve">
+  <data name="Install_Error_DeploymentFailure" xml:space="preserve">
     <value>A Windows telepítése sikertelen. {0}</value>
   </data>
-	<data name="Install_Error_AdminRequired" xml:space="preserve">
+  <data name="Install_Error_AdminRequired" xml:space="preserve">
     <value>Ez a csomag egy csomagolt szolgáltatást tartalmaz, és rendszergazdai jogosultságokkal kell telepíteni. Indítsa újra az alkalmazást rendszergazdaként, és próbálkozzon újra.</value>
   </data>
-	<data name="Install_Error_GenericDeployment" xml:space="preserve">
+  <data name="Install_Error_GenericDeployment" xml:space="preserve">
     <value>Windows telepítési hiba (0x{0:X8}). {1}</value>
   </data>
   <data name="Install_Error_PackageCorrupt" xml:space="preserve">
@@ -631,309 +630,311 @@
   <data name="Install_Error_NotSupported" xml:space="preserve">
     <value>This operation is not supported on your system.</value>
   </data>
-	<data name="Install_Error_AccessDenied" xml:space="preserve">
+  <data name="Install_Error_AccessDenied" xml:space="preserve">
     <value>Sikertelen: A hozzáférés megtagadva. Próbálja meg rendszergazdaként futtatni, vagy győződjön meg arról, hogy az oldalbetöltési házirend engedélyezi az alkalmazáscsomagokat. {0}</value>
   </data>
-	<data name="Install_Error_Generic" xml:space="preserve">
+  <data name="Install_Error_Generic" xml:space="preserve">
     <value>Sikertelen: {0}</value>
   </data>
-	<data name="Install_Btn_ForceInstall" xml:space="preserve">
+  <data name="Install_Btn_ForceInstall" xml:space="preserve">
     <value>Telepítés kényszerítése</value>
   </data>
-	<data name="Install_Btn_RunAsAdmin" xml:space="preserve">
+  <data name="Install_Btn_RunAsAdmin" xml:space="preserve">
     <value>Futtassa rendszergazdaként</value>
   </data>
-	<data name="Common_OK" xml:space="preserve">
+  <data name="Common_OK" xml:space="preserve">
     <value>OK</value>
   </data>
-	<data name="DownloadsPage_Header.Text" xml:space="preserve">
+  <data name="DownloadsPage_Header.Text" xml:space="preserve">
     <value>Letöltések</value>
   </data>
-	<data name="DownloadsPage_OpenFolder.Content" xml:space="preserve">
+  <data name="DownloadsPage_OpenFolder.Content" xml:space="preserve">
     <value>Mappa megnyitása</value>
   </data>
-	<data name="DownloadsPage_Delete.Text" xml:space="preserve">
+  <data name="DownloadsPage_Delete.Text" xml:space="preserve">
     <value>Törlés</value>
   </data>
-	<data name="DownloadsPage_CancelBtn.ToolTipService.ToolTip" xml:space="preserve">
+  <data name="DownloadsPage_CancelBtn.ToolTipService.ToolTip" xml:space="preserve">
     <value>Letöltés megszakítása</value>
   </data>
-	<data name="Download_Status_Fetching" xml:space="preserve">
+  <data name="Download_Status_Fetching" xml:space="preserve">
     <value>Letöltési URL-ek lekérése</value>
   </data>
-	<data name="Download_Status_Downloading" xml:space="preserve">
+  <data name="Download_Status_Downloading" xml:space="preserve">
     <value>Letöltés</value>
   </data>
-	<data name="Download_Status_Installing" xml:space="preserve">
+  <data name="Download_Status_Installing" xml:space="preserve">
     <value>Telepítés</value>
   </data>
-	<data name="Download_Status_Cancelling" xml:space="preserve">
+  <data name="Download_Status_Cancelling" xml:space="preserve">
     <value>Megszakítás</value>
   </data>
-	<data name="InstallationsPage_Header.Text" xml:space="preserve">
+  <data name="InstallationsPage_Header.Text" xml:space="preserve">
     <value>Telepítési csomag</value>
   </data>
-	<data name="InstallationsPage_Installing.Text" xml:space="preserve">
+  <data name="InstallationsPage_Installing.Text" xml:space="preserve">
     <value>Telepítés…</value>
   </data>
-	<data name="InstallationsPage_FileText.PlaceholderText" xml:space="preserve">
+  <data name="InstallationsPage_FileText.PlaceholderText" xml:space="preserve">
     <value>Nincs fájl kiválasztva</value>
   </data>
-	<data name="InstallationsPage_InstallBtn.Content" xml:space="preserve">
+  <data name="InstallationsPage_InstallBtn.Content" xml:space="preserve">
     <value>Telepítés</value>
   </data>
-	<data name="InstallationsPage_InstallLabel" xml:space="preserve">
+  <data name="InstallationsPage_InstallLabel" xml:space="preserve">
     <value>Telepítés</value>
   </data>
-	<data name="InstallationsPage_DropZone.Text" xml:space="preserve">
+  <data name="InstallationsPage_DropZone.Text" xml:space="preserve">
     <value>Válasszon egy csomagot, vagy húzza ide</value>
   </data>
-	<data name="InstallationsPage_FilePicker_Title" xml:space="preserve">
+  <data name="InstallationsPage_FilePicker_Title" xml:space="preserve">
     <value>Válasszon egy alkalmazáscsomagot</value>
   </data>
-	<data name="InstallationsPage_DragCaption" xml:space="preserve">
+  <data name="InstallationsPage_DragCaption" xml:space="preserve">
     <value>Ejtse ide a csomag kiválasztásához</value>
   </data>
-	<data name="Install_Status_Installing" xml:space="preserve">
+  <data name="Install_Status_Installing" xml:space="preserve">
     <value>Telepítés</value>
   </data>
-	<data name="Install_Status_Installed" xml:space="preserve">
+  <data name="Install_Status_Installed" xml:space="preserve">
     <value>Telepítve.</value>
   </data>
-	<data name="Install_Status_Error" xml:space="preserve">
+  <data name="Install_Status_Error" xml:space="preserve">
     <value>Hiba</value>
   </data>
-	<data name="Install_Dialog_Title" xml:space="preserve">
+  <data name="Install_Dialog_Title" xml:space="preserve">
     <value>Telepítés sikertelen</value>
   </data>
-	<data name="InstallationsPage_FilePicker_Error" xml:space="preserve">
+  <data name="InstallationsPage_FilePicker_Error" xml:space="preserve">
     <value>Fájlválasztó hiba</value>
   </data>
-	<data name="InstallationsPage_FilePicker_CommDlgError" xml:space="preserve">
+  <data name="InstallationsPage_FilePicker_CommDlgError" xml:space="preserve">
     <value>A GetOpenFileName nem sikerült. CommDlgExtendedError=0x{0:X}</value>
   </data>
-	<data name="InstallationsPage_Filter_AppPackages" xml:space="preserve">
+  <data name="InstallationsPage_Filter_AppPackages" xml:space="preserve">
     <value>Alkalmazáscsomagok (*.msix;*.appx;*.msixbundle;*.appxbundle)</value>
   </data>
-	<data name="InstallationsPage_Filter_AllFiles" xml:space="preserve">
+  <data name="InstallationsPage_Filter_AllFiles" xml:space="preserve">
     <value>Minden fájl (*.*)</value>
   </data>
-	<data name="UpdatesPage_Header.Text" xml:space="preserve">
+  <data name="UpdatesPage_Header.Text" xml:space="preserve">
     <value>Frissítések</value>
   </data>
-	<data name="UpdatesPage_Stop.Text" xml:space="preserve">
+  <data name="UpdatesPage_Stop.Text" xml:space="preserve">
     <value>Megállítás</value>
   </data>
-	<data name="UpdatesPage_SelectAll.Content" xml:space="preserve">
+  <data name="UpdatesPage_SelectAll.Content" xml:space="preserve">
     <value>Mindet kiválaszt</value>
   </data>
-	<data name="UpdatesPage_NoUpdates.Text" xml:space="preserve">
+  <data name="UpdatesPage_NoUpdates.Text" xml:space="preserve">
     <value>Nincs új frissítés</value>
   </data>
-	<data name="UpdatesPage_Completed.Text" xml:space="preserve">
+  <data name="UpdatesPage_Completed.Text" xml:space="preserve">
     <value>Befejezett</value>
   </data>
-	<data name="UpdatesPage_VersionSeparator.Text" xml:space="preserve">
+  <data name="UpdatesPage_VersionSeparator.Text" xml:space="preserve">
     <value>→</value>
   </data>
-	<data name="UpdatesPage_CancelBtn.ToolTipService.ToolTip" xml:space="preserve">
+  <data name="UpdatesPage_CancelBtn.ToolTipService.ToolTip" xml:space="preserve">
     <value>Frissítés megszakítása</value>
   </data>
-	<data name="Updates_ButtonCheck" xml:space="preserve">
+  <data name="Updates_ButtonCheck" xml:space="preserve">
     <value>Frissítések keresése</value>
   </data>
-	<data name="Updates_ButtonChecking" xml:space="preserve">
+  <data name="Updates_ButtonChecking" xml:space="preserve">
     <value>Ellenőrzés…</value>
   </data>
-	<data name="Updates_ButtonUpdate" xml:space="preserve">
+  <data name="Updates_ButtonUpdate" xml:space="preserve">
     <value>Kijelölt frissítés ({0})</value>
   </data>
-	<data name="Updates_CheckingBase" xml:space="preserve">
+  <data name="Updates_CheckingBase" xml:space="preserve">
     <value>Ellenőrzés</value>
   </data>
-	<data name="Updates_CheckingProgress" xml:space="preserve">
+  <data name="Updates_CheckingProgress" xml:space="preserve">
     <value>Ellenőrzés ({0}/{1})</value>
   </data>
-	<data name="Search_Filter_AllDepartments" xml:space="preserve">
+  <data name="Search_Filter_AllDepartments" xml:space="preserve">
     <value>Minden osztály</value>
   </data>
-	<data name="Search_Filter_Fonts" xml:space="preserve">
+  <data name="Search_Filter_Fonts" xml:space="preserve">
     <value>Betűtípusok</value>
   </data>
-	<data name="Search_Filter_Themes" xml:space="preserve">
+  <data name="Search_Filter_Themes" xml:space="preserve">
     <value>Témák</value>
   </data>
-	<data name="Search_Filter_AllTypes" xml:space="preserve">
+  <data name="Search_Filter_AllTypes" xml:space="preserve">
     <value>Minden típus</value>
   </data>
-	<data name="Search_Filter_Free" xml:space="preserve">
+  <data name="Search_Filter_Free" xml:space="preserve">
     <value>Ingyenes</value>
   </data>
-	<data name="Search_Filter_Paid" xml:space="preserve">
+  <data name="Search_Filter_Paid" xml:space="preserve">
     <value>Fizetős</value>
   </data>
-	<data name="BundlesPage_Loading.Text" xml:space="preserve">
+  <data name="BundlesPage_Loading.Text" xml:space="preserve">
     <value>Betöltés…</value>
   </data>
-	<data name="BundlesPage_Error.Text" xml:space="preserve">
+  <data name="BundlesPage_Error.Text" xml:space="preserve">
     <value>Váratlan hiba történt!</value>
   </data>
-	<data name="BundlesPage_InBundle.Text" xml:space="preserve">
+  <data name="BundlesPage_InBundle.Text" xml:space="preserve">
     <value>Ebben a csomagban</value>
   </data>
-	<data name="AppPage_StopBtn.ToolTipService.ToolTip" xml:space="preserve">
+  <data name="AppPage_StopBtn.ToolTipService.ToolTip" xml:space="preserve">
     <value>Megállítás</value>
   </data>
-	<data name="AppPage_MoreOptionsBtn.ToolTipService.ToolTip" xml:space="preserve">
+  <data name="AppPage_MoreOptionsBtn.ToolTipService.ToolTip" xml:space="preserve">
     <value>További lehetőségek</value>
   </data>
-	<data name="AppPage_ShareBtn.ToolTipService.ToolTip" xml:space="preserve">
+  <data name="AppPage_ShareBtn.ToolTipService.ToolTip" xml:space="preserve">
     <value>Megosztás</value>
   </data>
-	<data name="AppPage_Share_CopyLink.Text" xml:space="preserve">
+  <data name="AppPage_Share_CopyLink.Text" xml:space="preserve">
     <value>Link másolása</value>
   </data>
-	<data name="AppPage_Share_CopyProductId.Text" xml:space="preserve">
+  <data name="AppPage_Share_CopyProductId.Text" xml:space="preserve">
     <value>Termékazonosító másolása</value>
   </data>
-	<data name="AppPage_Share_CopyPackageFamilyName.Text" xml:space="preserve">
+  <data name="AppPage_Share_CopyPackageFamilyName.Text" xml:space="preserve">
     <value>PFN másolása</value>
   </data>
-	<data name="AppPage_LightboxClose.ToolTipService.ToolTip" xml:space="preserve">
+  <data name="AppPage_LightboxClose.ToolTipService.ToolTip" xml:space="preserve">
     <value>Bezárás</value>
   </data>
-	<data name="AppPage_LightboxPrev.ToolTipService.ToolTip" xml:space="preserve">
+  <data name="AppPage_LightboxPrev.ToolTipService.ToolTip" xml:space="preserve">
     <value>Előző</value>
   </data>
-	<data name="AppPage_LightboxNext.ToolTipService.ToolTip" xml:space="preserve">
+  <data name="AppPage_LightboxNext.ToolTipService.ToolTip" xml:space="preserve">
     <value>Következő</value>
   </data>
-	<data name="AppPage_ScreenshotsPrev.ToolTipService.ToolTip" xml:space="preserve">
+  <data name="AppPage_ScreenshotsPrev.ToolTipService.ToolTip" xml:space="preserve">
     <value>Előző képernyőkép</value>
   </data>
-	<data name="AppPage_ScreenshotsNext.ToolTipService.ToolTip" xml:space="preserve">
+  <data name="AppPage_ScreenshotsNext.ToolTipService.ToolTip" xml:space="preserve">
     <value>Következő képernyőkép</value>
   </data>
-	<data name="AppPage_LightboxCounter_Format" xml:space="preserve">
+  <data name="AppPage_LightboxCounter_Format" xml:space="preserve">
     <value>{0} / {1}</value>
   </data>
-	<data name="DownloadsPage_MoreOptionsBtn.ToolTipService.ToolTip" xml:space="preserve">
+  <data name="DownloadsPage_MoreOptionsBtn.ToolTipService.ToolTip" xml:space="preserve">
     <value>További lehetőségek</value>
   </data>
-	<data name="AppPage_Btn_Install" xml:space="preserve">
+  <data name="AppPage_Btn_Install" xml:space="preserve">
     <value>Telepítés</value>
   </data>
-	<data name="AppPage_Btn_Update" xml:space="preserve">
+  <data name="AppPage_Btn_Update" xml:space="preserve">
     <value>Frissítés</value>
   </data>
-	<data name="AppPage_Btn_Open" xml:space="preserve">
+  <data name="AppPage_Btn_Open" xml:space="preserve">
     <value>Megnyitás</value>
   </data>
-	<data name="AppPage_Btn_Retry" xml:space="preserve">
+  <data name="AppPage_Btn_Retry" xml:space="preserve">
     <value>Újra</value>
   </data>
-	<data name="AppPage_Btn_Download" xml:space="preserve">
+  <data name="AppPage_Btn_Download" xml:space="preserve">
     <value>Letöltés</value>
   </data>
-	<data name="InstallationsPage_ClearBtn.ToolTipService.ToolTip" xml:space="preserve">
+  <data name="InstallationsPage_ClearBtn.ToolTipService.ToolTip" xml:space="preserve">
     <value>Tisztítás</value>
   </data>
-	<data name="Settings_LicenseDialogTitle.Text" xml:space="preserve">
+  <data name="Settings_LicenseDialogTitle.Text" xml:space="preserve">
     <value>Licenc</value>
   </data>
-	<data name="Settings_LicenseDialogClose.Content" xml:space="preserve">
+  <data name="Settings_LicenseDialogClose.Content" xml:space="preserve">
     <value>Bezárás</value>
   </data>
-	<data name="Sideloading_DisabledTitle" xml:space="preserve">
+  <data name="Sideloading_DisabledTitle" xml:space="preserve">
     <value>Az oldaltöltés le van tiltva</value>
   </data>
-	<data name="Sideloading_DisabledMessage" xml:space="preserve">
+  <data name="Sideloading_DisabledMessage" xml:space="preserve">
     <value>A külső forrásból való telepítés jelenleg le van tiltva ezen az eszközön. Addig nem tud alkalmazáscsomagokat telepíteni, amíg ezt a funkciót be nem kapcsolja.
 
 A Windows beállításokban a Fejlesztői mód bekapcsolásával engedélyezheti.</value>
   </data>
-	<data name="Sideloading_EnableButton" xml:space="preserve">
+  <data name="Sideloading_EnableButton" xml:space="preserve">
     <value>Beállítások megnyitása</value>
   </data>
-	<data name="Sideloading_CancelButton" xml:space="preserve">
+  <data name="Sideloading_CancelButton" xml:space="preserve">
     <value>Most nem</value>
   </data>
-	<data name="InstallationsPage_MoreOptionsBtn.ToolTipService.ToolTip" xml:space="preserve">
+  <data name="InstallationsPage_MoreOptionsBtn.ToolTipService.ToolTip" xml:space="preserve">
     <value>Speciális beállítások</value>
   </data>
-	<data name="InstallationsPage_AdvancedInstall.Text" xml:space="preserve">
+  <data name="InstallationsPage_AdvancedInstall.Text" xml:space="preserve">
     <value>Kicsomagolt mód</value>
   </data>
-	<data name="InstallationsPage_CustomFolder.PlaceholderText" xml:space="preserve">
+  <data name="InstallationsPage_CustomFolder.PlaceholderText" xml:space="preserve">
     <value>Válassza ki a telepítési mappát…</value>
   </data>
-	<data name="InstallationsPage_BrowseFolderBtn.Content" xml:space="preserve">
+  <data name="InstallationsPage_BrowseFolderBtn.Content" xml:space="preserve">
     <value>Tallózás</value>
   </data>
-	<data name="InstallationsPage_RemoveSignature.Content" xml:space="preserve">
+  <data name="InstallationsPage_RemoveSignature.Content" xml:space="preserve">
     <value>Aláírás ellenőrzés eltávolítása</value>
   </data>
-	<data name="InstallationsPage_SelectDependenciesBtn.Content" xml:space="preserve">
+  <data name="InstallationsPage_SelectDependenciesBtn.Content" xml:space="preserve">
     <value>Válassza ki a függőségeket</value>
   </data>
-	<data name="InstallationsPage_FolderPicker_Title" xml:space="preserve">
+  <data name="InstallationsPage_FolderPicker_Title" xml:space="preserve">
     <value>Válassza ki a telepítés helyét</value>
   </data>
-	<data name="InstallationsPage_DependencyPicker_Title" xml:space="preserve">
+  <data name="InstallationsPage_DependencyPicker_Title" xml:space="preserve">
     <value>Válassza ki a függőségi csomagokat</value>
   </data>
-	<data name="InstallationsPage_Dependencies_Count" xml:space="preserve">
+  <data name="InstallationsPage_Dependencies_Count" xml:space="preserve">
     <value>{0} kiválasztva</value>
   </data>
-	<data name="Install_Error_NoFolderSelected" xml:space="preserve">
+  <data name="Install_Error_NoFolderSelected" xml:space="preserve">
     <value>Válasszon telepítési mappát a telepítés előtt.</value>
   </data>
-	<data name="Install_Error_FolderExists" xml:space="preserve">
+  <data name="Install_Error_FolderExists" xml:space="preserve">
     <value>A kiválasztott helyen már létezik egy "{0}" nevű mappa. Válasszon másik helyet, vagy távolítsa el a meglévő mappát.</value>
   </data>
-	<data name="Install_Error_NoInstallableArch" xml:space="preserve">
+  <data name="Install_Error_NoInstallableArch" xml:space="preserve">
     <value>Ez a csomag nem tartalmazza az Ön által kiválasztott architektúrával kompatibilis csomagot.</value>
   </data>
-	<data name="Install_Error_ManifestMissing" xml:space="preserve">
+  <data name="Install_Error_ManifestMissing" xml:space="preserve">
     <value>Nem található az AppxManifest.xml a csomagban.</value>
   </data>
-	<data name="DeveloperMode_DisabledTitle" xml:space="preserve">
+  <data name="DeveloperMode_DisabledTitle" xml:space="preserve">
     <value>Fejlesztői mód szükséges</value>
   </data>
-	<data name="DeveloperMode_DisabledMessage" xml:space="preserve">
+  <data name="DeveloperMode_DisabledMessage" xml:space="preserve">
     <value>A testreszabott (laza) telepítés egy alkalmazást csomagolatlan fájlokból regisztrál, ami Fejlesztői módot igényel.
 
 A Windows beállításokban a Fejlesztői mód bekapcsolásával engedélyezheti.</value>
   </data>
-	<data name="DeveloperMode_EnableButton" xml:space="preserve">
+  <data name="DeveloperMode_EnableButton" xml:space="preserve">
     <value>Beállítások megnyitása</value>
   </data>
-	<data name="DeveloperMode_CancelButton" xml:space="preserve">
+  <data name="DeveloperMode_CancelButton" xml:space="preserve">
     <value>Nem most</value>
   </data>
-	<data name="InstallationsPage_ClearFolderBtn.ToolTipService.ToolTip" xml:space="preserve">
+  <data name="InstallationsPage_ClearFolderBtn.ToolTipService.ToolTip" xml:space="preserve">
     <value>Telepítési hely törlése</value>
   </data>
-	<data name="InstallationsPage_ClearDepsBtn.ToolTipService.ToolTip" xml:space="preserve">
+  <data name="InstallationsPage_ClearDepsBtn.ToolTipService.ToolTip" xml:space="preserve">
     <value>A kiválasztott függőségek törlése</value>
   </data>
-	<data name="Updates_FailedBanner_Title.Text" xml:space="preserve">
+  <data name="Updates_FailedBanner_Title.Text" xml:space="preserve">
     <value>Néhány frissítés sikertelen volt</value>
   </data>
-	<data name="Install_Error_AppInUse" xml:space="preserve">
+  <data name="Install_Error_AppInUse" xml:space="preserve">
     <value>A frissítés nem telepíthető, mert az alkalmazás jelenleg használatban van. Zárja be az alkalmazást, és próbálkozzon újra.</value>
   </data>
-	<data name="Install_Error_AppInUse_Processes" xml:space="preserve">
+  <data name="Install_Error_AppInUse_Processes" xml:space="preserve">
     <value>A frissítés telepítéséhez a következő alkalmazásokat be kell zárni:</value>
   </data>
-	<data name="Install_Btn_Retry" xml:space="preserve">
+  <data name="Install_Btn_Retry" xml:space="preserve">
     <value>Újra</value>
   </data>
-
   <data name="Install_Btn_DeferredInstall" xml:space="preserve">
     <value>Deferred Install</value>
   </data>
   <data name="Install_Error_DeferredInstallDescription" xml:space="preserve">
     <value>The application is currently running. We will securely prepare the update now, and it will be applied automatically the next time the app is closed or restarted.</value>
+  </data>
+  <data name="Updates_FailedBanner_ClearAll.Text" xml:space="preserve">
+    <value>Clear all</value>
   </data>
 </root>

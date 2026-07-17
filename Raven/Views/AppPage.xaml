@@ -203,6 +203,11 @@
                                             x:Uid="AppPage_BypassFilters"
                                             Click="IgnoreDependencyFilterToggle_Click"
                                             Style="{StaticResource CheckBoxToggleMenuFlyoutItemStyle}" />
+                                        <ToggleMenuFlyoutItem
+                                            x:Name="InstallDependenciesSeparatelyToggle"
+                                            x:Uid="AppPage_InstallDependenciesSeparately"
+                                            Click="InstallDependenciesSeparatelyToggle_Click"
+                                            Style="{StaticResource CheckBoxToggleMenuFlyoutItemStyle}" />
                                         <MenuFlyoutSeparator />
                                         <!--  Button-style item: custom template removes icon column, centers text  -->
                                         <MenuFlyoutItem

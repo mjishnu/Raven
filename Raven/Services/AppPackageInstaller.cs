@@ -5,9 +5,18 @@ namespace Raven.Services;
 
 public class PackageDeploymentException : InvalidOperationException
 {
-    public int OuterHResult { get; }
-    public int? ExtendedHResult { get; }
-    public string? DeploymentErrorText { get; }
+    public int OuterHResult
+    {
+        get;
+    }
+    public int? ExtendedHResult
+    {
+        get;
+    }
+    public string? DeploymentErrorText
+    {
+        get;
+    }
 
     public PackageDeploymentException(int outerHresult, int? extendedHresult, string? deploymentErrorText, string message, Exception? innerException = null)
         : base(message, innerException)

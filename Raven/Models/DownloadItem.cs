@@ -222,9 +222,12 @@ public partial class DownloadItem : INotifyPropertyChanged
     public bool WasDownloadOnly { get; set; }
 
     /// <summary>
-    /// True when this item was started with the "bypass dependency filter" option, meaning every
-    /// supported-architecture/version dependency was fetched and each must be installed as its own
-    /// standalone package. Persisted so a force-install retry repeats the same install strategy.
+    /// True when this item was started with the "bypass dependency filter" option.
+    /// </summary>
+    public bool IgnoreDependencyFilter { get; set; }
+
+    /// <summary>
+    /// True when the user requested to install dependencies separately.
     /// </summary>
     public bool InstallDependenciesSeparately { get; set; }
 

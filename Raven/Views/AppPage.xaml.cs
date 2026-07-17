@@ -159,7 +159,8 @@ public sealed partial class AppPage : Page
 
         // Reflect this app's persisted bypass choice on the toggle when the page is visited; reset
         // to off when the app has no download item so state never leaks between apps.
-        IgnoreDependencyFilterToggle.IsChecked = downloadItem?.InstallDependenciesSeparately ?? false;
+        IgnoreDependencyFilterToggle.IsChecked = downloadItem?.IgnoreDependencyFilter ?? false;
+        InstallDependenciesSeparatelyToggle.IsChecked = downloadItem?.InstallDependenciesSeparately ?? false;
 
         if (downloadItem != null)
         {
@@ -595,47 +596,32 @@ public sealed partial class AppPage : Page
 
             if (IsCurrentProduct(item))
             {
-                // Admin-required errors must be handled first — before the force-install
-                // or retry branches — so the elevation dialog is always shown.
-                if (InstallHelper.IsAdminRequired(item.LastInstallError) && !InstallHelper.IsRunningAsAdministrator())
-                {
-                    await InstallHelper.ShowInstallationErrorDialogAsync(
-                        App.MainWindow.Content.XamlRoot,
-                        "Install_Dialog_Title".GetLocalized(),
-                        item.LastInstallError
-                    );
-                    return;
-                }
-
-                if (InstallHelper.IsForceInstallable(item.LastInstallError))
-                {
-                    var force = await InstallHelper.ShowInstallationErrorOrForceInstallDialogAsync(
-                        App.MainWindow.Content.XamlRoot,
-                        "Install_Dialog_Title".GetLocalized(),
-                        item.LastInstallError
-                    );
-
-                    if (force)
-                    {
-                        if (!string.IsNullOrWhiteSpace(mainPackagePath))
-                            await RetryForceInstallAsync(item, mainPackagePath);
-                        else
-                            InstallButton_Click(null!, null!);
-                    }
-                    return;
-                }
-
-                var retryAction = await InstallHelper.ShowUpdateFailedRetryDialogAsync(
+                var retryAction = await InstallHelper.HandleInstallExceptionAsync(
                     App.MainWindow.Content.XamlRoot,
                     "Install_Dialog_Title".GetLocalized(),
-                    item.LastInstallError
+                    item.LastInstallError,
+                    isAlreadyForceInstalling: _isForceInstalling
                 );
 
-                if (retryAction == RetryInstallAction.RetryNormal || retryAction == RetryInstallAction.RetryDeferred)
+                if (retryAction == RetryInstallAction.RetryForce)
+                {
+                    if (!string.IsNullOrWhiteSpace(mainPackagePath))
+                        await RetryForceInstallAsync(item, mainPackagePath);
+                    else
+                        InstallButton_Click(null!, null!);
+                }
+                else if (retryAction == RetryInstallAction.RetryNormal || retryAction == RetryInstallAction.RetryDeferred)
                 {
                     bool deferRegistration = retryAction == RetryInstallAction.RetryDeferred;
                     if (!string.IsNullOrWhiteSpace(mainPackagePath))
                         await RetryInstallAsync(item, mainPackagePath, deferRegistration);
+                    else
+                        InstallButton_Click(null!, null!);
+                }
+                else if (retryAction == RetryInstallAction.RetryInstallDependenciesSeparately)
+                {
+                    if (!string.IsNullOrWhiteSpace(mainPackagePath))
+                        await RetryInstallAsync(item, mainPackagePath, false, true);
                     else
                         InstallButton_Click(null!, null!);
                 }
@@ -648,7 +634,13 @@ public sealed partial class AppPage : Page
             DownloadManagerService.Instance.ClearDownloadError(item.ProductId);
         }
     }
-    private async Task RetryInstallAsync(DownloadItem item, string mainPackagePath, bool deferRegistration = false)
+    private Task RetryInstallAsync(DownloadItem item, string mainPackagePath, bool deferRegistration = false, bool installDependenciesSeparatelyRetry = false) =>
+        ExecuteInstallRetryAsync(item, mainPackagePath, deferRegistration, installDependenciesSeparatelyRetry, ignoreVersion: false);
+
+    private Task RetryForceInstallAsync(DownloadItem item, string mainPackagePath, bool deferRegistration = false) =>
+        ExecuteInstallRetryAsync(item, mainPackagePath, deferRegistration, installDependenciesSeparatelyRetry: false, ignoreVersion: true);
+
+    private async Task ExecuteInstallRetryAsync(DownloadItem item, string mainPackagePath, bool deferRegistration, bool installDependenciesSeparatelyRetry, bool ignoreVersion)
     {
         var productId = item.ProductId;
         var downloadManager = DownloadManagerService.Instance;
@@ -701,8 +693,8 @@ public sealed partial class AppPage : Page
                 mainPackagePath,
                 dependencyPackagePaths: depPaths,
                 progress: installProgress,
-                ignoreVersion: false,
-                installDependenciesSeparately: IgnoreDependencyFilterToggle.IsChecked,
+                ignoreVersion: ignoreVersion,
+                installDependenciesSeparately: InstallDependenciesSeparatelyToggle.IsChecked || installDependenciesSeparatelyRetry,
                 deferRegistration: deferRegistration
             );
 
@@ -715,109 +707,15 @@ public sealed partial class AppPage : Page
             UpdateService.StopStatusAnimation();
             downloadManager.UpdateDownloadStatusText(productId, "Download_Status_InstallFailed".GetLocalizedFormat(ex.Message));
             downloadManager.UpdateDownloadStatus(productId, DownloadStatus.Failed);
+            
+            string logPrefix = ignoreVersion ? "Force install failed" : "Retry install failed";
             _logger.LogError(
                 ex,
-                "Retry install failed | ProductId={ProductId} | MainPackage={MainPackagePath}",
+                $"{logPrefix} | ProductId={{ProductId}} | MainPackage={{MainPackagePath}}",
                 item.ProductId,
                 mainPackagePath
             );
 
-            await InstallHelper.ShowInstallationErrorDialogAsync(
-                this.Content.XamlRoot,
-                "Install_Dialog_Title".GetLocalized(),
-                ex
-            );
-        }
-        finally
-        {
-            _isForceInstalling = false;
-            _overrideAction = null;
-            UpdateInstallButtonState();
-        }
-    }
-
-    private async Task RetryForceInstallAsync(DownloadItem item, string mainPackagePath, bool deferRegistration = false)
-    {
-        var productId = item.ProductId;
-        var downloadManager = DownloadManagerService.Instance;
-
-        _isForceInstalling = true;
-
-        // Ensure we're observing so status/progress changes propagate immediately.
-        // BindToDownloadItem handles switching from a previously-bound item and is a no-op
-        // (subscription-wise) if already bound to this item.
-        BindToDownloadItem(item);
-
-        // Clear any previous install error so status handler can't pick it up.
-        item.LastInstallError = null;
-
-        // Reflect install retry in UI + Downloads page.
-        downloadManager.UpdateDownloadStatus(productId, DownloadStatus.Installing);
-        downloadManager.UpdateDownloadProgress(productId, 0);
-        // Use the override for animated dots in the Downloads list.
-        downloadManager.UpdateDownloadStatusText(productId, "Status_Installing".GetLocalized());
-        try
-        {
-            downloadManager.UpdateDownloadBytes(productId, null, null);
-        }
-        catch { }
-
-        downloadManager.UpdateDownloadDetailsText(productId, string.Empty);
-
-        UpdateService.SetProgress(0);
-        UpdateService.SetDetails(string.Empty);
-        StatusText.Text = "Status_Installing".GetLocalized();
-        DetailsText.Text = "0%";
-        SetInstallButtonState(showProgress: true);
-        SetProgressIndeterminate(false);
-        UpdateService.StartStatusAnimation("Status_Installing".GetLocalized());
-
-        var forceDepsDir = !string.IsNullOrWhiteSpace(item.DownloadPath)
-            ? Path.Combine(item.DownloadPath, "Dependencies")
-            : null;
-
-        var depPaths = item.DownloadedFiles
-            .Select(f => f.Path)
-            .Where(p => !string.IsNullOrWhiteSpace(p)
-                && File.Exists(p)
-                && forceDepsDir != null
-                && p.StartsWith(forceDepsDir, StringComparison.OrdinalIgnoreCase))
-            .ToList();
-
-        try
-        {
-            var installProgress = new Progress<AppPackageInstaller.InstallProgress>(p =>
-            {
-                var percent = (int)Math.Clamp(p.Percent, 0, 100);
-                downloadManager.UpdateDownloadProgress(productId, percent);
-            });
-
-            await AppPackageInstaller.InstallAsync(
-                mainPackagePath,
-                dependencyPackagePaths: depPaths,
-                progress: installProgress,
-                ignoreVersion: true,
-                installDependenciesSeparately: IgnoreDependencyFilterToggle.IsChecked,
-                deferRegistration: deferRegistration
-            );
-
-            UpdateService.StopStatusAnimation();
-            downloadManager.UpdateDownloadStatusText(productId, null);
-            downloadManager.UpdateDownloadStatus(productId, DownloadStatus.Completed);
-        }
-        catch (Exception ex)
-        {
-            UpdateService.StopStatusAnimation();
-            downloadManager.UpdateDownloadStatusText(productId, "Download_Status_InstallFailed".GetLocalizedFormat(ex.Message));
-            downloadManager.UpdateDownloadStatus(productId, DownloadStatus.Failed);
-            _logger.LogError(
-                ex,
-                "Force install failed | ProductId={ProductId} | MainPackage={MainPackagePath}",
-                item.ProductId,
-                mainPackagePath
-            );
-
-            // Force install already failed: do not re-offer force install.
             await InstallHelper.ShowInstallationErrorDialogAsync(
                 this.Content.XamlRoot,
                 "Install_Dialog_Title".GetLocalized(),
@@ -1081,13 +979,23 @@ public sealed partial class AppPage : Page
         // The toggle is the source of truth. When the user changes it, mirror the choice onto this
         // app's download item so a later install/retry (and a future page load) reflect it. We never
         // push the stored value back onto the toggle except on page load, so the user can always
-        // toggle it off — even after a cancel.
+        // toggle it off - even after a cancel.
         if (_currentProductInfo == null)
             return;
 
         var item = DownloadManagerService.Instance.GetDownload(_currentProductInfo.ProductId);
         if (item != null)
-            item.InstallDependenciesSeparately = IgnoreDependencyFilterToggle.IsChecked;
+            item.IgnoreDependencyFilter = IgnoreDependencyFilterToggle.IsChecked;
+    }
+
+    private void InstallDependenciesSeparatelyToggle_Click(object sender, RoutedEventArgs e)
+    {
+        if (_currentProductInfo == null)
+            return;
+
+        var item = DownloadManagerService.Instance.GetDownload(_currentProductInfo.ProductId);
+        if (item != null)
+            item.InstallDependenciesSeparately = InstallDependenciesSeparatelyToggle.IsChecked;
     }
 
     private void MoreOptionsFlyout_Opening(object? sender, object e)
@@ -1341,7 +1249,8 @@ public sealed partial class AppPage : Page
                 // Persist the action mode so Retry survives an app restart.
                 downloadItem.WasDownloadOnly = isDownloadOnly;
                 // Persist the bypass choice so a force-install retry uses the same strategy.
-                downloadItem.InstallDependenciesSeparately = IgnoreDependencyFilterToggle.IsChecked;
+                downloadItem.IgnoreDependencyFilter = IgnoreDependencyFilterToggle.IsChecked;
+                downloadItem.InstallDependenciesSeparately = InstallDependenciesSeparatelyToggle.IsChecked;
             }
 
             // Always use a fresh CTS per download attempt
@@ -1458,7 +1367,7 @@ public sealed partial class AppPage : Page
                 _downloadCts.Token,
                 UpdateService,
                 downloadOnly: isDownloadOnly,
-                installDependenciesSeparately: IgnoreDependencyFilterToggle.IsChecked
+                installDependenciesSeparately: InstallDependenciesSeparatelyToggle.IsChecked
             );
 
             downloadManager.UnregisterCancellationToken(productId);

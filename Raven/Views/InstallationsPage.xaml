@@ -1,4 +1,4 @@
-﻿<Page
+<Page
     x:Class="Raven.Views.InstallationsPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -85,6 +85,8 @@
                     x:Name="DropZoneText"
                     x:Uid="InstallationsPage_DropZone"
                     HorizontalAlignment="Center"
+                    TextAlignment="Center"
+                    TextWrapping="Wrap"
                     FontSize="18" />
             </StackPanel>
         </Button>
@@ -230,6 +232,10 @@
                     Click="RemoveSignatureCheckBox_Click" />
             </StackPanel>
             <!--  Dependencies: available in both normal and advanced install modes  -->
+            <CheckBox
+                x:Name="InstallDependenciesSeparatelyCheckBox"
+                x:Uid="InstallationsPage_InstallDependenciesSeparately"
+                Visibility="Collapsed" />
             <StackPanel Orientation="Horizontal" Spacing="8">
                 <Button
                     x:Name="SelectDependenciesButton"

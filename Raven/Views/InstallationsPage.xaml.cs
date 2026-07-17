@@ -184,7 +184,7 @@ public sealed partial class InstallationsPage : Page
     private void UpdateLayoutForViewport(double viewportHeight)
     {
         var headerAllowance = 200; // approximate title + progress + path row
-        var desired = Math.Max(300, (viewportHeight - headerAllowance) * 2.0 / 3.0);
+        var desired = Math.Max(120, (viewportHeight - headerAllowance) * 2.0 / 3.0);
         DropZoneButton.MinHeight = desired;
     }
 
@@ -320,6 +320,14 @@ public sealed partial class InstallationsPage : Page
         AdvancedPanel.Visibility = AdvancedInstallToggle.IsChecked
             ? Visibility.Visible
             : Visibility.Collapsed;
+
+        if (!ViewModel.AdvancedInstallEnabled)
+        {
+            ViewModel.RemoveSignature = false;
+            RemoveSignatureCheckBox.IsChecked = false;
+        }
+
+        UpdateInstallDependenciesSeparatelyState();
     }
 
     private void BrowseFolderButton_Click(object sender, RoutedEventArgs e)
@@ -397,6 +405,25 @@ public sealed partial class InstallationsPage : Page
         ClearDependenciesButton.Visibility = count == 0
             ? Visibility.Collapsed
             : Visibility.Visible;
+        InstallDependenciesSeparatelyCheckBox.Visibility = count == 0
+            ? Visibility.Collapsed
+            : Visibility.Visible;
+
+        UpdateInstallDependenciesSeparatelyState();
+    }
+
+    private void UpdateInstallDependenciesSeparatelyState()
+    {
+        if (ViewModel.AdvancedInstallEnabled)
+        {
+            InstallDependenciesSeparatelyCheckBox.IsChecked = true;
+            InstallDependenciesSeparatelyCheckBox.IsEnabled = false;
+        }
+        else
+        {
+            InstallDependenciesSeparatelyCheckBox.IsChecked = false;
+            InstallDependenciesSeparatelyCheckBox.IsEnabled = true;
+        }
     }
 
     private async Task PerformCustomInstallAsync(string path)
@@ -517,7 +544,7 @@ public sealed partial class InstallationsPage : Page
             await Windows.System.Launcher.LaunchUriAsync(new Uri("ms-settings:developers"));
     }
 
-    private async Task PerformInstallAsync(string path, bool ignoreVersion)
+    private async Task PerformInstallAsync(string path, bool ignoreVersion, bool deferRegistration = false, bool installDependenciesSeparatelyRetry = false, IReadOnlyList<string>? savedDependencies = null)
     {
         if (_installLogger.IsEnabled(LogLevel.Information))
         {
@@ -536,15 +563,19 @@ public sealed partial class InstallationsPage : Page
         var progress = new Progress<AppPackageInstaller.InstallProgress>(p =>
             ViewModel.ProgressPercent = Math.Clamp(p.Percent, 0, 100));
 
+        var dependencyPaths = savedDependencies ?? ViewModel.DependencyPaths.ToList();
+
         var succeeded = false;
         Exception? installException = null;
         try
         {
             await AppPackageInstaller.InstallAsync(
                 path,
-                dependencyPackagePaths: ViewModel.DependencyPaths,
+                dependencyPackagePaths: dependencyPaths,
                 progress,
                 ignoreVersion: ignoreVersion,
+                installDependenciesSeparately: InstallDependenciesSeparatelyCheckBox.IsChecked == true || installDependenciesSeparatelyRetry,
+                deferRegistration: deferRegistration,
                 logger: _installLogger
             );
             succeeded = true;
@@ -594,27 +625,25 @@ public sealed partial class InstallationsPage : Page
         var xamlRoot = GetDialogXamlRoot();
         if (xamlRoot is null)
             return;
+        var retryAction = await InstallHelper.HandleInstallExceptionAsync(
+            xamlRoot,
+            "Install_Dialog_Title".GetLocalized(),
+            installException,
+            isAlreadyForceInstalling: ignoreVersion
+        );
 
-        if (!ignoreVersion)
+        if (retryAction == RetryInstallAction.RetryForce)
         {
-            var forceRetry = await InstallHelper.ShowInstallationErrorOrForceInstallDialogAsync(
-                xamlRoot,
-                "Install_Dialog_Title".GetLocalized(),
-                installException
-            );
-
-            if (forceRetry)
-            {
-                await PerformInstallAsync(path, ignoreVersion: true);
-            }
+            await PerformInstallAsync(path, ignoreVersion: true, deferRegistration: false, false, dependencyPaths);
         }
-        else
+        else if (retryAction == RetryInstallAction.RetryNormal || retryAction == RetryInstallAction.RetryDeferred)
         {
-            await InstallHelper.ShowInstallationErrorDialogAsync(
-                xamlRoot,
-                "Install_Dialog_Title".GetLocalized(),
-                installException
-            );
+            bool nextDeferRegistration = retryAction == RetryInstallAction.RetryDeferred;
+            await PerformInstallAsync(path, ignoreVersion, nextDeferRegistration, false, dependencyPaths);
+        }
+        else if (retryAction == RetryInstallAction.RetryInstallDependenciesSeparately)
+        {
+            await PerformInstallAsync(path, ignoreVersion, false, true, dependencyPaths);
         }
     }
 }

@@ -10,11 +10,33 @@ public enum RetryInstallAction
 {
     Cancel,
     RetryNormal,
-    RetryDeferred
+    RetryDeferred,
+    RetryInstallDependenciesSeparately,
+    RetryForce
 }
 
 public static partial class InstallHelper
 {
+    public static async Task<RetryInstallAction> HandleInstallExceptionAsync(
+        XamlRoot xamlRoot,
+        string title,
+        Exception installException,
+        bool isAlreadyForceInstalling = false)
+    {
+        if (IsAdminRequired(installException) && !IsRunningAsAdministrator())
+        {
+            await ShowInstallationErrorDialogAsync(xamlRoot, title, installException);
+            return RetryInstallAction.Cancel;
+        }
+
+        if (!isAlreadyForceInstalling && IsForceInstallable(installException))
+        {
+            var forceRetry = await ShowInstallationErrorOrForceInstallDialogAsync(xamlRoot, title, installException);
+            return forceRetry ? RetryInstallAction.RetryForce : RetryInstallAction.Cancel;
+        }
+
+        return await ShowUpdateFailedRetryDialogAsync(xamlRoot, title, installException);
+    }
     private const int ERROR_PACKAGED_SERVICE_REQUIRES_ADMIN = unchecked((int)0x80073D28);
     private const int ERROR_INSTALL_CONFLICTING_PACKAGE = unchecked((int)0x80073D06);
 
@@ -55,6 +77,17 @@ public static partial class InstallHelper
     {
         var comEx = TryGetDeploymentCOMException(exception);
         return comEx != null && IsNewerOrSameVersionInstalled(comEx.HResult);
+    }
+
+    public static bool IsDependencyProvidedButNotUsedError(Exception? exception)
+    {
+        var comEx = TryGetDeploymentCOMException(exception);
+        if (comEx != null && comEx.HResult == unchecked((int)0x80073CF3))
+        {
+            var message = exception?.Message ?? "";
+            return message.Contains("was provided but not used", StringComparison.OrdinalIgnoreCase);
+        }
+        return false;
     }
 
     public static bool IsRunningAsAdministrator()
@@ -186,12 +219,7 @@ public static partial class InstallHelper
             var dialog = new ContentDialog
             {
                 Title = title,
-                Content = new TextBlock
-                {
-                    Text = GetFriendlyMsixError(comEx.HResult, exception.Message),
-                    TextWrapping = TextWrapping.Wrap,
-                    IsTextSelectionEnabled = true
-                },
+                Content = CreateDialogTextBlock(GetFriendlyMsixError(comEx.HResult, exception.Message)),
                 PrimaryButtonText = "Install_Btn_ForceInstall".GetLocalized(),
                 CloseButtonText = "Common_OK".GetLocalized(),
                 DefaultButton = ContentDialogButton.Primary,
@@ -235,6 +263,20 @@ public static partial class InstallHelper
         return results.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
     }
 
+    private static TextBlock CreateDialogTextBlock(string text, Thickness? margin = null, bool isSecondaryColor = false, bool isSemiBold = false)
+    {
+        var tb = new TextBlock
+        {
+            Text = text,
+            TextWrapping = TextWrapping.Wrap,
+            IsTextSelectionEnabled = true
+        };
+        if (margin.HasValue) tb.Margin = margin.Value;
+        if (isSecondaryColor) tb.Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextFillColorSecondaryBrush"];
+        if (isSemiBold) tb.FontWeight = Microsoft.UI.Text.FontWeights.SemiBold;
+        return tb;
+    }
+
     public static async Task<RetryInstallAction> ShowUpdateFailedRetryDialogAsync(
         XamlRoot xamlRoot,
         string title,
@@ -250,56 +292,35 @@ public static partial class InstallHelper
             isAppInUseError = comEx != null && comEx.HResult == unchecked((int)0x80073D02);
         }
 
+        bool isDependencyProvidedButNotUsed = IsDependencyProvidedButNotUsedError(exception);
+
         if (isAppInUseError)
         {
-            content.Children.Add(new TextBlock
-            {
-                Text = "Install_Error_AppInUse".GetLocalized(),
-                TextWrapping = TextWrapping.Wrap,
-                IsTextSelectionEnabled = true
-            });
+            content.Children.Add(CreateDialogTextBlock("Install_Error_AppInUse".GetLocalized()));
 
             if (blockingProcs.Count > 0)
             {
-                content.Children.Add(new TextBlock
-                {
-                    Text = "Install_Error_AppInUse_Processes".GetLocalized(),
-                    TextWrapping = TextWrapping.Wrap,
-                    Margin = new Thickness(0, 8, 0, 0),
-                    IsTextSelectionEnabled = true
-                });
+                content.Children.Add(CreateDialogTextBlock("Install_Error_AppInUse_Processes".GetLocalized(), new Thickness(0, 8, 0, 0)));
 
                 var procList = new StackPanel { Spacing = 4, Margin = new Thickness(12, 4, 0, 0) };
                 foreach (var proc in blockingProcs)
                 {
-                    procList.Children.Add(new TextBlock
-                    {
-                        Text = $"• {proc}",
-                        FontWeight = Microsoft.UI.Text.FontWeights.SemiBold,
-                        IsTextSelectionEnabled = true
-                    });
+                    procList.Children.Add(CreateDialogTextBlock($"• {proc}", null, false, true));
                 }
                 content.Children.Add(procList);
             }
 
-            content.Children.Add(new TextBlock
-            {
-                Text = "Install_Error_DeferredInstallDescription".GetLocalized(),
-                TextWrapping = TextWrapping.Wrap,
-                Margin = new Thickness(0, 8, 0, 0),
-                Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextFillColorSecondaryBrush"],
-                IsTextSelectionEnabled = true
-            });
+            content.Children.Add(CreateDialogTextBlock("Install_Error_DeferredInstallDescription".GetLocalized(), new Thickness(0, 8, 0, 0), true));
+        }
+        else if (isDependencyProvidedButNotUsed)
+        {
+            content.Children.Add(CreateDialogTextBlock("Install_Error_DependencyProvidedButNotUsed".GetLocalized()));
+            content.Children.Add(CreateDialogTextBlock(GetFriendlyErrorMessage(exception), new Thickness(0, 8, 0, 0), true));
         }
         else
         {
             // Always show the actual error message, as the main text (if not app-in-use)
-            content.Children.Add(new TextBlock
-            {
-                Text = GetFriendlyErrorMessage(exception),
-                TextWrapping = TextWrapping.Wrap,
-                IsTextSelectionEnabled = true
-            });
+            content.Children.Add(CreateDialogTextBlock(GetFriendlyErrorMessage(exception)));
         }
 
         var dialog = new ContentDialog
@@ -315,6 +336,12 @@ public static partial class InstallHelper
             dialog.PrimaryButtonText = "Install_Btn_DeferredInstall".GetLocalized();
             dialog.DefaultButton = ContentDialogButton.Primary;
         }
+        else if (isDependencyProvidedButNotUsed)
+        {
+            dialog.PrimaryButtonText = "Install_Btn_InstallDependenciesSeparately".GetLocalized();
+            dialog.SecondaryButtonText = "Install_Btn_Retry".GetLocalized();
+            dialog.DefaultButton = ContentDialogButton.Primary;
+        }
         else
         {
             dialog.PrimaryButtonText = "Install_Btn_Retry".GetLocalized();
@@ -325,7 +352,13 @@ public static partial class InstallHelper
 
         if (result == ContentDialogResult.Primary)
         {
-            return isAppInUseError ? RetryInstallAction.RetryDeferred : RetryInstallAction.RetryNormal;
+            if (isAppInUseError) return RetryInstallAction.RetryDeferred;
+            if (isDependencyProvidedButNotUsed) return RetryInstallAction.RetryInstallDependenciesSeparately;
+            return RetryInstallAction.RetryNormal;
+        }
+        else if (result == ContentDialogResult.Secondary)
+        {
+            if (isDependencyProvidedButNotUsed) return RetryInstallAction.RetryNormal;
         }
 
         return RetryInstallAction.Cancel;
@@ -344,12 +377,7 @@ public static partial class InstallHelper
         var dialog = new ContentDialog
         {
             Title = title,
-            Content = new TextBlock
-            {
-                Text = GetFriendlyMsixError(cex.HResult, cex.Message),
-                TextWrapping = TextWrapping.Wrap,
-                IsTextSelectionEnabled = true
-            },
+            Content = CreateDialogTextBlock(GetFriendlyMsixError(cex.HResult, cex.Message)),
             PrimaryButtonText = "Install_Btn_RunAsAdmin".GetLocalized(),
             CloseButtonText = "Common_OK".GetLocalized(),
             XamlRoot = xamlRoot,
@@ -376,12 +404,7 @@ public static partial class InstallHelper
         var dialog = new ContentDialog
         {
             Title = title,
-            Content = new TextBlock
-            {
-                Text = content,
-                TextWrapping = TextWrapping.Wrap,
-                IsTextSelectionEnabled = true
-            },
+            Content = CreateDialogTextBlock(content),
             CloseButtonText = "Common_OK".GetLocalized(),
             XamlRoot = xamlRoot,
         };
