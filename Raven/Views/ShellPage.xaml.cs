@@ -138,6 +138,12 @@ public sealed partial class ShellPage : Page
         this.AddHandler(PointerPressedEvent, new PointerEventHandler(OnPagePointerPressed), true);
         RegisterBackForwardKeyboardAccelerators();
 
+        if (NavigationViewControl.SettingsItem is NavigationViewItem settingsItem)
+        {
+            settingsItem.PointerEntered += NavItem_PointerEntered;
+            settingsItem.PointerExited += NavItem_PointerExited;
+        }
+
         if (XamlRoot is null)
             return;
 
@@ -435,6 +441,42 @@ public sealed partial class ShellPage : Page
     private void InstallationsButton_Click(object sender, RoutedEventArgs e)
     {
         ViewModel.NavigationService.NavigateTo(typeof(InstallationsViewModel).FullName!);
+    }
+
+    private void NavItem_PointerEntered(object sender, PointerRoutedEventArgs e)
+    {
+        if (sender is NavigationViewItem item && item.Icon is UIElement icon)
+        {
+            var visual = Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.GetElementVisual(icon);
+            var compositor = visual.Compositor;
+            
+            visual.CenterPoint = new System.Numerics.Vector3((float)(icon.ActualSize.X / 2.0), (float)(icon.ActualSize.Y / 2.0), 0);
+            
+            var spring = compositor.CreateSpringVector3Animation();
+            spring.Target = "Scale";
+            spring.FinalValue = new System.Numerics.Vector3(1.08f, 1.08f, 1.0f);
+            spring.DampingRatio = 0.8f;
+            spring.Period = TimeSpan.FromMilliseconds(50);
+            
+            visual.StartAnimation("Scale", spring);
+        }
+    }
+
+    private void NavItem_PointerExited(object sender, PointerRoutedEventArgs e)
+    {
+        if (sender is NavigationViewItem item && item.Icon is UIElement icon)
+        {
+            var visual = Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.GetElementVisual(icon);
+            var compositor = visual.Compositor;
+            
+            var spring = compositor.CreateSpringVector3Animation();
+            spring.Target = "Scale";
+            spring.FinalValue = new System.Numerics.Vector3(1.0f, 1.0f, 1.0f);
+            spring.DampingRatio = 0.8f;
+            spring.Period = TimeSpan.FromMilliseconds(50);
+            
+            visual.StartAnimation("Scale", spring);
+        }
     }
 }
 
