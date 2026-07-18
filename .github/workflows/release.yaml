@@ -274,6 +274,11 @@ jobs:
           draft: true
           prerelease: ${{ needs.prepare.outputs.release_version != needs.prepare.outputs.numeric_version }}
           generate_release_notes: true
+          body: |
+            > Note: [Read installation instruction](https://github.com/mjishnu/Raven/blob/main/README.md#-how-to-run)
+            > 
+            > - Normal version you need to download the runtimes (runtimes are usually shared by multiple apps)
+            > - Self-contained version contains all the runtimes inbuild (larger size, runtimes can't be shared with other apps)
           files: |
             ./artifacts/Raven-*-win-x64.zip
             ./artifacts/Raven-*-win-x86.zip
