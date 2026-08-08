@@ -78,6 +78,11 @@ winget install mjishnu.raven
 - If you encounter a false antivirus positive, download `raven_cert.zip` from [releases](https://github.com/mjishnu/Raven/releases), extract the contents and install `raven.cer` or run `install_raven_cert.bat`.
 - Search for the `raven` in startmenu and run
 
+### ▶️ Video Guide
+[<img width="996" height="543" alt="IMM-WZsVCt5_E" src="https://github.com/user-attachments/assets/80fd984c-8587-49a0-ae13-07bee72d9a9d" />
+](https://www.youtube.com/watch?v=ZX__BaD6kr0)
+
+
 ## 🏗️ Architecture
 
 Raven follows the **MVVM pattern** and uses dependency injection via `Microsoft.Extensions.Hosting`.
