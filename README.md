@@ -60,8 +60,8 @@ Built with **WinUI 3** and **.NET 10**, Raven delivers a clean, fluent UI that f
 ##  🛑 System requirements
 
 - **Windows 10** Version 2004, Build 19041+
-- [**.NET 10**](https://dotnet.microsoft.com/en-us/download/dotnet/10.0)
-- [**Windows App SDK Runtime**](https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/downloads#windows-app-sdk)
+- [**.NET 10**](https://dotnet.microsoft.com/en-us/download/dotnet/10.0) (Not needed for self-contained)
+- [**Windows App SDK Runtime**](https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/downloads#windows-app-sdk) (Not needed for self-contained)
 
 ## 🌐 How to Run
 #### 1. Releases
