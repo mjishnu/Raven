@@ -53,7 +53,12 @@ public static class PortableMsixLauncher
         if (!IsPackageFile(mainPackagePath))
             throw new InvalidDataException("Select an .msix, .appx, .msixbundle or .appxbundle file.");
 
-        var root = GetPortableRoot(appTitle, packageKey);
+        var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow);
+        var installBaseFolder = NativeFilePicker.PickFolder(hwnd, "Choose installation folder");
+        if (string.IsNullOrWhiteSpace(installBaseFolder))
+            throw new OperationCanceledException("No installation folder was selected.");
+
+        var root = GetPortableRoot(appTitle, packageKey, installBaseFolder);
         var appDir = Path.Combine(root, "App");
         var depsDir = Path.Combine(root, "Dependencies");
 
@@ -121,18 +126,24 @@ public static class PortableMsixLauncher
         return new PortableLaunchResult(root, executable, addedToPath, shortcutPath);
     }
 
-    public static string GetPortableRoot(string appTitle, string packageKey)
+    public static string GetPortableRoot(string appTitle, string packageKey, string? baseFolder = null)
     {
-        var baseDir = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "Raven",
-            "PortableApps"
-        );
+        var baseDir = string.IsNullOrWhiteSpace(baseFolder)
+            ? Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "Raven",
+                "PortableApps")
+            : Path.GetFullPath(baseFolder);
 
         var name = MakeSafeFileName(string.IsNullOrWhiteSpace(appTitle) ? "App" : appTitle);
         var key = MakeSafeFileName(string.IsNullOrWhiteSpace(packageKey) ? "local" : packageKey);
         return Path.Combine(baseDir, $"{name}_{key}");
     }
+
+    public static string GetShortcutFolder() => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.StartMenu),
+        "Programs",
+        "Raven Portable Apps");
 
     private static bool IsPackageFile(string path)
     {
@@ -422,11 +433,7 @@ public static class PortableMsixLauncher
         string workingDirectory
     )
     {
-        var programs = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.StartMenu),
-            "Programs",
-            "Raven Portable Apps"
-        );
+        var programs = GetShortcutFolder();
         Directory.CreateDirectory(programs);
 
         var shortcutPath = Path.Combine(programs, MakeSafeFileName(appTitle) + ".lnk");

@@ -50,9 +50,9 @@ public sealed partial class AppPage : Page
     // Maps an internal action key to its localised display string.
     private static string GetLocalizedAction(string key) => key switch
     {
-        // Portable mode: packaged apps are downloaded, unpacked, and launched instead of registered.
-        "Install" => "Download & Run",
-        "Update" => "Update & Run",
+        "Install" => "Install",
+        "Run" => "Run",
+        "Update" => "Update",
         "Open" => "AppPage_Btn_Open".GetLocalized(),
         "Retry" => "AppPage_Btn_Retry".GetLocalized(),
         "Download" => "AppPage_Btn_Download".GetLocalized(),
@@ -927,10 +927,11 @@ public sealed partial class AppPage : Page
     private static IEnumerable<string> GetFlyoutItemsForAction(string action) =>
         action switch
         {
-            "Open" => ["Install", "Download"],
-            "Update" => ["Open", "Download"],
-            "Install" => ["Download"],
-            "Retry" => ["Download"],
+            "Open" => ["Install", "Run", "Download"],
+            "Update" => ["Open", "Run", "Download"],
+            "Install" => ["Run", "Download"],
+            "Run" => ["Install", "Download"],
+            "Retry" => ["Run", "Download"],
             _ => [],
         };
 
@@ -1002,13 +1003,38 @@ public sealed partial class AppPage : Page
     private void MoreOptionsFlyout_Opening(object? sender, object e)
     {
         var width = MoreOptionsButton.ActualWidth;
-        if (width <= 0)
-            return;
         if (sender is MenuFlyout flyout)
         {
-            foreach (var item in flyout.Items.OfType<MenuFlyoutItem>())
-                item.MinWidth = width;
+            if (!flyout.Items.OfType<MenuFlyoutItem>().Any(i => Equals(i.Tag, "RavenOpenFolder")))
+            {
+                flyout.Items.Add(new MenuFlyoutSeparator());
+                var openFolderItem = new MenuFlyoutItem
+                {
+                    Text = "Open Folder",
+                    Tag = "RavenOpenFolder",
+                    MinHeight = 44,
+                };
+                openFolderItem.Click += (_, _) => OpenPortableShortcutFolder();
+                flyout.Items.Add(openFolderItem);
+            }
+
+            if (width > 0)
+            {
+                foreach (var item in flyout.Items.OfType<MenuFlyoutItem>())
+                    item.MinWidth = width;
+            }
         }
+    }
+
+    private static void OpenPortableShortcutFolder()
+    {
+        var folder = PortableMsixLauncher.GetShortcutFolder();
+        Directory.CreateDirectory(folder);
+        Process.Start(new ProcessStartInfo
+        {
+            FileName = folder,
+            UseShellExecute = true,
+        });
     }
 
     private void ShareMenuFlyout_Opening(object? sender, object e)
@@ -1208,6 +1234,7 @@ public sealed partial class AppPage : Page
         var downloadManager = DownloadManagerService.Instance;
         var isUnpackaged = _currentProductInfo.InstallerType == InstallerType.Unpackaged;
         var action = CurrentActionKey;
+        var isRunAction = string.Equals(action, "Run", StringComparison.OrdinalIgnoreCase);
 
         // For Retry, repeat whatever the user last attempted (persisted on the DownloadItem).
         var existingItem = downloadManager.GetDownload(productId);
@@ -1391,46 +1418,71 @@ public sealed partial class AppPage : Page
                     if (string.IsNullOrWhiteSpace(mainPackagePath) || !File.Exists(mainPackagePath))
                     {
                         await ShowErrorDialogAsync(
-                            "Portable launch failed",
+                            isRunAction ? "Portable launch failed" : "Installation failed",
                             "The Microsoft Store package was downloaded, but Raven could not identify the main MSIX/AppX file."
                         );
                     }
                     else
                     {
-                        try
+                        var dependencyPaths = currentItem.DownloadedFiles
+                            .Where(f => !string.Equals(f.Path, mainPackagePath, StringComparison.OrdinalIgnoreCase))
+                            .Select(f => f.Path)
+                            .Where(File.Exists)
+                            .ToList();
+
+                        if (isRunAction)
                         {
-                            UpdateService.SetDetails("Unpacking package...");
-                            DetailsText.Text = "Unpacking package...";
+                            try
+                            {
+                                UpdateService.SetDetails("Choose install folder...");
+                                DetailsText.Text = "Choose install folder...";
 
-                            var dependencyPaths = currentItem.DownloadedFiles
-                                .Where(f => !string.Equals(f.Path, mainPackagePath, StringComparison.OrdinalIgnoreCase))
-                                .Select(f => f.Path)
-                                .ToList();
+                                var result = await PortableMsixLauncher.ExtractAndLaunchAsync(
+                                    mainPackagePath,
+                                    dependencyPaths,
+                                    _currentProductInfo.Title,
+                                    productId,
+                                    _downloadCts.Token
+                                );
 
-                            var result = await PortableMsixLauncher.ExtractAndLaunchAsync(
-                                mainPackagePath,
-                                dependencyPaths,
-                                _currentProductInfo.Title,
-                                productId,
-                                _downloadCts.Token
-                            );
-
-                            UpdateService.SetDetails($"Portable folder: {result.ExtractDirectory}");
-                            DetailsText.Text = $"Portable folder: {result.ExtractDirectory}";
+                                UpdateService.SetDetails($"Portable folder: {result.ExtractDirectory}");
+                                DetailsText.Text = $"Portable folder: {result.ExtractDirectory}";
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogError(
+                                    ex,
+                                    "Portable extraction/launch failed | ProductId={ProductId} | Package={Package}",
+                                    productId,
+                                    mainPackagePath
+                                );
+                                await ShowErrorDialogAsync("Portable launch failed", ex.Message);
+                            }
                         }
-                        catch (Exception ex)
+                        else
                         {
-                            _logger.LogError(
-                                ex,
-                                "Portable extraction/launch failed | ProductId={ProductId} | Package={Package}",
-                                productId,
-                                mainPackagePath
-                            );
-
-                            await ShowErrorDialogAsync(
-                                "Portable launch failed",
-                                ex.Message
-                            );
+                            try
+                            {
+                                UpdateService.SetDetails("Installing package...");
+                                DetailsText.Text = "Installing package...";
+                                var progress = new Progress<AppPackageInstaller.InstallProgress>(p =>
+                                    downloadManager.UpdateDownloadProgress(productId, Math.Clamp(p.Percent, 0, 100)));
+                                await AppPackageInstaller.InstallAsync(
+                                    mainPackagePath,
+                                    dependencyPackagePaths: dependencyPaths,
+                                    progress: progress,
+                                    installDependenciesSeparately: InstallDependenciesSeparatelyToggle.IsChecked
+                                );
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogError(ex, "Package installation failed | ProductId={ProductId}", productId);
+                                await InstallHelper.ShowInstallationErrorDialogAsync(
+                                    this.Content.XamlRoot,
+                                    "Install_Dialog_Title".GetLocalized(),
+                                    ex
+                                );
+                            }
                         }
                     }
                 }
