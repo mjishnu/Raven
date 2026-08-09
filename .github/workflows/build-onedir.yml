@@ -1,0 +1,106 @@
+name: Build Raven OneDir
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/gui-install-run-folder-path
+    paths:
+      - "Raven/**"
+      - "Raven.Updater/**"
+      - "StoreListings/**"
+      - ".gitmodules"
+      - ".github/workflows/build-onedir.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build-onedir:
+    name: Build OneDir ${{ matrix.arch }}
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            rid: win-x64
+          - arch: arm64
+            rid: win-arm64
+
+    steps:
+      - name: Checkout repository and submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup .NET 10 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore Raven
+        shell: pwsh
+        run: >-
+          dotnet restore Raven/Raven.csproj
+          -r ${{ matrix.rid }}
+          --source https://api.nuget.org/v3/index.json
+
+      - name: Publish Raven self-contained OneDir
+        shell: pwsh
+        run: >-
+          dotnet publish Raven/Raven.csproj
+          -c Release
+          -r ${{ matrix.rid }}
+          --self-contained true
+          --no-restore
+          -p:Platform=${{ matrix.arch }}
+          -p:WindowsAppSDKSelfContained=true
+          -p:PublishSingleFile=false
+          -p:DebugType=None
+          -p:DebugSymbols=false
+          -o OUTPUT/Raven-${{ matrix.arch }}
+
+      - name: Publish updater
+        shell: pwsh
+        run: |
+          dotnet restore Raven.Updater/Raven.Updater.csproj -r ${{ matrix.rid }} --source https://api.nuget.org/v3/index.json
+          dotnet publish Raven.Updater/Raven.Updater.csproj `
+            -c Release `
+            -r ${{ matrix.rid }} `
+            --self-contained true `
+            --no-restore `
+            -p:PublishSingleFile=true `
+            -p:DebugType=None `
+            -p:DebugSymbols=false `
+            -o OUTPUT/updater-${{ matrix.arch }}
+
+          Get-ChildItem OUTPUT/Raven-${{ matrix.arch }} -Filter 'Raven.Updater.*' -File -ErrorAction SilentlyContinue | Remove-Item -Force
+          Copy-Item OUTPUT/updater-${{ matrix.arch }}/Raven.Updater.exe OUTPUT/Raven-${{ matrix.arch }}/Raven.Updater.exe -Force
+          Get-ChildItem OUTPUT/Raven-${{ matrix.arch }} -Filter '*.pdb' -Recurse -File -ErrorAction SilentlyContinue | Remove-Item -Force
+
+          if (-not (Test-Path OUTPUT/Raven-${{ matrix.arch }}/Raven.exe)) {
+            throw 'Raven.exe was not produced.'
+          }
+
+      - name: Create OneDir ZIP
+        shell: pwsh
+        run: |
+          Compress-Archive `
+            -Path OUTPUT/Raven-${{ matrix.arch }}/* `
+            -DestinationPath OUTPUT/Raven-OneDir-${{ matrix.arch }}.zip `
+            -CompressionLevel Optimal `
+            -Force
+
+          $hash = (Get-FileHash OUTPUT/Raven-OneDir-${{ matrix.arch }}.zip -Algorithm SHA256).Hash
+          "$hash  Raven-OneDir-${{ matrix.arch }}.zip" | Set-Content OUTPUT/Raven-OneDir-${{ matrix.arch }}.zip.sha256.txt -Encoding ascii
+
+      - name: Upload OneDir ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: Raven-OneDir-${{ matrix.arch }}
+          path: |
+            OUTPUT/Raven-OneDir-${{ matrix.arch }}.zip
+            OUTPUT/Raven-OneDir-${{ matrix.arch }}.zip.sha256.txt
+          if-no-files-found: error
+          compression-level: 0
