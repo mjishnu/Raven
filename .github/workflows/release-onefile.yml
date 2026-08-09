@@ -1,0 +1,199 @@
+name: Release Raven Portable
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag"
+        required: true
+        default: "v1.1.0.0-portable.1"
+      title:
+        description: "Release title"
+        required: true
+        default: "Raven Portable v1.1.0.0-portable.1"
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/release-onefile.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Build and publish Raven Portable release
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository and submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Setup .NET 10 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Prepare build folders
+        shell: pwsh
+        run: |
+          Remove-Item -Recurse -Force _onefile_build, OUTPUT -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Force _onefile_build/payload | Out-Null
+          New-Item -ItemType Directory -Force _onefile_build/updater | Out-Null
+          New-Item -ItemType Directory -Force _onefile_build/launcher | Out-Null
+          New-Item -ItemType Directory -Force OUTPUT | Out-Null
+
+      - name: Restore Raven from nuget.org
+        shell: pwsh
+        run: >-
+          dotnet restore Raven/Raven.csproj
+          -r win-x64
+          --source https://api.nuget.org/v3/index.json
+
+      - name: Publish Raven self-contained x64
+        shell: pwsh
+        run: >-
+          dotnet publish Raven/Raven.csproj
+          -c Release
+          -r win-x64
+          --self-contained true
+          --no-restore
+          -p:Platform=x64
+          -p:WindowsAppSDKSelfContained=true
+          -p:DebugType=None
+          -p:DebugSymbols=false
+          -o _onefile_build/payload
+
+      - name: Publish Raven updater self-contained
+        shell: pwsh
+        run: |
+          dotnet restore Raven.Updater/Raven.Updater.csproj -r win-x64 --source https://api.nuget.org/v3/index.json
+          dotnet publish Raven.Updater/Raven.Updater.csproj `
+            -c Release `
+            -r win-x64 `
+            --self-contained true `
+            --no-restore `
+            -p:PublishSingleFile=true `
+            -p:DebugType=None `
+            -p:DebugSymbols=false `
+            -o _onefile_build/updater
+
+          Get-ChildItem _onefile_build/payload -Filter 'Raven.Updater.*' -File -ErrorAction SilentlyContinue | Remove-Item -Force
+          Copy-Item _onefile_build/updater/Raven.Updater.exe _onefile_build/payload/Raven.Updater.exe -Force
+          Get-ChildItem _onefile_build/payload -Filter '*.pdb' -Recurse -File -ErrorAction SilentlyContinue | Remove-Item -Force
+
+          if (-not (Test-Path _onefile_build/payload/Raven.exe)) {
+            throw 'Raven.exe was not produced.'
+          }
+
+      - name: Create embedded payload ZIP
+        shell: pwsh
+        run: |
+          Compress-Archive `
+            -Path _onefile_build/payload/* `
+            -DestinationPath _onefile_build/RavenPayload.zip `
+            -CompressionLevel Optimal `
+            -Force
+
+      - name: Build Raven OneFile launcher
+        shell: pwsh
+        run: |
+          $payload = (Resolve-Path _onefile_build/RavenPayload.zip).Path
+
+          dotnet restore Raven.OneFileLauncher/Raven.OneFileLauncher.csproj `
+            -r win-x64 `
+            --source https://api.nuget.org/v3/index.json `
+            "-p:RavenPayloadZip=$payload"
+
+          dotnet publish Raven.OneFileLauncher/Raven.OneFileLauncher.csproj `
+            -c Release `
+            -r win-x64 `
+            --self-contained true `
+            --no-restore `
+            -p:PublishSingleFile=true `
+            -p:DebugType=None `
+            -p:DebugSymbols=false `
+            "-p:RavenPayloadZip=$payload" `
+            -o _onefile_build/launcher
+
+          $source = '_onefile_build/launcher/Raven.OneFileLauncher.exe'
+          if (-not (Test-Path $source)) {
+            throw 'Raven.OneFileLauncher.exe was not produced.'
+          }
+
+          Copy-Item $source OUTPUT/Raven-Portable.exe -Force
+
+      - name: Create SHA256 file
+        shell: pwsh
+        run: |
+          $hash = (Get-FileHash OUTPUT/Raven-Portable.exe -Algorithm SHA256).Hash
+          "$hash  Raven-Portable.exe" | Set-Content OUTPUT/Raven-Portable.exe.sha256.txt -Encoding ascii
+          Write-Host "Raven-Portable.exe SHA256: $hash"
+
+      - name: Create release notes
+        shell: pwsh
+        run: |
+          @'
+          ## Raven Portable fork
+
+          This release is based on Raven and adds a portable MSIX/AppX workflow for packages you own or are licensed to use.
+
+          ### Changes in this fork
+          - Open local `.msix`, `.appx`, `.msixbundle` and `.appxbundle` packages from the Raven UI.
+          - Extract compatible packages without registering them as installed MSIX packages.
+          - Detect and launch the main executable when the application supports unpackaged execution.
+          - Add the detected executable folder to the current user's PATH.
+          - Create a Start menu shortcut so the portable app can be found through Windows Start/Search.
+          - Provide a self-contained x64 OneFile build of Raven.
+          - Include a local `BUILD_ONEFILE.bat` and GitHub Actions build workflow for reproducible builds.
+
+          **License notice:** Only use this feature for packages you own or have a valid license to use. Package extraction does not grant a software license and does not make every MSIX/AppX application portable; applications may still require package identity, frameworks, services, drivers, or their own licensing mechanisms.
+
+          ### Download
+          `Raven-Portable.exe` is the self-contained x64 executable. The SHA256 text file can be used to verify the download.
+          '@ | Set-Content RELEASE_NOTES.md -Encoding utf8
+
+      - name: Create or update GitHub release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = '${{ github.event.inputs.tag }}'
+          $title = '${{ github.event.inputs.title }}'
+
+          if ([string]::IsNullOrWhiteSpace($tag)) {
+            $tag = 'v1.1.0.0-portable.1'
+          }
+          if ([string]::IsNullOrWhiteSpace($title)) {
+            $title = 'Raven Portable v1.1.0.0-portable.1'
+          }
+
+          gh release view $tag *> $null
+          if ($LASTEXITCODE -eq 0) {
+            gh release edit $tag --title $title --notes-file RELEASE_NOTES.md
+            if ($LASTEXITCODE -ne 0) { throw 'Could not update the GitHub release.' }
+            gh release upload $tag OUTPUT/Raven-Portable.exe OUTPUT/Raven-Portable.exe.sha256.txt --clobber
+            if ($LASTEXITCODE -ne 0) { throw 'Could not upload release assets.' }
+          }
+          else {
+            gh release create $tag `
+              OUTPUT/Raven-Portable.exe `
+              OUTPUT/Raven-Portable.exe.sha256.txt `
+              --title $title `
+              --notes-file RELEASE_NOTES.md `
+              --target $env:GITHUB_SHA
+            if ($LASTEXITCODE -ne 0) { throw 'Could not create the GitHub release.' }
+          }
+
+      - name: Upload build artifact too
+        uses: actions/upload-artifact@v4
+        with:
+          name: Raven-Portable-x64-release
+          path: |
+            OUTPUT/Raven-Portable.exe
+            OUTPUT/Raven-Portable.exe.sha256.txt
+          if-no-files-found: error
+          compression-level: 0
