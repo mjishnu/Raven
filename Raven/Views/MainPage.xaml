@@ -5,10 +5,53 @@
     xmlns:layout="using:Raven.Layouts"
     xmlns:model="using:StoreListings.Library"
     xmlns:shared="using:Raven.Views.Shared">
-    <shared:CardViewControl
-        x:Name="CardView"
-        HeaderText="{x:Bind ViewModel.HeaderText, Mode=OneWay}"
-        ItemSourceFilter1="{x:Bind ViewModel.ItemSourceFilter1, Mode=OneWay}"
-        ItemSourceFilter2="{x:Bind ViewModel.ItemSourceFilter2, Mode=OneWay}"
-        ItemsSource="{x:Bind ViewModel.Cards, Mode=OneWay}" />
+
+    <Grid RowSpacing="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Border
+            Grid.Row="0"
+            Margin="12,12,12,0"
+            Padding="12"
+            CornerRadius="8"
+            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+            BorderThickness="1">
+            <Grid ColumnSpacing="12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Spacing="3" VerticalAlignment="Center">
+                    <TextBlock
+                        Text="Portable MSIX / AppX"
+                        FontWeight="SemiBold"
+                        FontSize="16" />
+                    <TextBlock
+                        Text="Open a local package, unpack it, add its executable folder to your user PATH and create a Start menu entry."
+                        TextWrapping="Wrap"
+                        Opacity="0.75" />
+                </StackPanel>
+
+                <Button
+                    x:Name="OpenPortablePackageButton"
+                    Grid.Column="1"
+                    Content="Open local package"
+                    Click="OpenPortablePackageButton_Click"
+                    VerticalAlignment="Center" />
+            </Grid>
+        </Border>
+
+        <shared:CardViewControl
+            Grid.Row="1"
+            x:Name="CardView"
+            HeaderText="{x:Bind ViewModel.HeaderText, Mode=OneWay}"
+            ItemSourceFilter1="{x:Bind ViewModel.ItemSourceFilter1, Mode=OneWay}"
+            ItemSourceFilter2="{x:Bind ViewModel.ItemSourceFilter2, Mode=OneWay}"
+            ItemsSource="{x:Bind ViewModel.Cards, Mode=OneWay}" />
+    </Grid>
 </Page>
