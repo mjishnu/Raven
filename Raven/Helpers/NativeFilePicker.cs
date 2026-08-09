@@ -101,10 +101,17 @@ public static class NativeFilePicker
                 return GetMultipleResults(dialog);
 
             dialog.GetResult(out var item);
-            item.GetDisplayName(SIGDN_FILESYSPATH, out var path);
-            return string.IsNullOrEmpty(path)
-                ? Array.Empty<string>()
-                : new[] { path };
+            try
+            {
+                item.GetDisplayName(SIGDN_FILESYSPATH, out var path);
+                return string.IsNullOrEmpty(path)
+                    ? Array.Empty<string>()
+                    : new[] { path };
+            }
+            finally
+            {
+                Marshal.ReleaseComObject(item);
+            }
         }
         finally
         {
