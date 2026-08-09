@@ -1,5 +1,6 @@
 name: Build Raven OneDir
 
+# Produces downloadable ZIPs for direct testing of the current feature branch.
 on:
   workflow_dispatch:
   push:
