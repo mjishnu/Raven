@@ -3,7 +3,7 @@ name: Publish Raven Release Once
 on:
   push:
     branches:
-      - feature/gui-install-run-folder-path
+      - main
     paths:
       - ".github/workflows/publish-release-once.yml"
 
@@ -34,6 +34,18 @@ jobs:
             --repo "${{ github.repository }}" \
             --name Raven-Windows-arm64 \
             --dir release-assets/arm64
+
+      - name: Verify individual release assets
+        shell: bash
+        run: |
+          test -f release-assets/x64/Raven-Setup-x64.msi
+          test -f release-assets/x64/Raven-Setup-x64.msi.sha256.txt
+          test -f release-assets/x64/Raven-OneDir-x64.zip
+          test -f release-assets/x64/Raven-OneDir-x64.zip.sha256.txt
+          test -f release-assets/arm64/Raven-Setup-arm64.msi
+          test -f release-assets/arm64/Raven-Setup-arm64.msi.sha256.txt
+          test -f release-assets/arm64/Raven-OneDir-arm64.zip
+          test -f release-assets/arm64/Raven-OneDir-arm64.zip.sha256.txt
 
       - name: Write release notes
         shell: bash
@@ -89,14 +101,33 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           if gh release view v1.1.0.0-portable.2 --repo "${{ github.repository }}" >/dev/null 2>&1; then
-            echo "Release already exists; nothing to do."
-            exit 0
+            gh release upload v1.1.0.0-portable.2 \
+              release-assets/x64/Raven-Setup-x64.msi \
+              release-assets/x64/Raven-Setup-x64.msi.sha256.txt \
+              release-assets/x64/Raven-OneDir-x64.zip \
+              release-assets/x64/Raven-OneDir-x64.zip.sha256.txt \
+              release-assets/arm64/Raven-Setup-arm64.msi \
+              release-assets/arm64/Raven-Setup-arm64.msi.sha256.txt \
+              release-assets/arm64/Raven-OneDir-arm64.zip \
+              release-assets/arm64/Raven-OneDir-arm64.zip.sha256.txt \
+              --repo "${{ github.repository }}" \
+              --clobber
+            gh release edit v1.1.0.0-portable.2 \
+              --repo "${{ github.repository }}" \
+              --title "Raven Portable v1.1.0.0-portable.2" \
+              --notes-file release-notes.md
+          else
+            gh release create v1.1.0.0-portable.2 \
+              release-assets/x64/Raven-Setup-x64.msi \
+              release-assets/x64/Raven-Setup-x64.msi.sha256.txt \
+              release-assets/x64/Raven-OneDir-x64.zip \
+              release-assets/x64/Raven-OneDir-x64.zip.sha256.txt \
+              release-assets/arm64/Raven-Setup-arm64.msi \
+              release-assets/arm64/Raven-Setup-arm64.msi.sha256.txt \
+              release-assets/arm64/Raven-OneDir-arm64.zip \
+              release-assets/arm64/Raven-OneDir-arm64.zip.sha256.txt \
+              --repo "${{ github.repository }}" \
+              --target main \
+              --title "Raven Portable v1.1.0.0-portable.2" \
+              --notes-file release-notes.md
           fi
-
-          gh release create v1.1.0.0-portable.2 \
-            release-assets/x64/* \
-            release-assets/arm64/* \
-            --repo "${{ github.repository }}" \
-            --target bc3e44c80055263a036b80a8785b867d844f4248 \
-            --title "Raven Portable v1.1.0.0-portable.2" \
-            --notes-file release-notes.md
