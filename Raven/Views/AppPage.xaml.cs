@@ -50,8 +50,9 @@ public sealed partial class AppPage : Page
     // Maps an internal action key to its localised display string.
     private static string GetLocalizedAction(string key) => key switch
     {
-        "Install" => "AppPage_Btn_Install".GetLocalized(),
-        "Update" => "AppPage_Btn_Update".GetLocalized(),
+        // Portable mode: packaged apps are downloaded, unpacked, and launched instead of registered.
+        "Install" => "Download & Run",
+        "Update" => "Update & Run",
         "Open" => "AppPage_Btn_Open".GetLocalized(),
         "Retry" => "AppPage_Btn_Retry".GetLocalized(),
         "Download" => "AppPage_Btn_Download".GetLocalized(),
@@ -1366,7 +1367,10 @@ public sealed partial class AppPage : Page
                 productId,
                 _downloadCts.Token,
                 UpdateService,
-                downloadOnly: isDownloadOnly,
+                // Portable mode: packaged apps must never enter Raven's Add-AppxPackage install phase.
+                // The explicit Download action still remains download-only; Install/Update will be
+                // handled below by PortableMsixLauncher after the files are complete.
+                downloadOnly: isUnpackaged ? isDownloadOnly : true,
                 installDependenciesSeparately: InstallDependenciesSeparatelyToggle.IsChecked
             );
 
@@ -1380,6 +1384,55 @@ public sealed partial class AppPage : Page
                 if (isUnpackaged && !isDownloadOnly && currentItem != null)
                 {
                     await LaunchUnpackagedInstallerAsync(currentItem);
+                }
+                else if (!isUnpackaged && !isDownloadOnly && currentItem != null)
+                {
+                    var mainPackagePath = PickMainPackage(currentItem.DownloadedFiles);
+                    if (string.IsNullOrWhiteSpace(mainPackagePath) || !File.Exists(mainPackagePath))
+                    {
+                        await ShowErrorDialogAsync(
+                            "Portable launch failed",
+                            "The Microsoft Store package was downloaded, but Raven could not identify the main MSIX/AppX file."
+                        );
+                    }
+                    else
+                    {
+                        try
+                        {
+                            UpdateService.SetDetails("Unpacking package...");
+                            DetailsText.Text = "Unpacking package...";
+
+                            var dependencyPaths = currentItem.DownloadedFiles
+                                .Where(f => !string.Equals(f.Path, mainPackagePath, StringComparison.OrdinalIgnoreCase))
+                                .Select(f => f.Path)
+                                .ToList();
+
+                            var result = await PortableMsixLauncher.ExtractAndLaunchAsync(
+                                mainPackagePath,
+                                dependencyPaths,
+                                _currentProductInfo.Title,
+                                productId,
+                                _downloadCts.Token
+                            );
+
+                            UpdateService.SetDetails($"Portable folder: {result.ExtractDirectory}");
+                            DetailsText.Text = $"Portable folder: {result.ExtractDirectory}";
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(
+                                ex,
+                                "Portable extraction/launch failed | ProductId={ProductId} | Package={Package}",
+                                productId,
+                                mainPackagePath
+                            );
+
+                            await ShowErrorDialogAsync(
+                                "Portable launch failed",
+                                ex.Message
+                            );
+                        }
+                    }
                 }
                 UnbindFromDownloadItem();
                 return;
