@@ -1,8 +1,8 @@
 $ErrorActionPreference='Stop'
-function R([string]$p,[string]$o,[string]$n){$t=[IO.File]::ReadAllText($p);if(-not $t.Contains($o)){throw "anchor not found in $p"};[IO.File]::WriteAllText($p,$t.Replace($o,$n))}
+function ReplaceExact([string]$p,[string]$o,[string]$n){$t=[IO.File]::ReadAllText($p);if(-not $t.Contains($o)){throw "anchor not found in $p"};[IO.File]::WriteAllText($p,$t.Replace($o,$n))}
 
 $p='Raven/Views/AppPage.xaml.cs'
-R $p @'
+ReplaceExact $p @'
         var isInstalled = isUnpackaged
             ? IsUnpackagedInstalled(_currentProductInfo)
             : IsPackagedInstalled(_currentProductInfo);
@@ -11,7 +11,7 @@ R $p @'
             ? IsUnpackagedInstalled(_currentProductInfo)
             : IsPackagedInstalled(_currentProductInfo) || PortableLaunchRegistry.Exists(productId);
 '@
-R $p @'
+ReplaceExact $p @'
                                 var result = await PortableMsixLauncher.ExtractAndLaunchAsync(
                                     mainPackagePath,
                                     dependencyPaths,
@@ -33,7 +33,7 @@ R $p @'
 
                                 UpdateService.SetDetails($"Portable folder: {result.ExtractDirectory}");
 '@
-R $p @'
+ReplaceExact $p @'
         if (_currentProductInfo.InstallerType != InstallerType.Unpackaged)
         {
             var launch = await PackagedAppDiscovery.TryLaunchDetailedAsync(
@@ -47,7 +47,7 @@ R $p @'
 '@
 
 $p='Raven/Helpers/PortableMsixLauncher.cs'
-R $p @'
+ReplaceExact $p @'
         var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow);
         var installBaseFolder = NativeFilePicker.PickFolder(hwnd, "Choose installation folder");
 '@ @'
@@ -61,7 +61,7 @@ R $p @'
 '@
 
 $p='Raven/Helpers/NativeFilePicker.cs'
-R $p @'
+ReplaceExact $p @'
     public static string? PickFolder(IntPtr owner, string? title = null)
     {
         var results = ShowOpenDialog(
@@ -79,7 +79,7 @@ R $p @'
             FOS_PICKFOLDERS | FOS_FORCEFILESYSTEM,
             initialFolder);
 '@
-R $p @'
+ReplaceExact $p @'
         FilterSpec[]? filters,
         uint extraFlags)
 '@ @'
@@ -87,7 +87,7 @@ R $p @'
         uint extraFlags,
         string? initialFolder = null)
 '@
-R $p @'
+ReplaceExact $p @'
             if (!string.IsNullOrEmpty(title))
                 dialog.SetTitle(title);
 
@@ -108,7 +108,7 @@ R $p @'
 
             if (filters is { Length: > 0 })
 '@
-R $p @'
+ReplaceExact $p @'
     // ---------------------------------------------------------------
     //  Constants
 '@ @'
