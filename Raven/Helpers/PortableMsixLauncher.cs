@@ -54,7 +54,12 @@ public static class PortableMsixLauncher
             throw new InvalidDataException("Select an .msix, .appx, .msixbundle or .appxbundle file.");
 
         var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow);
-        var installBaseFolder = NativeFilePicker.PickFolder(hwnd, "Choose installation folder");
+        var defaultBaseFolder = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "Raven",
+            "PortableApps");
+        Directory.CreateDirectory(defaultBaseFolder);
+        var installBaseFolder = NativeFilePicker.PickFolder(hwnd, "Choose installation folder", defaultBaseFolder);
         if (string.IsNullOrWhiteSpace(installBaseFolder))
             throw new OperationCanceledException("No installation folder was selected.");
 

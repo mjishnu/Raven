@@ -298,7 +298,7 @@ public sealed partial class AppPage : Page
         var isUnpackaged = _currentProductInfo.InstallerType == InstallerType.Unpackaged;
         var isInstalled = isUnpackaged
             ? IsUnpackagedInstalled(_currentProductInfo)
-            : IsPackagedInstalled(_currentProductInfo);
+            : IsPackagedInstalled(_currentProductInfo) || PortableLaunchRegistry.Exists(productId);
         var downloadManager = DownloadManagerService.Instance;
         var downloadItem = downloadManager.GetDownload(productId);
         var isUpdateAvailable = IsUpdateAvailable(downloadItem);
@@ -1444,6 +1444,7 @@ public sealed partial class AppPage : Page
                                     productId,
                                     _downloadCts.Token
                                 );
+                                PortableLaunchRegistry.Save(productId, result.ExecutablePath, result.ExtractDirectory);
 
                                 UpdateService.SetDetails($"Portable folder: {result.ExtractDirectory}");
                                 DetailsText.Text = $"Portable folder: {result.ExtractDirectory}";
@@ -1529,6 +1530,9 @@ public sealed partial class AppPage : Page
 
         if (_currentProductInfo.InstallerType != InstallerType.Unpackaged)
         {
+            if (PortableLaunchRegistry.TryLaunch(_currentProductInfo.ProductId))
+                return;
+
             var launch = await PackagedAppDiscovery.TryLaunchDetailedAsync(
                 _currentProductInfo.PackageFamilyName
             );

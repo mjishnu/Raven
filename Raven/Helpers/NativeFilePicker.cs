@@ -36,13 +36,14 @@ public static class NativeFilePicker
     /// Shows a folder-picker dialog.
     /// Returns the selected folder path, or <c>null</c> if cancelled.
     /// </summary>
-    public static string? PickFolder(IntPtr owner, string? title = null)
+    public static string? PickFolder(IntPtr owner, string? title = null, string? initialFolder = null)
     {
         var results = ShowOpenDialog(
             owner,
             title,
             filters: null,
-            FOS_PICKFOLDERS | FOS_FORCEFILESYSTEM);
+            FOS_PICKFOLDERS | FOS_FORCEFILESYSTEM,
+            initialFolder);
 
         return results.Count > 0 ? results[0] : null;
     }
@@ -57,7 +58,8 @@ public static class NativeFilePicker
         IntPtr owner,
         string? title,
         FilterSpec[]? filters,
-        uint extraFlags)
+        uint extraFlags,
+        string? initialFolder = null)
     {
         var dialog = (IFileOpenDialog)new FileOpenDialogCoClass();
         try
@@ -67,6 +69,16 @@ public static class NativeFilePicker
 
             if (!string.IsNullOrEmpty(title))
                 dialog.SetTitle(title);
+
+            if (!string.IsNullOrWhiteSpace(initialFolder) && Directory.Exists(initialFolder))
+            {
+                var iid = typeof(IShellItem).GUID;
+                if (SHCreateItemFromParsingName(initialFolder, IntPtr.Zero, ref iid, out var folderItem) == 0 && folderItem != null)
+                {
+                    try { dialog.SetFolder(folderItem); dialog.SetDefaultFolder(folderItem); }
+                    finally { Marshal.ReleaseComObject(folderItem); }
+                }
+            }
 
             if (filters is { Length: > 0 })
                 SetFilters(dialog, filters);
@@ -148,6 +160,13 @@ public static class NativeFilePicker
             Marshal.ReleaseComObject(shellItemArray);
         }
     }
+
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode, PreserveSig = true)]
+    private static extern int SHCreateItemFromParsingName(
+        [MarshalAs(UnmanagedType.LPWStr)] string pszPath,
+        IntPtr pbc,
+        ref Guid riid,
+        [MarshalAs(UnmanagedType.Interface)] out IShellItem? ppv);
 
     // ---------------------------------------------------------------
     //  Constants
