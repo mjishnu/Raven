@@ -38,10 +38,7 @@
 
     <Feature Id="MainFeature" Title="Raven" Level="1">
       <ComponentRef Id="MainExecutableComponent" />
-      <Files Directory="INSTALLFOLDER" Include="!(bindpath.Payload)\**">
-        <Exclude Files="!(bindpath.Payload)\Raven.exe" />
-        <Exclude Files="!(bindpath.Payload)\**\*.pdb" />
-      </Files>
+      <ComponentGroupRef Id="PayloadFiles" />
     </Feature>
   </Package>
 </Wix>
