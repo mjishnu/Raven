@@ -1,0 +1,41 @@
+name: Apply guarded feature patch
+
+on:
+  push:
+    branches:
+      - feature/gui-install-run-folder-path
+    paths:
+      - ".github/workflows/apply-feature-branch-patch.yml"
+      - ".github/scripts/apply-feature-branch-patch.ps1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: windows-latest
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/gui-install-run-folder-path
+          fetch-depth: 0
+
+      - name: Apply guarded source patch
+        shell: pwsh
+        run: ./.github/scripts/apply-feature-branch-patch.ps1
+
+      - name: Commit source changes
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Raven/Views/AppPage.xaml.cs Raven/Helpers/PortableMsixLauncher.cs
+          if (git diff --cached --quiet) {
+            Write-Host "No source changes to commit."
+            exit 0
+          }
+          git commit -m "Add install/run modes and user-selected portable folder"
+          git push origin HEAD:feature/gui-install-run-folder-path
