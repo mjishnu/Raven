@@ -28,6 +28,10 @@
 
                 <StackPanel Grid.Column="0" Spacing="3" VerticalAlignment="Center">
                     <TextBlock
+                        Text="Only use this feature for packages you own or have a valid license to use."
+                        FontWeight="SemiBold"
+                        TextWrapping="Wrap" />
+                    <TextBlock
                         Text="Portable MSIX / AppX"
                         FontWeight="SemiBold"
                         FontSize="16" />
