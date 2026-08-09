@@ -20,7 +20,7 @@
 
 This repository is a fork of [mjishnu/Raven](https://github.com/mjishnu/Raven). Raven is a modern WinUI 3 / .NET 10 alternative Microsoft Store client for Windows. The original Raven project provides Store search, downloads, installation, updates, dependency handling and package export.
 
-This fork keeps the original Raven functionality and adds a portable-package workflow and an optional single-EXE distribution build.
+This fork keeps the original Raven functionality and adds a portable-package workflow and an optional single-EXE distribution build. This implements the free installation and usage of all apps, paid aswell, if they dont have a seperate mechanism to prevent the start of a copy.
 
 ## Changes in this fork
 
