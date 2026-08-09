@@ -8,7 +8,15 @@
   <b>Raven with additional portable MSIX/AppX tools and a single-file x64 build</b>
 </p>
 
-> **Only use the portable package feature for packages you own or have a valid license to use.**
+> ## ⚠️ IMPORTANT LICENSE AND LIABILITY NOTICE
+>
+> **Only use this software for applications and packages that you own or for which you have a valid license or other legal right to use.**
+>
+> **I explicitly advise against downloading, installing, extracting, launching, or otherwise using paid applications without a valid license.** This project is not intended to grant access to paid software without authorization, and extracting or downloading a package does not grant you a software license.
+>
+> You are solely responsible for ensuring that your use of this software complies with the applicable software license terms, Microsoft Store terms, copyright law, and other applicable laws and agreements.
+>
+> **The maintainer assumes no responsibility or liability for unauthorized use, license violations, copyright infringement, data loss, system damage, financial loss, or other consequences resulting from the use or misuse of this software, to the maximum extent permitted by applicable law. Use this software at your own risk.**
 
 This repository is a fork of [mjishnu/Raven](https://github.com/mjishnu/Raven). Raven is a modern WinUI 3 / .NET 10 alternative Microsoft Store client for Windows. The original Raven project provides Store search, downloads, installation, updates, dependency handling and package export.
 
@@ -17,6 +25,8 @@ This fork keeps the original Raven functionality and adds a portable-package wor
 ## Changes in this fork
 
 ### Portable MSIX / AppX launcher
+
+> **License reminder:** Only open or prepare packages that you own or are licensed to use. Do not use this feature to install or run paid software without a valid license.
 
 The home page contains an **Open local package** action for local packages that you are licensed to use.
 
@@ -193,16 +203,35 @@ StoreListings/
 └── ...                              # upstream Store API submodule
 
 .github/workflows/
-└── build-onefile.yml                # GitHub Actions x64 OneFile build
+├── build-onefile.yml                # GitHub Actions x64 OneFile build
+└── release-onefile.yml              # GitHub Actions release build
 
 BUILD_ONEFILE.bat                    # equivalent local OneFile build
 ```
 
-## Notes about portability
+## Notes about portability and licensing
 
 Extracting an MSIX/AppX package does **not** automatically make every Windows application portable. A package may depend on installation-time registration or a valid package identity. This fork attempts to launch compatible desktop payloads but does not emulate all Windows package deployment features.
 
-Use the portable feature only when you have the legal right and any required license to use the package/application.
+**A downloadable or extractable package is not the same thing as a software license.** You must already have the legal right to use the application. I strongly advise against installing or running paid applications without a valid license.
+
+Do not assume that the technical ability to download, extract, or launch an application gives you permission to use it. The user is responsible for verifying ownership, entitlement, license conditions, and any restrictions imposed by the software publisher or distribution platform.
+
+## Disclaimer / limitation of liability
+
+This project is provided for legitimate use, experimentation, interoperability, backup, development, and use with software for which the user has appropriate rights.
+
+**The maintainer does not authorize or encourage software piracy, circumvention of payment obligations, copyright infringement, or use of paid applications without a valid license.**
+
+To the maximum extent permitted by applicable law, the maintainer assumes no responsibility or liability for:
+
+- unauthorized or unlawful use of this software;
+- violations of software licenses, Store terms, copyright, or other third-party rights;
+- loss of data, application settings, or files;
+- system instability, security problems, or damage caused by extracted or launched software;
+- financial loss, account restrictions, service suspensions, or other consequences resulting from use or misuse of this project.
+
+**Use this software at your own risk and only with applications you are legally entitled to use.**
 
 ## System requirements
 
@@ -228,3 +257,5 @@ Please consider contributing improvements and fixes back to the appropriate upst
 ## License
 
 Raven is licensed under the **Apache License 2.0**. See [LICENSE](LICENSE) for the complete license text.
+
+The Apache License governs the software license for this repository. The additional warnings above concern how users choose to use the software and do not grant any rights to third-party applications or packages.
