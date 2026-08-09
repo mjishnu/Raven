@@ -95,7 +95,6 @@ public static class PortableMsixLauncher
             }
             catch
             {
-                // Some resource/framework packages are not useful to an unpackaged Win32 payload.
             }
         }
 
@@ -327,7 +326,6 @@ public static class PortableMsixLauncher
             }
             catch
             {
-                // Fall back to executable scoring below.
             }
         }
 
@@ -385,7 +383,7 @@ public static class PortableMsixLauncher
             try
             {
                 _ = SendMessageTimeout(
-                    HwndBroadcast,
+                    (nint)HwndBroadcast,
                     WmSettingChange,
                     0,
                     "Environment",
