@@ -137,6 +137,16 @@ jobs:
         shell: pwsh
         run: |
           @'
+          # ⚠️ Important license and liability notice
+
+          **Only use Raven Portable for applications and packages that you own or for which you have a valid license or other legal right to use.**
+
+          **I explicitly advise against downloading, installing, extracting, launching, or otherwise using paid applications without a valid license.** The ability to download or extract an application package does not grant a license to use that application.
+
+          You are solely responsible for ensuring that your use complies with the applicable software license terms, Microsoft Store terms, copyright law, and other applicable laws and agreements.
+
+          **The maintainer assumes no responsibility or liability for unauthorized use, license violations, copyright infringement, data loss, system damage, financial loss, account restrictions, or other consequences resulting from the use or misuse of this software, to the maximum extent permitted by applicable law. Use this software at your own risk.**
+
           ## Raven Portable fork
 
           This release is based on Raven and adds a portable MSIX/AppX workflow for packages you own or are licensed to use.
@@ -150,7 +160,11 @@ jobs:
           - Provide a self-contained x64 OneFile build of Raven.
           - Include a local `BUILD_ONEFILE.bat` and GitHub Actions build workflow for reproducible builds.
 
-          **License notice:** Only use this feature for packages you own or have a valid license to use. Package extraction does not grant a software license and does not make every MSIX/AppX application portable; applications may still require package identity, frameworks, services, drivers, or their own licensing mechanisms.
+          ### License reminder
+
+          **Do not use this project to install or run paid software without a valid license. I strongly advise against doing so.** Package extraction does not grant a software license and does not make every MSIX/AppX application portable. Applications may still require package identity, frameworks, services, drivers, or their own licensing mechanisms.
+
+          The maintainer does not authorize or encourage software piracy, circumvention of payment obligations, copyright infringement, or use of paid applications without a valid license.
 
           ### Download
           `Raven-Portable.exe` is the self-contained x64 executable. The SHA256 text file can be used to verify the download.
