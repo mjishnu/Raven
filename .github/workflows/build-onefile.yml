@@ -1,0 +1,144 @@
+name: Build Raven OneFile
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "Raven/**"
+      - "Raven.Updater/**"
+      - "Raven.OneFileLauncher/**"
+      - "StoreListings/**"
+      - ".gitmodules"
+      - "BUILD_ONEFILE.bat"
+      - ".github/workflows/build-onefile.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build-onefile-x64:
+    name: Build Raven-Portable.exe x64
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository and submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup .NET 10 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Show SDK information
+        shell: pwsh
+        run: dotnet --info
+
+      - name: Prepare build folders
+        shell: pwsh
+        run: |
+          Remove-Item -Recurse -Force _onefile_build, OUTPUT -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Force _onefile_build/payload | Out-Null
+          New-Item -ItemType Directory -Force _onefile_build/updater | Out-Null
+          New-Item -ItemType Directory -Force _onefile_build/launcher | Out-Null
+          New-Item -ItemType Directory -Force OUTPUT | Out-Null
+
+      - name: Restore Raven from nuget.org
+        shell: pwsh
+        run: >-
+          dotnet restore Raven/Raven.csproj
+          -r win-x64
+          --source https://api.nuget.org/v3/index.json
+
+      - name: Publish Raven self-contained x64
+        shell: pwsh
+        run: >-
+          dotnet publish Raven/Raven.csproj
+          -c Release
+          -r win-x64
+          --self-contained true
+          --no-restore
+          -p:Platform=x64
+          -p:WindowsAppSDKSelfContained=true
+          -p:DebugType=None
+          -p:DebugSymbols=false
+          -o _onefile_build/payload
+
+      - name: Publish Raven updater self-contained
+        shell: pwsh
+        run: |
+          dotnet restore Raven.Updater/Raven.Updater.csproj -r win-x64 --source https://api.nuget.org/v3/index.json
+          dotnet publish Raven.Updater/Raven.Updater.csproj `
+            -c Release `
+            -r win-x64 `
+            --self-contained true `
+            --no-restore `
+            -p:PublishSingleFile=true `
+            -p:DebugType=None `
+            -p:DebugSymbols=false `
+            -o _onefile_build/updater
+
+          Get-ChildItem _onefile_build/payload -Filter 'Raven.Updater.*' -File -ErrorAction SilentlyContinue | Remove-Item -Force
+          Copy-Item _onefile_build/updater/Raven.Updater.exe _onefile_build/payload/Raven.Updater.exe -Force
+          Get-ChildItem _onefile_build/payload -Filter '*.pdb' -Recurse -File -ErrorAction SilentlyContinue | Remove-Item -Force
+
+          if (-not (Test-Path _onefile_build/payload/Raven.exe)) {
+            throw 'Raven.exe was not produced.'
+          }
+
+      - name: Create embedded payload ZIP
+        shell: pwsh
+        run: |
+          Compress-Archive `
+            -Path _onefile_build/payload/* `
+            -DestinationPath _onefile_build/RavenPayload.zip `
+            -CompressionLevel Optimal `
+            -Force
+
+      - name: Build Raven OneFile launcher
+        shell: pwsh
+        run: |
+          $payload = (Resolve-Path _onefile_build/RavenPayload.zip).Path
+
+          dotnet restore Raven.OneFileLauncher/Raven.OneFileLauncher.csproj `
+            -r win-x64 `
+            --source https://api.nuget.org/v3/index.json `
+            "-p:RavenPayloadZip=$payload"
+
+          dotnet publish Raven.OneFileLauncher/Raven.OneFileLauncher.csproj `
+            -c Release `
+            -r win-x64 `
+            --self-contained true `
+            --no-restore `
+            -p:PublishSingleFile=true `
+            -p:DebugType=None `
+            -p:DebugSymbols=false `
+            "-p:RavenPayloadZip=$payload" `
+            -o _onefile_build/launcher
+
+          $source = '_onefile_build/launcher/Raven.OneFileLauncher.exe'
+          if (-not (Test-Path $source)) {
+            throw 'Raven.OneFileLauncher.exe was not produced.'
+          }
+
+          Copy-Item $source OUTPUT/Raven-Portable.exe -Force
+
+      - name: Create SHA256 file
+        shell: pwsh
+        run: |
+          $hash = (Get-FileHash OUTPUT/Raven-Portable.exe -Algorithm SHA256).Hash
+          "$hash  Raven-Portable.exe" | Set-Content OUTPUT/Raven-Portable.exe.sha256.txt -Encoding ascii
+          Write-Host "Raven-Portable.exe SHA256: $hash"
+
+      - name: Upload Raven OneFile artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Raven-Portable-x64
+          path: |
+            OUTPUT/Raven-Portable.exe
+            OUTPUT/Raven-Portable.exe.sha256.txt
+          if-no-files-found: error
+          compression-level: 0
