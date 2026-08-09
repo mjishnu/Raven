@@ -1236,9 +1236,7 @@ public sealed partial class AppPage : Page
         var action = CurrentActionKey;
         var isRunAction = string.Equals(action, "Run", StringComparison.OrdinalIgnoreCase);
 
-        if (isRunAction &&
-            (PortableLaunchRegistry.Exists(productId) ||
-             (!isUnpackaged && IsPackagedInstalled(_currentProductInfo))))
+        if (isRunAction && PortableLaunchRegistry.Exists(productId))
         {
             await TryOpenCurrentAppAsync();
             return;

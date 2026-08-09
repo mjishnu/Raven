@@ -80,16 +80,22 @@ public static class PortableMsixLauncher
         var appDir = Path.Combine(root, "App");
         var depsDir = Path.Combine(root, "Dependencies");
 
-        if (Directory.Exists(root))
+        Directory.CreateDirectory(root);
+
+        // Keep the user-selected root folder intact and only replace Raven-owned payload folders.
+        foreach (var ownedDirectory in new[] { appDir, depsDir })
         {
+            if (!Directory.Exists(ownedDirectory))
+                continue;
+
             try
             {
-                Directory.Delete(root, recursive: true);
+                Directory.Delete(ownedDirectory, recursive: true);
             }
             catch (Exception ex)
             {
                 throw new IOException(
-                    $"The existing portable folder could not be replaced. Close the portable app if it is still running and try again. Folder: {root}",
+                    $"The existing portable application files could not be replaced. Close the portable app if it is still running and try again. Folder: {ownedDirectory}",
                     ex
                 );
             }
