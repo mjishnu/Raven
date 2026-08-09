@@ -1,4 +1,4 @@
-name: Build Raven Windows
+name: Build Raven OneDir
 
 on:
   workflow_dispatch:
@@ -9,16 +9,14 @@ on:
       - "Raven/**"
       - "Raven.Updater/**"
       - "StoreListings/**"
-      - "Installer/**"
       - ".gitmodules"
-      - ".github/workflows/build-onedir.yml"
 
 permissions:
   contents: read
 
 jobs:
-  build-windows:
-    name: Build Windows ${{ matrix.arch }}
+  build-onedir:
+    name: Build OneDir ${{ matrix.arch }}
     runs-on: windows-latest
     strategy:
       fail-fast: false
@@ -84,68 +82,7 @@ jobs:
             throw 'Raven.exe was not produced.'
           }
 
-      - name: Generate WiX payload authoring
-        shell: pwsh
-        run: |
-          $payload = (Resolve-Path 'OUTPUT/Raven-${{ matrix.arch }}').Path
-          $generated = Join-Path $env:GITHUB_WORKSPACE 'Installer/GeneratedPayload.wxs'
-
-          function Escape-Xml([string]$value) {
-            return [System.Security.SecurityElement]::Escape($value)
-          }
-
-          $lines = [System.Collections.Generic.List[string]]::new()
-          $lines.Add('<?xml version="1.0" encoding="utf-8"?>')
-          $lines.Add('<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">')
-          $lines.Add('  <Fragment>')
-          $lines.Add('    <ComponentGroup Id="PayloadFiles">')
-
-          Get-ChildItem $payload -Recurse -File |
-            Where-Object { $_.Name -ne 'Raven.exe' -and $_.Extension -ne '.pdb' } |
-            Sort-Object FullName |
-            ForEach-Object {
-              $relative = [IO.Path]::GetRelativePath($payload, $_.FullName)
-              $relativeDir = [IO.Path]::GetDirectoryName($relative)
-              $bytes = [Text.Encoding]::UTF8.GetBytes($relative.ToLowerInvariant())
-              $hash = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($bytes)).Substring(0, 24)
-              $componentId = "C_$hash"
-              $fileId = "F_$hash"
-              $source = Escape-Xml("!(bindpath.Payload)\$relative")
-              $sub = if ([string]::IsNullOrWhiteSpace($relativeDir)) { '' } else { ' Subdirectory="' + (Escape-Xml($relativeDir)) + '"' }
-
-              $lines.Add(('      <Component Id="{0}" Directory="INSTALLFOLDER"{1} Guid="*">' -f $componentId, $sub))
-              $lines.Add(('        <File Id="{0}" Source="{1}" KeyPath="yes" />' -f $fileId, $source))
-              $lines.Add('      </Component>')
-            }
-
-          $lines.Add('    </ComponentGroup>')
-          $lines.Add('  </Fragment>')
-          $lines.Add('</Wix>')
-          [IO.File]::WriteAllLines($generated, $lines, [Text.UTF8Encoding]::new($false))
-
-      - name: Build WiX 4 MSI
-        shell: pwsh
-        run: |
-          $payload = Join-Path $env:GITHUB_WORKSPACE 'OUTPUT\Raven-${{ matrix.arch }}'
-          $installerOut = Join-Path $env:GITHUB_WORKSPACE 'OUTPUT\installer-${{ matrix.arch }}'
-          New-Item -ItemType Directory -Path $installerOut -Force | Out-Null
-
-          dotnet build Installer/Raven.Installer.wixproj `
-            -c Release `
-            -p:InstallerPlatform=${{ matrix.arch }} `
-            -p:PayloadDir="$payload" `
-            -p:OutputPath="$installerOut\"
-
-          $msi = Get-ChildItem $installerOut -Filter '*.msi' -Recurse -File | Select-Object -First 1
-          if (-not $msi) { throw 'WiX did not produce an MSI.' }
-
-          $finalMsi = Join-Path $env:GITHUB_WORKSPACE 'OUTPUT\Raven-Setup-${{ matrix.arch }}.msi'
-          Copy-Item $msi.FullName $finalMsi -Force
-
-          $hash = (Get-FileHash $finalMsi -Algorithm SHA256).Hash
-          "$hash  Raven-Setup-${{ matrix.arch }}.msi" | Set-Content "OUTPUT/Raven-Setup-${{ matrix.arch }}.msi.sha256.txt" -Encoding ascii
-
-      - name: Create portable ZIP
+      - name: Create OneDir ZIP
         shell: pwsh
         run: |
           Compress-Archive `
@@ -157,13 +94,11 @@ jobs:
           $hash = (Get-FileHash OUTPUT/Raven-OneDir-${{ matrix.arch }}.zip -Algorithm SHA256).Hash
           "$hash  Raven-OneDir-${{ matrix.arch }}.zip" | Set-Content OUTPUT/Raven-OneDir-${{ matrix.arch }}.zip.sha256.txt -Encoding ascii
 
-      - name: Upload Windows build
+      - name: Upload OneDir ZIP
         uses: actions/upload-artifact@v4
         with:
-          name: Raven-Windows-${{ matrix.arch }}
+          name: Raven-OneDir-${{ matrix.arch }}
           path: |
-            OUTPUT/Raven-Setup-${{ matrix.arch }}.msi
-            OUTPUT/Raven-Setup-${{ matrix.arch }}.msi.sha256.txt
             OUTPUT/Raven-OneDir-${{ matrix.arch }}.zip
             OUTPUT/Raven-OneDir-${{ matrix.arch }}.zip.sha256.txt
           if-no-files-found: error
