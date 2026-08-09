@@ -21,3 +21,4 @@ jobs:
           git add Raven/Views/AppPage.xaml.cs Raven/Helpers/PortableMsixLauncher.cs Raven/Helpers/NativeFilePicker.cs
           git commit -m "Fix Open for portable apps and default folder picker"
           git push
+# retrigger after script fix
