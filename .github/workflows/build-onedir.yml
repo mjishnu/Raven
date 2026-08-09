@@ -1,8 +1,5 @@
-name: Build Raven OneDir
+name: Build Raven Windows
 
-# Produces downloadable ZIPs for direct testing of the current feature branch.
-# Manual rebuild marker: Open/picker persistence fixes included.
-# Manual rebuild marker: home/run/folder polish included.
 on:
   workflow_dispatch:
   push:
@@ -12,6 +9,7 @@ on:
       - "Raven/**"
       - "Raven.Updater/**"
       - "StoreListings/**"
+      - "Installer/**"
       - ".gitmodules"
       - ".github/workflows/build-onedir.yml"
 
@@ -19,8 +17,8 @@ permissions:
   contents: read
 
 jobs:
-  build-onedir:
-    name: Build OneDir ${{ matrix.arch }}
+  build-windows:
+    name: Build Windows ${{ matrix.arch }}
     runs-on: windows-latest
     strategy:
       fail-fast: false
@@ -86,7 +84,29 @@ jobs:
             throw 'Raven.exe was not produced.'
           }
 
-      - name: Create OneDir ZIP
+      - name: Build WiX 7 MSI
+        shell: pwsh
+        run: |
+          $payload = Join-Path $env:GITHUB_WORKSPACE 'OUTPUT\Raven-${{ matrix.arch }}'
+          $installerOut = Join-Path $env:GITHUB_WORKSPACE 'OUTPUT\installer-${{ matrix.arch }}'
+          New-Item -ItemType Directory -Path $installerOut -Force | Out-Null
+
+          dotnet build Installer/Raven.Installer.wixproj `
+            -c Release `
+            -p:InstallerPlatform=${{ matrix.arch }} `
+            -p:PayloadDir="$payload" `
+            -p:OutputPath="$installerOut\"
+
+          $msi = Get-ChildItem $installerOut -Filter '*.msi' -Recurse -File | Select-Object -First 1
+          if (-not $msi) { throw 'WiX did not produce an MSI.' }
+
+          $finalMsi = Join-Path $env:GITHUB_WORKSPACE 'OUTPUT\Raven-Setup-${{ matrix.arch }}.msi'
+          Copy-Item $msi.FullName $finalMsi -Force
+
+          $hash = (Get-FileHash $finalMsi -Algorithm SHA256).Hash
+          "$hash  Raven-Setup-${{ matrix.arch }}.msi" | Set-Content "OUTPUT/Raven-Setup-${{ matrix.arch }}.msi.sha256.txt" -Encoding ascii
+
+      - name: Create portable ZIP
         shell: pwsh
         run: |
           Compress-Archive `
@@ -98,11 +118,13 @@ jobs:
           $hash = (Get-FileHash OUTPUT/Raven-OneDir-${{ matrix.arch }}.zip -Algorithm SHA256).Hash
           "$hash  Raven-OneDir-${{ matrix.arch }}.zip" | Set-Content OUTPUT/Raven-OneDir-${{ matrix.arch }}.zip.sha256.txt -Encoding ascii
 
-      - name: Upload OneDir ZIP
+      - name: Upload Windows build
         uses: actions/upload-artifact@v4
         with:
-          name: Raven-OneDir-${{ matrix.arch }}
+          name: Raven-Windows-${{ matrix.arch }}
           path: |
+            OUTPUT/Raven-Setup-${{ matrix.arch }}.msi
+            OUTPUT/Raven-Setup-${{ matrix.arch }}.msi.sha256.txt
             OUTPUT/Raven-OneDir-${{ matrix.arch }}.zip
             OUTPUT/Raven-OneDir-${{ matrix.arch }}.zip.sha256.txt
           if-no-files-found: error
