@@ -1,6 +1,7 @@
 name: Build Raven OneDir
 
 # Produces downloadable ZIPs for direct testing of the current feature branch.
+# Manual rebuild marker: Open/picker persistence fixes included.
 on:
   workflow_dispatch:
   push:
