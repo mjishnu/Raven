@@ -1,8 +1,12 @@
-﻿using Microsoft.UI.Xaml.Controls;
+﻿using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 using StoreListings.Library;
 using Raven.Contracts.Services;
+using Raven.Helpers;
 using Raven.ViewModels;
+using Windows.Storage.Pickers;
+using WinRT.Interop;
 
 namespace Raven.Views;
 
@@ -53,6 +57,71 @@ public sealed partial class MainPage : Page
         else
         {
             throw result.Exception;
+        }
+    }
+
+    private async void OpenPortablePackageButton_Click(object sender, RoutedEventArgs e)
+    {
+        var picker = new FileOpenPicker();
+        picker.FileTypeFilter.Add(".msix");
+        picker.FileTypeFilter.Add(".appx");
+        picker.FileTypeFilter.Add(".msixbundle");
+        picker.FileTypeFilter.Add(".appxbundle");
+
+        var hwnd = WindowNative.GetWindowHandle(App.MainWindow);
+        InitializeWithWindow.Initialize(picker, hwnd);
+
+        var file = await picker.PickSingleFileAsync();
+        if (file == null)
+            return;
+
+        OpenPortablePackageButton.IsEnabled = false;
+
+        try
+        {
+            var title = Path.GetFileNameWithoutExtension(file.Name);
+            var result = await PortableMsixLauncher.ExtractAndLaunchAsync(
+                file.Path,
+                dependencyPackagePaths: null,
+                appTitle: title,
+                packageKey: "local",
+                cancellationToken: default,
+                addToUserPath: true,
+                createStartMenuShortcut: true
+            );
+
+            var pathText = result.AddedToUserPath
+                ? "The executable folder was added to your user PATH."
+                : "The executable folder was already present in your user PATH.";
+
+            var shortcutText = string.IsNullOrWhiteSpace(result.StartMenuShortcut)
+                ? string.Empty
+                : $"\n\nWindows Start/Search entry:\n{result.StartMenuShortcut}";
+
+            var dialog = new ContentDialog
+            {
+                Title = "Portable app started",
+                Content =
+                    $"Executable:\n{result.ExecutablePath}\n\n{pathText}{shortcutText}\n\nPortable folder:\n{result.ExtractDirectory}",
+                CloseButtonText = "OK",
+                XamlRoot = Content.XamlRoot,
+            };
+            await dialog.ShowAsync();
+        }
+        catch (Exception ex)
+        {
+            var dialog = new ContentDialog
+            {
+                Title = "Portable launch failed",
+                Content = ex.Message,
+                CloseButtonText = "OK",
+                XamlRoot = Content.XamlRoot,
+            };
+            await dialog.ShowAsync();
+        }
+        finally
+        {
+            OpenPortablePackageButton.IsEnabled = true;
         }
     }
 
