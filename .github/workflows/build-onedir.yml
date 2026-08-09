@@ -113,8 +113,8 @@ jobs:
               $source = Escape-Xml("!(bindpath.Payload)\$relative")
               $sub = if ([string]::IsNullOrWhiteSpace($relativeDir)) { '' } else { ' Subdirectory="' + (Escape-Xml($relativeDir)) + '"' }
 
-              $lines.Add("      <Component Id=\"$componentId\" Directory=\"INSTALLFOLDER\"$sub Guid=\"*\">")
-              $lines.Add("        <File Id=\"$fileId\" Source=\"$source\" KeyPath=\"yes\" />")
+              $lines.Add(('      <Component Id="{0}" Directory="INSTALLFOLDER"{1} Guid="*">' -f $componentId, $sub))
+              $lines.Add(('        <File Id="{0}" Source="{1}" KeyPath="yes" />' -f $fileId, $source))
               $lines.Add('      </Component>')
             }
 
