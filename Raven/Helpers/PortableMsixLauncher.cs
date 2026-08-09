@@ -59,11 +59,24 @@ public static class PortableMsixLauncher
             "Raven",
             "PortableApps");
         Directory.CreateDirectory(defaultBaseFolder);
-        var installBaseFolder = NativeFilePicker.PickFolder(hwnd, "Choose installation folder", defaultBaseFolder);
+        var suggestedName = MakeSafeFileName(string.IsNullOrWhiteSpace(appTitle) ? "App" : appTitle);
+        var suggestedFolder = Path.Combine(defaultBaseFolder, suggestedName);
+        Directory.CreateDirectory(suggestedFolder);
+
+        var installBaseFolder = NativeFilePicker.PickFolder(
+            hwnd,
+            "Choose installation folder",
+            defaultBaseFolder,
+            suggestedName);
         if (string.IsNullOrWhiteSpace(installBaseFolder))
             throw new OperationCanceledException("No installation folder was selected.");
 
-        var root = GetPortableRoot(appTitle, packageKey, installBaseFolder);
+        var root = string.Equals(
+            Path.GetFullPath(installBaseFolder).TrimEnd(Path.DirectorySeparatorChar),
+            Path.GetFullPath(suggestedFolder).TrimEnd(Path.DirectorySeparatorChar),
+            StringComparison.OrdinalIgnoreCase)
+                ? suggestedFolder
+                : GetPortableRoot(appTitle, packageKey, installBaseFolder);
         var appDir = Path.Combine(root, "App");
         var depsDir = Path.Combine(root, "Dependencies");
 

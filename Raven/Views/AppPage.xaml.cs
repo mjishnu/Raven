@@ -1236,6 +1236,14 @@ public sealed partial class AppPage : Page
         var action = CurrentActionKey;
         var isRunAction = string.Equals(action, "Run", StringComparison.OrdinalIgnoreCase);
 
+        if (isRunAction &&
+            (PortableLaunchRegistry.Exists(productId) ||
+             (!isUnpackaged && IsPackagedInstalled(_currentProductInfo))))
+        {
+            await TryOpenCurrentAppAsync();
+            return;
+        }
+
         // For Retry, repeat whatever the user last attempted (persisted on the DownloadItem).
         var existingItem = downloadManager.GetDownload(productId);
         var isDownloadOnly =

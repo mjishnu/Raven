@@ -36,14 +36,19 @@ public static class NativeFilePicker
     /// Shows a folder-picker dialog.
     /// Returns the selected folder path, or <c>null</c> if cancelled.
     /// </summary>
-    public static string? PickFolder(IntPtr owner, string? title = null, string? initialFolder = null)
+    public static string? PickFolder(
+        IntPtr owner,
+        string? title = null,
+        string? initialFolder = null,
+        string? suggestedFolderName = null)
     {
         var results = ShowOpenDialog(
             owner,
             title,
             filters: null,
             FOS_PICKFOLDERS | FOS_FORCEFILESYSTEM,
-            initialFolder);
+            initialFolder,
+            suggestedFolderName);
 
         return results.Count > 0 ? results[0] : null;
     }
@@ -59,7 +64,8 @@ public static class NativeFilePicker
         string? title,
         FilterSpec[]? filters,
         uint extraFlags,
-        string? initialFolder = null)
+        string? initialFolder = null,
+        string? suggestedFileName = null)
     {
         var dialog = (IFileOpenDialog)new FileOpenDialogCoClass();
         try
@@ -79,6 +85,9 @@ public static class NativeFilePicker
                     finally { Marshal.ReleaseComObject(folderItem); }
                 }
             }
+
+            if (!string.IsNullOrWhiteSpace(suggestedFileName))
+                dialog.SetFileName(suggestedFileName);
 
             if (filters is { Length: > 0 })
                 SetFilters(dialog, filters);
