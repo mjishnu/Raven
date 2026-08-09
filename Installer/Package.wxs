@@ -25,19 +25,30 @@
     </StandardDirectory>
 
     <Component Id="MainExecutableComponent" Directory="INSTALLFOLDER" Guid="*">
-      <File Id="RavenExe" Source="!(bindpath.Payload)\Raven.exe" KeyPath="yes">
-        <Shortcut
-            Id="StartMenuShortcut"
-            Directory="ApplicationProgramsFolder"
-            Name="Raven"
-            Description="Raven"
-            WorkingDirectory="INSTALLFOLDER"
-            Advertise="no" />
-      </File>
+      <File Id="RavenExe" Source="!(bindpath.Payload)\Raven.exe" KeyPath="yes" />
+    </Component>
+
+    <Component Id="StartMenuShortcutComponent" Directory="ApplicationProgramsFolder" Guid="*">
+      <Shortcut
+          Id="StartMenuShortcut"
+          Name="Raven"
+          Description="Raven"
+          Target="[#RavenExe]"
+          WorkingDirectory="INSTALLFOLDER"
+          Advertise="no" />
+      <RemoveFolder Id="RemoveApplicationProgramsFolder" Directory="ApplicationProgramsFolder" On="uninstall" />
+      <RegistryValue
+          Root="HKCU"
+          Key="Software\Raven"
+          Name="StartMenuShortcut"
+          Type="integer"
+          Value="1"
+          KeyPath="yes" />
     </Component>
 
     <Feature Id="MainFeature" Title="Raven" Level="1">
       <ComponentRef Id="MainExecutableComponent" />
+      <ComponentRef Id="StartMenuShortcutComponent" />
       <ComponentGroupRef Id="PayloadFiles" />
     </Feature>
   </Package>
