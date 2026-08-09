@@ -2,193 +2,229 @@
   <img src="Raven/Assets/Raven.ico" alt="Raven Logo" width="128" height="128">
 </p>
 
-<h1 align="center">Raven</h1>
+<h1 align="center">Raven – Portable Fork</h1>
 
 <p align="center">
-  <b>A free, open-source alternative Microsoft Store client for Windows</b>
+  <b>Raven with additional portable MSIX/AppX tools and a single-file x64 build</b>
 </p>
 
-<p align="center">
-  <a href="https://github.com/mjishnu/Raven/releases"><img src="https://img.shields.io/github/v/release/mjishnu/Raven?style=flat-square&color=blue" alt="GitHub Release"></a>
-  <a href="https://github.com/mjishnu/Raven/blob/main/LICENSE"><img src="https://img.shields.io/github/license/mjishnu/Raven?style=flat-square&color=green" alt="License"></a>
-  <a href="https://github.com/mjishnu/Raven/stargazers"><img src="https://img.shields.io/github/stars/mjishnu/Raven?style=flat-square" alt="Stars"></a>
-  <a href="https://github.com/mjishnu/Raven/issues"><img src="https://img.shields.io/github/issues/mjishnu/Raven?style=flat-square" alt="Issues"></a>
-  <a href="https://discord.gg/9eeN2Wve4T"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fdiscord.com%2Fapi%2Fv10%2Finvites%2F9eeN2Wve4T%3Fwith_counts%3Dtrue&query=%24.approximate_member_count&label=Discord&logo=discord&logoColor=white&color=5865F2&style=flat-square&suffix=%20members&cacheSeconds=3600" alt="Discord"></a>
-</p>
+> **Only use the portable package feature for packages you own or have a valid license to use.**
 
----
+This repository is a fork of [mjishnu/Raven](https://github.com/mjishnu/Raven). Raven is a modern WinUI 3 / .NET 10 alternative Microsoft Store client for Windows. The original Raven project provides Store search, downloads, installation, updates, dependency handling and package export.
 
-Raven is a modern, native Windows application that serves as a fully-featured alternative to the Microsoft Store. It can do everything the official store does — **search, download, install, and update apps** — while also adding powerful capabilities like **sideloading external UWP/MSIX packages**, **exporting Store apps for offline use**, and **bandwidth-saving delta downloads**.
+This fork keeps the original Raven functionality and adds a portable-package workflow and an optional single-EXE distribution build.
 
-Built with **WinUI 3** and **.NET 10**, Raven delivers a clean, fluent UI that feels right at home on Windows 10 and 11.
+## Changes in this fork
 
-<img width="996" height="543" alt="raven" src="https://github.com/user-attachments/assets/40229b36-df5e-419d-aea7-ca374f6e2108" />
+### Portable MSIX / AppX launcher
 
-## ✨ Features
+The home page contains an **Open local package** action for local packages that you are licensed to use.
 
-### 🔍 Search & Browse
-- **Store Search** — search the Microsoft Store catalog directly from the title bar with real-time auto-suggest (including app icons and titles).
-- **Advanced Search** — filter and query apps with more granular control over results.
-- **App Details** — full app detail pages with descriptions, screenshots, version info, and dependency listings.
-- **Market & Language Selection** — browse the Store as it appears in any region/language combination.
+Supported input formats:
 
-### ⬇️ Downloads & Export
-- **Download Store Apps** — download any app package directly from Microsoft's CDN for offline installation or archival.
-- **Delta Downloads** — save bandwidth with intelligent block-level delta downloads. Only changed blocks are fetched using BlockMap diffing, drastically reducing download sizes for updates.
-- **Export Packages** — download `.appx`, `.msix`, `.appxbundle`, and `.msixbundle` files for external use, backup, or redistribution to other machines.
-- **Download Manager** — a full download queue with progress tracking, pause/resume, and status animations.
+- `.msix`
+- `.appx`
+- `.msixbundle`
+- `.appxbundle`
 
-### 📦 Install & Sideload
-- **Install Store Apps** — install downloaded packages directly, just like the Microsoft Store.
-- **Sideload External Packages** — install `.appx`, `.msix`, `.appxbundle`, or `.msixbundle` files from anywhere — not just the Store. Drag-and-drop or browse to select.
-- **Dependency Resolution** — automatic detection and installation of required framework dependencies.
-- **Force Install** — option to forcibly reinstall or downgrade packages when a newer version is already present.
+For a compatible desktop package Raven can:
 
-### 🔄 Updates
-- **Update Checking** — scans all installed Store-signed packaged apps and compares them against the latest available versions.
-- **Delta Updates** — applies block-level differential updates to minimize download sizes.
-- **Batch & Individual Updates** — update all apps at once or pick and choose which ones to update.
-- **Version Comparison** — intelligently determines the latest available version per architecture and OS build.
+1. unpack the package without registering it as a normal MSIX installation;
+2. select the appropriate application package from an MSIX/AppX bundle;
+3. inspect `AppxManifest.xml` and locate the application's executable;
+4. fall back to EXE detection when the manifest does not provide a directly usable executable path;
+5. extract supplied dependency packages when applicable;
+6. start the detected executable from the extracted application directory.
 
-### ⚙️ General
-- **Unpackaged Deployment** — runs as a standalone `.exe` without requiring MSIX packaging or Windows App Installer.
-- **Theme Support** — light, dark, and system-default themes with seamless switching.
-- **Structured Logging** — separate log files for runtime events, installations, and crashes via Serilog.
-- **Localization-Ready** — UI strings use a resource-based localization system (`x:Uid`).
-- **Self-Update Check** — checks GitHub for newer releases of Raven itself.
+Not every MSIX/AppX application is portable. UWP applications, applications that require package identity, Store licensing APIs, registered COM components, services, drivers, shell extensions or other deployment-time registration can still require a normal package installation.
 
-##  🛑 System requirements
+### User PATH integration
 
-- **Windows 10** Version 2004, Build 19041+
-- [**.NET 10**](https://dotnet.microsoft.com/en-us/download/dotnet/10.0) (Not needed for self-contained)
-- [**Windows App SDK Runtime**](https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/downloads#windows-app-sdk) (Not needed for self-contained)
+When a portable desktop application is prepared, the directory containing its selected main executable can be added to the **current user's PATH**.
 
-## 🌐 How to Run
-#### 1. Releases
-- Statisfy all [system requirements](#-system-requirements) (excluding runtimes if running self contained version)
-- Download the latest version of Raven from [releases](https://github.com/mjishnu/Raven/releases) according to your system architecture.
-- Extract the contents of the zip and run `raven.exe`.
-- If you encounter a false antivirus positive, download `raven_cert.zip` from [releases](https://github.com/mjishnu/Raven/releases), extract the contents and install `raven.cer` or run `install_raven_cert.bat`.
+This changes only the user environment variable and does not require modifying the machine-wide PATH.
 
-#### 2. Winget
-- Install [winget](https://learn.microsoft.com/en-us/windows/package-manager/winget/) and run
-```ps1
-winget install mjishnu.raven
-```
-- If you encounter a false antivirus positive, download `raven_cert.zip` from [releases](https://github.com/mjishnu/Raven/releases), extract the contents and install `raven.cer` or run `install_raven_cert.bat`.
-- Search for the `raven` in startmenu and run
+### Windows Start/Search integration
 
-### ▶️ Video Guide
-[<img width="996" height="543" alt="IMM-WZsVCt5_E" src="https://github.com/user-attachments/assets/80fd984c-8587-49a0-ae13-07bee72d9a9d" />
-](https://www.youtube.com/watch?v=ZX__BaD6kr0)
+Raven creates a per-user Start menu shortcut under:
 
-
-## 🏗️ Architecture
-
-Raven follows the **MVVM pattern** and uses dependency injection via `Microsoft.Extensions.Hosting`.
-
-```
-Raven.sln
-├── Raven/                    # WinUI 3 Application (UI layer)
-│   ├── Views/                # XAML pages: Shell, Search, App Details,
-│   │                         #   Downloads, Installations, Updates, Settings
-│   ├── ViewModels/           # MVVM view models (CommunityToolkit.Mvvm)
-│   ├── Services/             # App-level services: navigation, downloads,
-│   │                         #   package installation, update checking
-│   ├── Helpers/              # Utilities: delta downloads, BlockMap parsing,
-│   │                         #   download URL resolution, version comparison
-│   ├── Models/               # Data models: AppInfo, DownloadItem, UpdateItem
-│   ├── Contracts/            # Service interfaces
-│   ├── Layouts/              # Custom WinUI layouts (VirtualGridLayout)
-│   ├── Styles/               # XAML resource dictionaries
-│   └── Strings/              # Localized string resources (en-us)
-│
-├── Raven.Updater/            # Self-update helper executable
-│   └── Program.cs            # Copies update payload and relaunches Raven
-│
-└── StoreListings/            # Git submodule — Microsoft Store API wrapper
-    └── StoreListings.Library/
-        ├── StoreEdgeFDProduct.cs   # Store product queries
-        ├── DCATPackage.cs          # Dependency catalog lookups
-        └── FE3Handler.cs           # Package download link resolution
+```text
+%APPDATA%\Microsoft\Windows\Start Menu\Programs\Raven Portable Apps\
 ```
 
-### Key Dependencies
+This allows compatible portable applications to appear in the Windows Start menu/search.
 
-| Package | Purpose |
-|---|---|
-| [Microsoft.WindowsAppSDK](https://github.com/microsoft/WindowsAppSDK) | WinUI 3 framework |
-| [CommunityToolkit.Mvvm](https://github.com/CommunityToolkit/dotnet) | MVVM source generators & helpers |
-| [CommunityToolkit.WinUI](https://github.com/CommunityToolkit/Windows) | WinUI media controls & effects |
-| [Downloader](https://github.com/bezzad/Downloader) | Multi-part file download engine |
-| [WinUIEx](https://github.com/dotMorten/WinUIEx) | Window management extensions |
-| [Serilog](https://serilog.net/) | Structured logging |
-| [StoreListings](https://github.com/mjishnu/StoreListings) | Microsoft Store API wrapper (submodule) |
+### Portable application storage
 
-## 📋 Build Prerequisites
+Extracted applications are stored below:
 
-- **.NET 10 SDK**
-- **Visual Studio 2026** with the following workloads:
-  - .NET Desktop Development
-  - Windows App SDK / WinUI Development
-  - Windows 10 SDK (26100)
-
-## 🚀 Getting Started
-
-### 1. Clone the Repository
-
-```bash
-git clone --recurse-submodules https://github.com/mjishnu/Raven.git
-cd Raven
+```text
+%LOCALAPPDATA%\Raven\PortableApps\
 ```
 
-> If you've already cloned without `--recurse-submodules`, initialize the submodule manually:
-> ```bash
-> git submodule update --init --recursive
-> ```
+### Single-file Raven build
 
-### 2. Build & Run
+This fork also includes a special **x64 OneFile build**.
 
-**From Visual Studio:**
-1. Open `Raven.sln`
-2. Set `Raven` as the startup project
-3. Select your target platform (`x64`, `x86`, or `arm64`)
-4. Press **F5** to build and run
+The final distributable file is:
 
-**From the command line:**
-```bash
-dotnet build Raven.sln -c Debug -p:Platform=x64
-dotnet run --project Raven -c Debug
+```text
+Raven-Portable.exe
 ```
 
-### Supported Platforms
+Raven itself is a WinUI 3 application and depends on native Windows App SDK files, resources and assets. Instead of discarding those required files, the OneFile launcher embeds the complete self-contained Raven payload inside one executable.
 
-| Architecture | Status |
-|---|---|
-| x64 | ✅ Supported |
-| x86 | ✅ Supported |
-| ARM64 | ✅ Supported |
+On first launch, the embedded application is extracted to a version-specific directory below:
 
-## 🤝 Contributing
+```text
+%LOCALAPPDATA%\Raven\OneFile\
+```
 
-Contributions are welcome! Here's how you can help:
+The launcher then starts the extracted `Raven.exe`. Subsequent launches reuse the extracted payload for that build.
 
-1. **Fork** the repository
-2. **Create a branch** for your feature or fix (`git checkout -b feature/my-feature`)
-3. **Commit** your changes (`git commit -m "Add my feature"`)
-4. **Push** to your branch (`git push origin feature/my-feature`)
-5. **Open a Pull Request**
+This gives you one file for distribution while retaining the complete WinUI runtime payload Raven requires.
 
-### Code Style
+## Build with GitHub Actions
 
-- Use `x:Uid`-based localized strings in XAML — no hardcoded text
-- Follow existing MVVM patterns and DI conventions
+A dedicated workflow is included:
 
-## ⭐ Acknowledgements
+```text
+.github/workflows/build-onefile.yml
+```
 
-- [StoreListings](https://github.com/dongle-the-gadget/StoreListings) for the Microsoft Store API wrapper.
-- [Alt App Installer](https://github.com/mjishnu/alt-app-installer) the predecessor to this project.
+To build it yourself on GitHub:
 
-## 📜 License
+1. Open the repository on GitHub.
+2. Open **Actions**.
+3. Select **Build Raven OneFile**.
+4. Click **Run workflow**.
+5. Select the `main` branch and start the workflow.
+6. When the build completes, open the workflow run.
+7. Download the artifact **Raven-Portable-x64**.
 
-This project is licensed under the **Apache License 2.0** — see the [LICENSE](LICENSE) file for details.
+The artifact contains:
+
+```text
+Raven-Portable.exe
+Raven-Portable.exe.sha256.txt
+```
+
+The workflow also runs automatically when relevant Raven/OneFile source files are pushed to `main`.
+
+No code-signing certificate secrets are required for this OneFile workflow. The resulting executable is therefore unsigned unless you sign it separately after the build.
+
+## Build locally
+
+For local builds this fork includes:
+
+```text
+BUILD_ONEFILE.bat
+```
+
+Requirements:
+
+- Windows 10/11 x64
+- Git
+- .NET 10 SDK
+- Internet access to `nuget.org`
+
+Clone the repository including its submodule:
+
+```bat
+git clone --recurse-submodules https://github.com/tarekwasfy01/Raven-Free-Installation-and-Appstart.git
+cd Raven-Free-Installation-and-Appstart
+```
+
+Then run:
+
+```text
+BUILD_ONEFILE.bat
+```
+
+The final files are written to:
+
+```text
+OUTPUT\Raven-Portable.exe
+OUTPUT\Raven-Portable.exe.sha256.txt
+```
+
+The build script explicitly restores packages from `nuget.org`, so a Visual Studio configuration that only has **Microsoft Visual Studio Offline Packages** enabled should not prevent the build.
+
+## Original Raven features
+
+The upstream project includes, among other features:
+
+- Microsoft Store search and browsing
+- app detail pages
+- direct package downloads
+- MSIX/AppX package export
+- dependency resolution
+- package installation and sideloading
+- update checking
+- delta downloads using block maps
+- installation management
+- light/dark themes
+- structured logging
+- WinUI 3 native Windows interface
+
+For upstream documentation and development, see [mjishnu/Raven](https://github.com/mjishnu/Raven).
+
+## Architecture
+
+The main components relevant to this fork are:
+
+```text
+Raven/
+├── Helpers/
+│   └── PortableMsixLauncher.cs     # portable extraction, EXE launch, PATH and Start menu
+├── Views/
+│   ├── MainPage.xaml               # portable-package UI and license notice
+│   └── MainPage.xaml.cs            # local package picker and launcher integration
+└── Raven.csproj                    # main WinUI 3 application
+
+Raven.OneFileLauncher/
+├── Raven.OneFileLauncher.csproj
+└── Program.cs                       # embeds/extracts the self-contained Raven payload
+
+Raven.Updater/
+└── ...                              # Raven update helper
+
+StoreListings/
+└── ...                              # upstream Store API submodule
+
+.github/workflows/
+└── build-onefile.yml                # GitHub Actions x64 OneFile build
+
+BUILD_ONEFILE.bat                    # equivalent local OneFile build
+```
+
+## Notes about portability
+
+Extracting an MSIX/AppX package does **not** automatically make every Windows application portable. A package may depend on installation-time registration or a valid package identity. This fork attempts to launch compatible desktop payloads but does not emulate all Windows package deployment features.
+
+Use the portable feature only when you have the legal right and any required license to use the package/application.
+
+## System requirements
+
+For the normal Raven application, follow the upstream project's Windows requirements. The self-contained OneFile build includes the .NET and Windows App SDK runtime payload needed by this Raven build, but the operating system still needs to satisfy Raven's Windows version requirements.
+
+The current Raven project targets:
+
+```text
+.NET 10
+Windows 10/11
+x64 for the OneFile build
+```
+
+## Credits
+
+This is a fork. The main Raven application and its original functionality were created by the upstream Raven contributors.
+
+- Original project: [mjishnu/Raven](https://github.com/mjishnu/Raven)
+- Store API library: [StoreListings](https://github.com/mjishnu/StoreListings)
+
+Please consider contributing improvements and fixes back to the appropriate upstream projects where applicable.
+
+## License
+
+Raven is licensed under the **Apache License 2.0**. See [LICENSE](LICENSE) for the complete license text.
