@@ -4,6 +4,7 @@
     <OutputName>Raven-Setup-$(InstallerPlatform)</OutputName>
     <InstallerPlatform Condition="'$(InstallerPlatform)' == ''">x64</InstallerPlatform>
     <PayloadDir Condition="'$(PayloadDir)' == ''">$(MSBuildThisFileDirectory)..\OUTPUT\Raven-$(InstallerPlatform)</PayloadDir>
+    <SuppressIces>ICE03</SuppressIces>
   </PropertyGroup>
 
   <ItemGroup>
