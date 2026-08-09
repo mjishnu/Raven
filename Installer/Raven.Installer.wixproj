@@ -1,4 +1,4 @@
-<Project Sdk="WixToolset.Sdk/7.0.0">
+<Project Sdk="WixToolset.Sdk/4.0.6">
   <PropertyGroup>
     <OutputType>Package</OutputType>
     <OutputName>Raven-Setup-$(InstallerPlatform)</OutputName>
