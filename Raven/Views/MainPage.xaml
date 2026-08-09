@@ -2,56 +2,11 @@
     x:Class="Raven.Views.MainPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:layout="using:Raven.Layouts"
     xmlns:model="using:StoreListings.Library"
     xmlns:shared="using:Raven.Views.Shared">
 
-    <Grid RowSpacing="12">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
-
-        <Border
-            Grid.Row="0"
-            Margin="12,12,12,0"
-            Padding="12"
-            CornerRadius="8"
-            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-            BorderThickness="1">
-            <Grid ColumnSpacing="12">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-
-                <StackPanel Grid.Column="0" Spacing="3" VerticalAlignment="Center">
-                    <TextBlock
-                        Text="Only use this feature for packages you own or have a valid license to use."
-                        FontWeight="SemiBold"
-                        TextWrapping="Wrap" />
-                    <TextBlock
-                        Text="Portable MSIX / AppX"
-                        FontWeight="SemiBold"
-                        FontSize="16" />
-                    <TextBlock
-                        Text="Open a local package, unpack it, add its executable folder to your user PATH and create a Start menu entry."
-                        TextWrapping="Wrap"
-                        Opacity="0.75" />
-                </StackPanel>
-
-                <Button
-                    x:Name="OpenPortablePackageButton"
-                    Grid.Column="1"
-                    Content="Open local package"
-                    Click="OpenPortablePackageButton_Click"
-                    VerticalAlignment="Center" />
-            </Grid>
-        </Border>
-
+    <Grid>
         <shared:CardViewControl
-            Grid.Row="1"
             x:Name="CardView"
             HeaderText="{x:Bind ViewModel.HeaderText, Mode=OneWay}"
             ItemSourceFilter1="{x:Bind ViewModel.ItemSourceFilter1, Mode=OneWay}"
