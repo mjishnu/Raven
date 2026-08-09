@@ -10,7 +10,6 @@ on:
       - "Raven.Updater/**"
       - "StoreListings/**"
       - ".gitmodules"
-      - ".github/workflows/build-onedir.yml"
 
 permissions:
   contents: read
