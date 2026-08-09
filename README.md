@@ -2,7 +2,7 @@
   <img src="Raven/Assets/Raven.ico" alt="Raven Logo" width="128" height="128">
 </p>
 
-<h1 align="center">Raven – Portable Fork</h1>
+<h1 align="center">Raven – Portable Fork + Free Download of any App</h1>
 
 <p align="center">
   <b>Raven with additional portable MSIX/AppX tools and a single-file x64 build</b>
