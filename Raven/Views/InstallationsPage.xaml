@@ -169,7 +169,7 @@
                 Style="{ThemeResource AccentButtonStyle}" />
         </Grid>
         <!--
-            Install options (Row 4): the advanced-only folder + remove-signature collapse when
+            Install options (Row 4): the advanced-only folder + loose-mode options collapse when
             "Advanced install" is off; the dependency picker is available in BOTH modes. The outer
             StackPanel's Spacing skips the collapsed advanced section, so there's no empty gap.
         -->
@@ -177,7 +177,7 @@
             Grid.Row="4"
             Margin="0,0,0,24"
             Spacing="8">
-            <!--  Advanced-only: custom install folder + remove-signature  -->
+            <!--  Advanced/unpackaged: custom install folder + loose-package options  -->
             <StackPanel
                 x:Name="AdvancedPanel"
                 Spacing="8"
@@ -230,6 +230,10 @@
                     x:Name="RemoveSignatureCheckBox"
                     x:Uid="InstallationsPage_RemoveSignature"
                     Click="RemoveSignatureCheckBox_Click" />
+                <CheckBox
+                    x:Name="DisableRegistrationAndAddToPathCheckBox"
+                    Content="Do not register package; add app folder to PATH"
+                    IsChecked="{x:Bind ViewModel.DisableRegistrationAndAddToPath, Mode=TwoWay}" />
             </StackPanel>
             <!--  Dependencies: available in both normal and advanced install modes  -->
             <CheckBox

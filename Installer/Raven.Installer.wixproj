@@ -1,0 +1,13 @@
+<Project Sdk="WixToolset.Sdk/4.0.6">
+  <PropertyGroup>
+    <OutputType>Package</OutputType>
+    <OutputName>Raven-Setup-$(InstallerPlatform)</OutputName>
+    <InstallerPlatform Condition="'$(InstallerPlatform)' == ''">x64</InstallerPlatform>
+    <PayloadDir Condition="'$(PayloadDir)' == ''">$(MSBuildThisFileDirectory)..\OUTPUT\Raven-$(InstallerPlatform)</PayloadDir>
+    <SuppressIces>ICE03</SuppressIces>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <BindPath Include="$(PayloadDir)" BindName="Payload" />
+  </ItemGroup>
+</Project>

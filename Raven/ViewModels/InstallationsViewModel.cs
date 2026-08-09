@@ -18,6 +18,9 @@ public partial class InstallationsViewModel : ObservableObject
     [ObservableProperty]
     private bool _removeSignature;
 
+    [ObservableProperty]
+    private bool _disableRegistrationAndAddToPath;
+
     /// <summary>True while an install is running. Observable so any page instance reflects the
     /// in-progress state (progress survives navigating away and back) and so a second concurrent
     /// install can be prevented.</summary>
