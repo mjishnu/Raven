@@ -24,87 +24,58 @@ jobs:
           $launcherPath = 'Raven/Helpers/PortableMsixLauncher.cs'
           $launcher = Get-Content $launcherPath -Raw
 
-          $old = @'
-          if (Directory.Exists(root))
-          {
-              try
-              {
-                  Directory.Delete(root, recursive: true);
-              }
-              catch (Exception ex)
-              {
-                  throw new IOException(
-                      $"The existing portable folder could not be replaced. Close the portable app if it is still running and try again. Folder: {root}",
-                      ex
-                  );
-              }
-          }
+          $launcherPattern = '(?s)        if \(Directory\.Exists\(root\)\)\r?\n        \{.*?        Directory\.CreateDirectory\(depsDir\);'
+          $launcherReplacement = @'
+        Directory.CreateDirectory(root);
 
-          Directory.CreateDirectory(appDir);
-          Directory.CreateDirectory(depsDir);
-          '@
+        // Keep the selected root folder itself intact. Only replace Raven-owned payload folders.
+        foreach (var ownedDirectory in new[] { appDir, depsDir })
+        {
+            if (!Directory.Exists(ownedDirectory))
+                continue;
 
-          $new = @'
-          Directory.CreateDirectory(root);
+            try
+            {
+                Directory.Delete(ownedDirectory, recursive: true);
+            }
+            catch (Exception ex)
+            {
+                throw new IOException(
+                    $"The existing portable application files could not be replaced. Close the portable app if it is still running and try again. Folder: {ownedDirectory}",
+                    ex
+                );
+            }
+        }
 
-          // Keep the user-selected root folder itself intact. In particular, do not delete the
-          // folder that the native shell picker has just returned. Only replace Raven's own
-          // extracted payload subdirectories.
-          foreach (var ownedDirectory in new[] { appDir, depsDir })
-          {
-              if (!Directory.Exists(ownedDirectory))
-                  continue;
+        Directory.CreateDirectory(appDir);
+        Directory.CreateDirectory(depsDir);
+'@
 
-              try
-              {
-                  Directory.Delete(ownedDirectory, recursive: true);
-              }
-              catch (Exception ex)
-              {
-                  throw new IOException(
-                      $"The existing portable application files could not be replaced. Close the portable app if it is still running and try again. Folder: {ownedDirectory}",
-                      ex
-                  );
-              }
-          }
-
-          Directory.CreateDirectory(appDir);
-          Directory.CreateDirectory(depsDir);
-          '@
-
-          if (-not $launcher.Contains($old)) { throw 'PortableMsixLauncher patch anchor not found.' }
-          $launcher = $launcher.Replace($old, $new)
-          Set-Content $launcherPath $launcher -Encoding utf8NoBOM
+          $patchedLauncher = [regex]::Replace($launcher, $launcherPattern, $launcherReplacement, 1)
+          if ($patchedLauncher -eq $launcher) { throw 'PortableMsixLauncher regex did not match.' }
+          Set-Content $launcherPath $patchedLauncher -Encoding utf8NoBOM
 
           $pickerPath = 'Raven/Helpers/NativeFilePicker.cs'
           $picker = Get-Content $pickerPath -Raw
+          $pickerPattern = '(?s)            dialog\.GetResult\(out var item\);\r?\n            item\.GetDisplayName\(SIGDN_FILESYSPATH, out var path\);\r?\n            return string\.IsNullOrEmpty\(path\)\r?\n                \? Array\.Empty<string>\(\)\r?\n                : new\[\] \{ path \};'
+          $pickerReplacement = @'
+            dialog.GetResult(out var item);
+            try
+            {
+                item.GetDisplayName(SIGDN_FILESYSPATH, out var path);
+                return string.IsNullOrEmpty(path)
+                    ? Array.Empty<string>()
+                    : new[] { path };
+            }
+            finally
+            {
+                Marshal.ReleaseComObject(item);
+            }
+'@
 
-          $oldPicker = @'
-          dialog.GetResult(out var item);
-          item.GetDisplayName(SIGDN_FILESYSPATH, out var path);
-          return string.IsNullOrEmpty(path)
-              ? Array.Empty<string>()
-              : new[] { path };
-          '@
-
-          $newPicker = @'
-          dialog.GetResult(out var item);
-          try
-          {
-              item.GetDisplayName(SIGDN_FILESYSPATH, out var path);
-              return string.IsNullOrEmpty(path)
-                  ? Array.Empty<string>()
-                  : new[] { path };
-          }
-          finally
-          {
-              Marshal.ReleaseComObject(item);
-          }
-          '@
-
-          if (-not $picker.Contains($oldPicker)) { throw 'NativeFilePicker patch anchor not found.' }
-          $picker = $picker.Replace($oldPicker, $newPicker)
-          Set-Content $pickerPath $picker -Encoding utf8NoBOM
+          $patchedPicker = [regex]::Replace($picker, $pickerPattern, $pickerReplacement, 1)
+          if ($patchedPicker -eq $picker) { throw 'NativeFilePicker regex did not match.' }
+          Set-Content $pickerPath $patchedPicker -Encoding utf8NoBOM
 
       - name: Commit hotfix
         shell: pwsh
