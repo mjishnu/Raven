@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package
+      Name="Raven"
+      Manufacturer="Raven"
+      Version="1.0.0"
+      Language="1033"
+      UpgradeCode="96206BCD-C47C-43EB-80BC-24DFBF0F2900"
+      Scope="perMachine"
+      InstallerVersion="500"
+      Compressed="yes">
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of Raven is already installed." />
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+
+    <Icon Id="RavenIcon" SourceFile="..\Raven\Assets\Raven.ico" />
+    <Property Id="ARPPRODUCTICON" Value="RavenIcon" />
+
+    <StandardDirectory Id="ProgramFiles6432Folder">
+      <Directory Id="INSTALLFOLDER" Name="Raven" />
+    </StandardDirectory>
+
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="ApplicationProgramsFolder" Name="Raven" />
+    </StandardDirectory>
+
+    <Component Id="MainExecutableComponent" Directory="INSTALLFOLDER" Guid="*">
+      <File Id="RavenExe" Source="!(bindpath.Payload)\Raven.exe" KeyPath="yes">
+        <Shortcut
+            Id="StartMenuShortcut"
+            Directory="ApplicationProgramsFolder"
+            Name="Raven"
+            Description="Raven"
+            WorkingDirectory="INSTALLFOLDER"
+            Advertise="no" />
+      </File>
+    </Component>
+
+    <Feature Id="MainFeature" Title="Raven" Level="1">
+      <ComponentRef Id="MainExecutableComponent" />
+      <Files Directory="INSTALLFOLDER" Include="!(bindpath.Payload)\**">
+        <Exclude Files="!(bindpath.Payload)\Raven.exe" />
+        <Exclude Files="!(bindpath.Payload)\**\*.pdb" />
+      </Files>
+    </Feature>
+  </Package>
+</Wix>
