@@ -1,0 +1,106 @@
+name: Publish Raven Portable 2
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/publish-portable2.yml"
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download final OneDir and WiX artifacts
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p incoming dist
+
+          gh run download 31340710945 --repo '${{ github.repository }}' --name Raven-OneDir-x64 --dir incoming/onedir-x64
+          gh run download 31340710945 --repo '${{ github.repository }}' --name Raven-OneDir-arm64 --dir incoming/onedir-arm64
+          gh run download 31340819428 --repo '${{ github.repository }}' --name Raven-WiX-x64 --dir incoming/wix-x64
+          gh run download 31340819428 --repo '${{ github.repository }}' --name Raven-WiX-arm64 --dir incoming/wix-arm64
+
+          cp "$(find incoming/onedir-x64 -type f -name 'Raven-OneDir-x64.zip' -print -quit)" dist/Raven-OneDir-x64.zip
+          cp "$(find incoming/onedir-x64 -type f -name 'Raven-OneDir-x64.zip.sha256.txt' -print -quit)" dist/Raven-OneDir-x64.zip.sha256.txt
+          cp "$(find incoming/onedir-arm64 -type f -name 'Raven-OneDir-arm64.zip' -print -quit)" dist/Raven-OneDir-arm64.zip
+          cp "$(find incoming/onedir-arm64 -type f -name 'Raven-OneDir-arm64.zip.sha256.txt' -print -quit)" dist/Raven-OneDir-arm64.zip.sha256.txt
+          cp "$(find incoming/wix-x64 -type f -name 'Raven-Setup-x64.msi' -print -quit)" dist/Raven-Setup-x64.msi
+          cp "$(find incoming/wix-x64 -type f -name 'Raven-Setup-x64.msi.sha256.txt' -print -quit)" dist/Raven-Setup-x64.msi.sha256.txt
+          cp "$(find incoming/wix-arm64 -type f -name 'Raven-Setup-arm64.msi' -print -quit)" dist/Raven-Setup-arm64.msi
+          cp "$(find incoming/wix-arm64 -type f -name 'Raven-Setup-arm64.msi.sha256.txt' -print -quit)" dist/Raven-Setup-arm64.msi.sha256.txt
+
+          test -s dist/Raven-Setup-x64.msi
+          test -s dist/Raven-Setup-arm64.msi
+          test -s dist/Raven-OneDir-x64.zip
+          test -s dist/Raven-OneDir-arm64.zip
+          ls -lh dist
+
+      - name: Create release notes
+        shell: bash
+        run: |
+          cat > RELEASE_NOTES.md <<'EOF'
+          # ⚠️ Important license and liability notice
+
+          **Only use Raven Portable for applications and packages that you own or for which you have a valid license or other legal right to use.**
+
+          **I explicitly advise against downloading, installing, extracting, launching, or otherwise using paid applications without a valid license.** The ability to download or extract an application package does not grant a license to use that application.
+
+          You are solely responsible for ensuring that your use complies with the applicable software license terms, Microsoft Store terms, copyright law, and other applicable laws and agreements.
+
+          **The maintainer assumes no responsibility or liability for unauthorized use, license violations, copyright infringement, data loss, system damage, financial loss, account restrictions, or other consequences resulting from the use or misuse of this software, to the maximum extent permitted by applicable law. Use this software at your own risk.**
+
+          ## Raven Portable fork
+
+          This release is based on Raven and expands the portable MSIX/AppX workflow for packages you own or are licensed to use. Distribution now uses normal WiX installers and self-contained OneDir builds instead of relying on the previous self-extracting OneFile format.
+
+          ### Changes in this release
+          - Add **Run** as a portable alternative for compatible MSIX/AppX packages.
+          - Choose the portable storage location before extraction. The picker starts in Raven's PortableApps directory and pre-fills the application name.
+          - Extract compatible packages without registering them as installed MSIX packages.
+          - Reuse an existing Raven portable installation: selecting **Run** again starts the saved executable directly.
+          - Keep normal registered package installation available through **Install**.
+          - Persist the portable executable so **Open** can launch it again later.
+          - Detect and launch the main executable when the application supports unpackaged execution.
+          - Add the detected executable folder to the current user's PATH and create a Start menu shortcut.
+          - Fix the portable folder workflow so the selected root folder is preserved while Raven refreshes only its extracted payload folders.
+          - Provide self-contained **x64** and **ARM64** OneDir builds.
+          - Provide normal **WiX MSI installers** for x64 and ARM64.
+
+          ### License reminder
+
+          **Do not use this project to install or run paid software without a valid license. I strongly advise against doing so.** Package extraction does not grant a software license and does not make every MSIX/AppX application portable. Applications may still require package identity, frameworks, services, drivers, or their own licensing mechanisms.
+
+          The maintainer does not authorize or encourage software piracy, circumvention of payment obligations, copyright infringement, or use of paid applications without a valid license.
+
+          ### Downloads
+          - `Raven-Setup-x64.msi` — WiX installer for standard x64 Windows PCs.
+          - `Raven-Setup-arm64.msi` — WiX installer for Windows on ARM64.
+          - `Raven-OneDir-x64.zip` — self-contained x64 OneDir build without an installer.
+          - `Raven-OneDir-arm64.zip` — self-contained ARM64 OneDir build without an installer.
+          - Matching `.sha256.txt` files are included for verification.
+          EOF
+
+      - name: Create GitHub release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG='v1.1.0.0-portable.2'
+          TITLE='Raven Portable v1.1.0.0-portable.2'
+          TARGET='3cb75af9268acd9a124e77dd5c281fd6b63b7233'
+
+          if gh release view "$TAG" --repo '${{ github.repository }}' >/dev/null 2>&1; then
+            gh release edit "$TAG" --repo '${{ github.repository }}' --title "$TITLE" --notes-file RELEASE_NOTES.md --target "$TARGET"
+            gh release upload "$TAG" --repo '${{ github.repository }}' dist/* --clobber
+          else
+            gh release create "$TAG" --repo '${{ github.repository }}' dist/* --title "$TITLE" --notes-file RELEASE_NOTES.md --target "$TARGET"
+          fi
