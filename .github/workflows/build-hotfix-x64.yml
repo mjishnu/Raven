@@ -1,0 +1,72 @@
+name: Build MSIX Hotfix x64
+
+on:
+  push:
+    branches:
+      - hotfix/msix-portable-extraction
+    paths:
+      - ".github/workflows/build-hotfix-x64.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore Raven
+        shell: pwsh
+        run: dotnet restore Raven/Raven.csproj -r win-x64 --source https://api.nuget.org/v3/index.json
+
+      - name: Publish Raven x64
+        shell: pwsh
+        run: |
+          dotnet publish Raven/Raven.csproj `
+            -c Release `
+            -r win-x64 `
+            --self-contained true `
+            --no-restore `
+            -p:Platform=x64 `
+            -p:WindowsAppSDKSelfContained=true `
+            -p:PublishSingleFile=false `
+            -p:DebugType=None `
+            -p:DebugSymbols=false `
+            -o OUTPUT/Raven-x64
+
+          dotnet restore Raven.Updater/Raven.Updater.csproj -r win-x64 --source https://api.nuget.org/v3/index.json
+          dotnet publish Raven.Updater/Raven.Updater.csproj `
+            -c Release `
+            -r win-x64 `
+            --self-contained true `
+            --no-restore `
+            -p:PublishSingleFile=true `
+            -p:DebugType=None `
+            -p:DebugSymbols=false `
+            -o OUTPUT/updater-x64
+
+          Get-ChildItem OUTPUT/Raven-x64 -Filter 'Raven.Updater.*' -File -ErrorAction SilentlyContinue | Remove-Item -Force
+          Copy-Item OUTPUT/updater-x64/Raven.Updater.exe OUTPUT/Raven-x64/Raven.Updater.exe -Force
+          Get-ChildItem OUTPUT/Raven-x64 -Filter '*.pdb' -Recurse -File -ErrorAction SilentlyContinue | Remove-Item -Force
+
+      - name: Package
+        shell: pwsh
+        run: |
+          Compress-Archive -Path OUTPUT/Raven-x64/* -DestinationPath OUTPUT/Raven-MSIX-Hotfix-x64.zip -CompressionLevel Optimal -Force
+          $hash = (Get-FileHash OUTPUT/Raven-MSIX-Hotfix-x64.zip -Algorithm SHA256).Hash
+          "$hash  Raven-MSIX-Hotfix-x64.zip" | Set-Content OUTPUT/Raven-MSIX-Hotfix-x64.zip.sha256.txt -Encoding ascii
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Raven-MSIX-Hotfix-x64
+          path: |
+            OUTPUT/Raven-MSIX-Hotfix-x64.zip
+            OUTPUT/Raven-MSIX-Hotfix-x64.zip.sha256.txt
+          compression-level: 0
