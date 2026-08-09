@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>Raven.OneFileLauncher</AssemblyName>
+    <RootNamespace>Raven.OneFileLauncher</RootNamespace>
+    <ApplicationIcon>..\Raven\Assets\Raven.ico</ApplicationIcon>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <CETCompat>false</CETCompat>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(RavenPayloadZip)' != '' and Exists('$(RavenPayloadZip)')">
+    <EmbeddedResource Include="$(RavenPayloadZip)" LogicalName="RavenPayload.zip" />
+  </ItemGroup>
+
+  <Target Name="ValidateRavenPayload" BeforeTargets="BeforeBuild">
+    <Error Condition="'$(RavenPayloadZip)' == ''" Text="RavenPayloadZip must point to the generated Raven payload ZIP." />
+    <Error Condition="'$(RavenPayloadZip)' != '' and !Exists('$(RavenPayloadZip)')" Text="Raven payload ZIP not found: $(RavenPayloadZip)" />
+  </Target>
+</Project>
