@@ -1,0 +1,168 @@
+name: Build Raven WiX Installer
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "Installer/**"
+      - ".github/workflows/build-wix.yml"
+  workflow_run:
+    workflows:
+      - "Build Raven OneDir"
+    types:
+      - completed
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  build-wix:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    name: Build WiX ${{ matrix.arch }}
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch:
+          - x64
+          - arm64
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Resolve OneDir source artifact
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ('${{ github.event_name }}' -eq 'workflow_run') {
+            $runId = '${{ github.event.workflow_run.id }}'
+            $artifactName = 'Raven-OneDir-${{ matrix.arch }}'
+          }
+          else {
+            $runId = gh run list `
+              --repo '${{ github.repository }}' `
+              --workflow build-onedir.yml `
+              --branch main `
+              --status success `
+              --limit 1 `
+              --json databaseId `
+              --jq '.[0].databaseId'
+
+            if ([string]::IsNullOrWhiteSpace($runId)) {
+              # Validated fallback from the first successful WiX build.
+              $runId = '31339631866'
+              $artifactName = 'Raven-Windows-${{ matrix.arch }}'
+            }
+            else {
+              $artifactName = 'Raven-OneDir-${{ matrix.arch }}'
+            }
+          }
+
+          "ONEDIR_RUN_ID=$runId" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "ONEDIR_ARTIFACT=$artifactName" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Host "Using run $runId artifact $artifactName"
+
+      - name: Download existing OneDir artifact
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          New-Item -ItemType Directory -Force artifact | Out-Null
+          gh run download $env:ONEDIR_RUN_ID `
+            --repo '${{ github.repository }}' `
+            --name $env:ONEDIR_ARTIFACT `
+            --dir artifact
+
+          $zip = Get-ChildItem artifact -Filter 'Raven-OneDir-${{ matrix.arch }}.zip' -Recurse -File | Select-Object -First 1
+          if (-not $zip) {
+            throw 'The selected artifact does not contain Raven-OneDir-${{ matrix.arch }}.zip.'
+          }
+
+          New-Item -ItemType Directory -Force 'OUTPUT/Raven-${{ matrix.arch }}' | Out-Null
+          Expand-Archive -Path $zip.FullName -DestinationPath 'OUTPUT/Raven-${{ matrix.arch }}' -Force
+
+          if (-not (Test-Path 'OUTPUT/Raven-${{ matrix.arch }}/Raven.exe')) {
+            throw 'Raven.exe was not found after extracting the OneDir artifact.'
+          }
+
+      - name: Generate WiX payload authoring
+        shell: pwsh
+        run: |
+          $payload = (Resolve-Path 'OUTPUT/Raven-${{ matrix.arch }}').Path
+          $generated = Join-Path $env:GITHUB_WORKSPACE 'Installer/GeneratedPayload.wxs'
+
+          function Escape-Xml([string]$value) {
+            return [System.Security.SecurityElement]::Escape($value)
+          }
+
+          $lines = [System.Collections.Generic.List[string]]::new()
+          $lines.Add('<?xml version="1.0" encoding="utf-8"?>')
+          $lines.Add('<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">')
+          $lines.Add('  <Fragment>')
+          $lines.Add('    <ComponentGroup Id="PayloadFiles">')
+
+          Get-ChildItem $payload -Recurse -File |
+            Where-Object { $_.Name -ne 'Raven.exe' -and $_.Extension -ne '.pdb' } |
+            Sort-Object FullName |
+            ForEach-Object {
+              $relative = [IO.Path]::GetRelativePath($payload, $_.FullName)
+              $relativeDir = [IO.Path]::GetDirectoryName($relative)
+              $bytes = [Text.Encoding]::UTF8.GetBytes($relative.ToLowerInvariant())
+              $hash = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($bytes)).Substring(0, 24)
+              $componentId = "C_$hash"
+              $fileId = "F_$hash"
+              $source = Escape-Xml("!(bindpath.Payload)\$relative")
+              $sub = if ([string]::IsNullOrWhiteSpace($relativeDir)) { '' } else { ' Subdirectory="' + (Escape-Xml($relativeDir)) + '"' }
+
+              $lines.Add(('      <Component Id="{0}" Directory="INSTALLFOLDER"{1} Guid="*">' -f $componentId, $sub))
+              $lines.Add(('        <File Id="{0}" Source="{1}" KeyPath="yes" />' -f $fileId, $source))
+              $lines.Add('      </Component>')
+            }
+
+          $lines.Add('    </ComponentGroup>')
+          $lines.Add('  </Fragment>')
+          $lines.Add('</Wix>')
+          [IO.File]::WriteAllLines($generated, $lines, [Text.UTF8Encoding]::new($false))
+
+      - name: Build WiX 4 MSI
+        shell: pwsh
+        run: |
+          $payload = Join-Path $env:GITHUB_WORKSPACE 'OUTPUT\Raven-${{ matrix.arch }}'
+          $installerOut = Join-Path $env:GITHUB_WORKSPACE 'OUTPUT\installer-${{ matrix.arch }}'
+          New-Item -ItemType Directory -Path $installerOut -Force | Out-Null
+
+          dotnet build Installer/Raven.Installer.wixproj `
+            -c Release `
+            -p:InstallerPlatform=${{ matrix.arch }} `
+            -p:PayloadDir="$payload" `
+            -p:OutputPath="$installerOut\"
+
+          $msi = Get-ChildItem $installerOut -Filter '*.msi' -Recurse -File | Select-Object -First 1
+          if (-not $msi) {
+            throw 'WiX did not produce an MSI.'
+          }
+
+          $finalMsi = Join-Path $env:GITHUB_WORKSPACE 'OUTPUT\Raven-Setup-${{ matrix.arch }}.msi'
+          Copy-Item $msi.FullName $finalMsi -Force
+          $hash = (Get-FileHash $finalMsi -Algorithm SHA256).Hash
+          "$hash  Raven-Setup-${{ matrix.arch }}.msi" | Set-Content "OUTPUT/Raven-Setup-${{ matrix.arch }}.msi.sha256.txt" -Encoding ascii
+
+      - name: Upload WiX installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: Raven-WiX-${{ matrix.arch }}
+          path: |
+            OUTPUT/Raven-Setup-${{ matrix.arch }}.msi
+            OUTPUT/Raven-Setup-${{ matrix.arch }}.msi.sha256.txt
+          if-no-files-found: error
+          compression-level: 0
