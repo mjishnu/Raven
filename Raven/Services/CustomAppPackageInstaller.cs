@@ -3,6 +3,7 @@ using System.Xml.Linq;
 using Microsoft.Extensions.Logging;
 using Raven.Contracts.Services;
 using Raven.Helpers;
+using Raven.ViewModels;
 using Windows.Management.Deployment;
 
 namespace Raven.Services;
@@ -37,9 +38,8 @@ public sealed class CustomInstallException : Exception
 /// <summary>
 /// Loose-file ("developer mode") installer. Extracts a package/bundle, selects the
 /// correct architecture from a bundle, moves the loose files to a user-chosen folder,
-/// optionally strips the signature, and registers from the loose AppxManifest.xml.
-/// The chosen folder is the app's PERMANENT home (loose registration references files
-/// in place). Kept separate from <see cref="AppPackageInstaller"/> (the signed path).
+/// optionally strips the signature, and either registers from the loose AppxManifest.xml
+/// or leaves the package unregistered and adds the app folder to the user's PATH.
 /// </summary>
 public static class CustomAppPackageInstaller
 {
@@ -58,6 +58,9 @@ public static class CustomAppPackageInstaller
             throw new FileNotFoundException("Package file not found.", packagePath);
         if (string.IsNullOrWhiteSpace(targetParentFolder) || !Directory.Exists(targetParentFolder))
             throw new DirectoryNotFoundException($"Install folder not found: {targetParentFolder}");
+
+        var disableRegistrationAndAddToPath =
+            App.GetService<InstallationsViewModel>().DisableRegistrationAndAddToPath;
 
         var ext = Path.GetExtension(packagePath).ToLowerInvariant();
         var isBundle = BundleExtensions.Contains(ext);
@@ -126,8 +129,6 @@ public static class CustomAppPackageInstaller
                 throw new CustomInstallException(
                     CustomInstallError.FolderExists, $"Target folder already exists: {target}", folderName);
 
-            // The guard above guarantees target is absent or empty; remove an empty
-            // leftover so Directory.Move can create it cleanly (same-volume path).
             if (Directory.Exists(target))
                 Directory.Delete(target);
             MoveDirectory(looseDir, target);
@@ -166,8 +167,6 @@ public static class CustomAppPackageInstaller
                 if (IsDependencyAlreadyInstalled(packageManager, depUri.LocalPath, logger))
                     continue;
 
-                // Offer the other selected packages as available dependencies so a framework that
-                // depends on another selected framework resolves regardless of pick order.
                 var siblingDeps = dependencyUris.Where((_, idx) => idx != i).ToList();
                 try
                 {
@@ -192,10 +191,20 @@ public static class CustomAppPackageInstaller
                 }
             }
 
+            if (disableRegistrationAndAddToPath)
+            {
+                progress?.Report(new AppPackageInstaller.InstallProgress(85, "Adding to PATH", "Install"));
+                AddDirectoryToUserPath(target);
+                logger?.LogInformation(
+                    "Custom install completed without package registration | Folder={Folder}", target);
+                progress?.Report(new AppPackageInstaller.InstallProgress(100, "Completed", "Install"));
+                return;
+            }
+
             var manifestUri = new Uri(Path.Combine(target, "AppxManifest.xml"));
             var op = packageManager.RegisterPackageAsync(
                 manifestUri,
-               [],
+                [],
                 DeploymentOptions.DevelopmentMode | DeploymentOptions.ForceApplicationShutdown);
 
             op.Progress = (_, p) =>
@@ -218,8 +227,6 @@ public static class CustomAppPackageInstaller
             }
             catch (Exception ex)
             {
-                // The raw COMException only carries an HRESULT; the real diagnostic
-                // (missing dependency, signature, disk error) lives in the DeploymentResult.
                 string? deploymentErrorText = null;
                 string? extendedErrorCode = null;
                 try
@@ -232,7 +239,6 @@ public static class CustomAppPackageInstaller
                 }
                 catch
                 {
-                    // Best-effort; fall through with the original exception.
                 }
 
                 if (!string.IsNullOrWhiteSpace(deploymentErrorText))
@@ -253,8 +259,8 @@ public static class CustomAppPackageInstaller
         {
             logger?.LogError(
                 ex,
-                "Custom install failed | Path={Path} | Folder={Folder} | RemoveSig={RemoveSig}",
-                packagePath, targetParentFolder, removeSignature);
+                "Custom install failed | Path={Path} | Folder={Folder} | RemoveSig={RemoveSig} | NoRegistration={NoRegistration}",
+                packagePath, targetParentFolder, removeSignature, disableRegistrationAndAddToPath);
             throw;
         }
         finally
@@ -268,6 +274,37 @@ public static class CustomAppPackageInstaller
             {
                 logger?.LogDebug(ex, "Custom install: temp cleanup failed (ignored)");
             }
+        }
+    }
+
+    private static void AddDirectoryToUserPath(string directory)
+    {
+        directory = Path.GetFullPath(directory).TrimEnd(Path.DirectorySeparatorChar);
+        var userPath = Environment.GetEnvironmentVariable("Path", EnvironmentVariableTarget.User) ?? string.Empty;
+        var parts = userPath.Split(
+            Path.PathSeparator,
+            StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+        if (!parts.Any(p => string.Equals(
+                p.TrimEnd(Path.DirectorySeparatorChar), directory, StringComparison.OrdinalIgnoreCase)))
+        {
+            var newPath = string.IsNullOrWhiteSpace(userPath)
+                ? directory
+                : userPath.TrimEnd(Path.PathSeparator) + Path.PathSeparator + directory;
+            Environment.SetEnvironmentVariable("Path", newPath, EnvironmentVariableTarget.User);
+        }
+
+        var processPath = Environment.GetEnvironmentVariable("Path") ?? string.Empty;
+        var processParts = processPath.Split(
+            Path.PathSeparator,
+            StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (!processParts.Any(p => string.Equals(
+                p.TrimEnd(Path.DirectorySeparatorChar), directory, StringComparison.OrdinalIgnoreCase)))
+        {
+            Environment.SetEnvironmentVariable(
+                "Path",
+                processPath.TrimEnd(Path.PathSeparator) + Path.PathSeparator + directory,
+                EnvironmentVariableTarget.Process);
         }
     }
 
@@ -300,7 +337,6 @@ public static class CustomAppPackageInstaller
 
             foreach (var pkg in packageManager.FindPackagesForUser(string.Empty, name, publisher))
             {
-                // Architecture must match (a neutral dependency matches anything).
                 if (archStr.Length > 0
                     && !archStr.Equals("neutral", StringComparison.OrdinalIgnoreCase)
                     && !pkg.Id.Architecture.ToString().Equals(archStr, StringComparison.OrdinalIgnoreCase))
@@ -316,7 +352,6 @@ public static class CustomAppPackageInstaller
         }
         catch (Exception ex)
         {
-            // Fail open: if we can't determine installed state, attempt the install.
             logger?.LogDebug(ex, "Custom install: dependency-installed check failed for {Dep}", depPackagePath);
             return false;
         }
@@ -330,7 +365,6 @@ public static class CustomAppPackageInstaller
         }
         catch (IOException)
         {
-            // Cross-volume move is not supported by Directory.Move; copy then delete.
             Directory.CreateDirectory(dest);
             foreach (var file in Directory.EnumerateFiles(source, "*", SearchOption.AllDirectories))
             {
