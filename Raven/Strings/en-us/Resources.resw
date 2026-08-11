@@ -889,6 +889,9 @@ You can enable it by turning on Developer Mode in Windows Settings.</value>
   <data name="Install_Error_ManifestMissing" xml:space="preserve">
     <value>Could not find AppxManifest.xml in the package.</value>
   </data>
+  <data name="Install_Error_ExecutableNotFound" xml:space="preserve">
+    <value>Unable to find executable. This app might not be able to run unregistered.</value>
+  </data>
   <data name="DeveloperMode_DisabledTitle" xml:space="preserve">
     <value>Developer Mode is required</value>
   </data>

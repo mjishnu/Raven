@@ -887,6 +887,9 @@ A Windows beállításokban a Fejlesztői mód bekapcsolásával engedélyezheti
   <data name="Install_Error_ManifestMissing" xml:space="preserve">
     <value>Nem található az AppxManifest.xml a csomagban.</value>
   </data>
+  <data name="Install_Error_ExecutableNotFound" xml:space="preserve">
+    <value>Nem található a végrehajtható fájl. Előfordulhat, hogy ez az alkalmazás nem futtatható regisztráció nélkül.</value>
+  </data>
   <data name="DeveloperMode_DisabledTitle" xml:space="preserve">
     <value>Fejlesztői mód szükséges</value>
   </data>

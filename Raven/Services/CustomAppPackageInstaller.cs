@@ -13,6 +13,7 @@ public enum CustomInstallError
     FolderExists,
     NoCompatibleArch,
     ManifestMissing,
+    ExecutableNotFound,
     Generic,
 }
 
@@ -193,10 +194,24 @@ public static class CustomAppPackageInstaller
 
             if (skipRegistration)
             {
-                progress?.Report(new AppPackageInstaller.InstallProgress(85, "Creating shortcut", "Install"));
                 var manifestXml = await File.ReadAllTextAsync(
                     Path.Combine(target, "AppxManifest.xml"), cancellationToken);
-                CreateAppShortcuts(target, appName, manifestXml, createStartMenuShortcut, createDesktopShortcut, logger);
+
+                var exePath = FindExecutable(target, manifestXml);
+                if (string.IsNullOrEmpty(exePath))
+                {
+                    logger?.LogWarning("Custom install: executable not found in {Folder}; unregistered app may fail to run.", target);
+                    throw new CustomInstallException(
+                        CustomInstallError.ExecutableNotFound,
+                        "Unable to find executable. This app might not be able to run unregistered.");
+                }
+
+                if (createStartMenuShortcut || createDesktopShortcut)
+                {
+                    progress?.Report(new AppPackageInstaller.InstallProgress(85, "Creating shortcut", "Install"));
+                    CreateAppShortcuts(target, appName, exePath, createStartMenuShortcut, createDesktopShortcut, logger);
+                }
+
                 logger?.LogInformation(
                     "Custom install completed without package registration | Folder={Folder} | StartMenuShortcut={StartMenu} | DesktopShortcut={Desktop}",
                     target, createStartMenuShortcut, createDesktopShortcut);
@@ -280,30 +295,30 @@ public static class CustomAppPackageInstaller
         }
     }
 
+    private static string? FindExecutable(string appFolder, string manifestXml)
+    {
+        var exeName = ExtractExecutableFromManifest(manifestXml);
+        if (string.IsNullOrEmpty(exeName))
+            return null;
+
+        var cleanExeName = exeName.TrimStart('\\', '/').Replace('/', Path.DirectorySeparatorChar);
+        var exePath = Path.GetFullPath(Path.Combine(appFolder, cleanExeName));
+        if (File.Exists(exePath))
+            return exePath;
+
+        return null;
+    }
+
     private static void CreateAppShortcuts(
         string appFolder,
         string appName,
-        string manifestXml,
+        string exePath,
         bool createStartMenuShortcut,
         bool createDesktopShortcut,
         ILogger? logger)
     {
         if (!createStartMenuShortcut && !createDesktopShortcut)
             return;
-
-        var exeName = ExtractExecutableFromManifest(manifestXml);
-        if (string.IsNullOrEmpty(exeName))
-            return;
-
-        var cleanExeName = exeName.TrimStart('\\', '/').Replace('/', Path.DirectorySeparatorChar);
-        var exePath = Path.GetFullPath(Path.Combine(appFolder, cleanExeName));
-        if (!File.Exists(exePath))
-        {
-            logger?.LogWarning(
-                "Custom install: executable {Exe} not found at {Path}; skipping shortcut creation.",
-                cleanExeName, exePath);
-            return;
-        }
 
         var workingDir = Path.GetDirectoryName(exePath) ?? appFolder;
 

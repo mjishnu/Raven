@@ -582,6 +582,8 @@ public sealed partial class InstallationsPage : Page
                     "Install_Error_NoInstallableArch".GetLocalized(),
                 CustomInstallError.ManifestMissing =>
                     "Install_Error_ManifestMissing".GetLocalized(),
+                CustomInstallError.ExecutableNotFound =>
+                    "Install_Error_ExecutableNotFound".GetLocalized(),
                 _ => "Install_Error_Generic".GetLocalizedFormat(cix.Message),
             };
             await InstallHelper.ShowDialogAsync(xamlRoot, title, message);
