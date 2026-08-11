@@ -614,8 +614,17 @@
   <data name="Install_Error_MissingDependency" xml:space="preserve">
     <value>A required component or dependency is missing. Try installing the app from the Microsoft Store instead.</value>
   </data>
+  <data name="Install_Error_InvalidManifest" xml:space="preserve">
+    <value>패키지 매니페스트(AppxManifest.xml)가 유효하지 않거나 잘못되었습니다.</value>
+  </data>
+  <data name="Install_Error_UntrustedRoot" xml:space="preserve">
+    <value>이 시스템에서 패키지 서명 루트 인증서를 신뢰할 수 없습니다.</value>
+  </data>
   <data name="Install_Error_SignatureInvalid" xml:space="preserve">
     <value>The package signature is invalid or untrusted.</value>
+  </data>
+  <data name="Install_Error_SignatureVerificationHint" xml:space="preserve">
+    <value>서명 검증에 실패했습니다. "서명 검증 제거" 옵션을 활성화한 후 다시 시도하세요.</value>
   </data>
   <data name="Install_Error_NotSigned" xml:space="preserve">
     <value>The package is not digitally signed.</value>
@@ -856,6 +865,15 @@ Windows 설정에서 개발자 모드를 켜서 활성화할 수 있습니다.</
   <data name="InstallationsPage_RemoveSignature.Content" xml:space="preserve">
     <value>서명 검증 제거</value>
   </data>
+  <data name="InstallationsPage_BypassRegistration.Content" xml:space="preserve">
+    <value>패키지 등록 건너뛰기</value>
+  </data>
+  <data name="InstallationsPage_CreateStartMenuShortcut.Content" xml:space="preserve">
+    <value>시작 메뉴 바로가기 만들기</value>
+  </data>
+  <data name="InstallationsPage_CreateDesktopShortcut.Content" xml:space="preserve">
+    <value>바탕 화면 바로가기 만들기</value>
+  </data>
   <data name="InstallationsPage_SelectDependenciesBtn.Content" xml:space="preserve">
     <value>종속성 선택</value>
   </data>
@@ -879,6 +897,9 @@ Windows 설정에서 개발자 모드를 켜서 활성화할 수 있습니다.</
   </data>
   <data name="Install_Error_ManifestMissing" xml:space="preserve">
     <value>패키지에서 AppxManifest.xml을 찾을 수 없습니다.</value>
+  </data>
+  <data name="Install_Error_ExecutableNotFound" xml:space="preserve">
+    <value>실행 파일을 찾을 수 없습니다. 이 앱은 등록되지 않은 상태에서 실행되지 않을 수 있습니다.</value>
   </data>
   <data name="DeveloperMode_DisabledTitle" xml:space="preserve">
     <value>개발자 모드가 필요합니다</value>

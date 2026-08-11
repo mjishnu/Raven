@@ -1,4 +1,5 @@
 using System.IO.Compression;
+using System.Runtime.InteropServices;
 using System.Xml.Linq;
 using Microsoft.Extensions.Logging;
 using Raven.Contracts.Services;
@@ -12,6 +13,7 @@ public enum CustomInstallError
     FolderExists,
     NoCompatibleArch,
     ManifestMissing,
+    ExecutableNotFound,
     Generic,
 }
 
@@ -37,9 +39,8 @@ public sealed class CustomInstallException : Exception
 /// <summary>
 /// Loose-file ("developer mode") installer. Extracts a package/bundle, selects the
 /// correct architecture from a bundle, moves the loose files to a user-chosen folder,
-/// optionally strips the signature, and registers from the loose AppxManifest.xml.
-/// The chosen folder is the app's PERMANENT home (loose registration references files
-/// in place). Kept separate from <see cref="AppPackageInstaller"/> (the signed path).
+/// optionally strips the signature, and either registers from the loose AppxManifest.xml
+/// or leaves the package unregistered and creates a Start Menu shortcut.
 /// </summary>
 public static class CustomAppPackageInstaller
 {
@@ -49,6 +50,9 @@ public static class CustomAppPackageInstaller
         string packagePath,
         string targetParentFolder,
         bool removeSignature,
+        bool skipRegistration,
+        bool createStartMenuShortcut,
+        bool createDesktopShortcut,
         IEnumerable<string>? dependencyPackagePaths,
         IProgress<AppPackageInstaller.InstallProgress>? progress,
         CancellationToken cancellationToken,
@@ -70,7 +74,7 @@ public static class CustomAppPackageInstaller
         try
         {
             progress?.Report(new AppPackageInstaller.InstallProgress(0, "Extracting", "Install"));
-            ZipFile.ExtractToDirectory(packagePath, outerDir);
+            ExtractPackageToDirectory(packagePath, outerDir);
             progress?.Report(new AppPackageInstaller.InstallProgress(30, "Extracting", "Install"));
 
             string looseDir;
@@ -81,8 +85,8 @@ public static class CustomAppPackageInstaller
                     throw new CustomInstallException(
                         CustomInstallError.ManifestMissing, "AppxBundleManifest.xml not found.");
 
-                var packages = LoosePackageInspector.ParseBundleApplicationPackages(
-                    await File.ReadAllTextAsync(bundleManifestPath, cancellationToken));
+                var bundleXml = await File.ReadAllTextAsync(bundleManifestPath, cancellationToken);
+                var packages = LoosePackageInspector.ParseBundleApplicationPackages(bundleXml);
                 var archRid = App.GetService<IArchitectureSelectorService>().SelectedArchRid;
                 var selected = LoosePackageInspector.SelectApplicationPackage(packages, archRid)
                     ?? throw new CustomInstallException(
@@ -102,7 +106,18 @@ public static class CustomAppPackageInstaller
 
                 var innerDir = Path.Combine(workRoot, "inner");
                 Directory.CreateDirectory(innerDir);
-                ZipFile.ExtractToDirectory(innerPkgPath, innerDir);
+                ExtractPackageToDirectory(innerPkgPath, innerDir);
+
+                foreach (var resFile in LoosePackageInspector.ParseBundleResourcePackageFiles(bundleXml))
+                {
+                    var resPkgPath = Path.Combine(outerDir, resFile);
+                    if (File.Exists(resPkgPath))
+                    {
+                        logger?.LogInformation("Custom install: overlaying bundle resource package {File}", resFile);
+                        ExtractPackageToDirectory(resPkgPath, innerDir, overwrite: false, ignoreFootprint: true);
+                    }
+                }
+
                 looseDir = innerDir;
             }
             else
@@ -126,8 +141,6 @@ public static class CustomAppPackageInstaller
                 throw new CustomInstallException(
                     CustomInstallError.FolderExists, $"Target folder already exists: {target}", folderName);
 
-            // The guard above guarantees target is absent or empty; remove an empty
-            // leftover so Directory.Move can create it cleanly (same-volume path).
             if (Directory.Exists(target))
                 Directory.Delete(target);
             MoveDirectory(looseDir, target);
@@ -166,8 +179,6 @@ public static class CustomAppPackageInstaller
                 if (IsDependencyAlreadyInstalled(packageManager, depUri.LocalPath, logger))
                     continue;
 
-                // Offer the other selected packages as available dependencies so a framework that
-                // depends on another selected framework resolves regardless of pick order.
                 var siblingDeps = dependencyUris.Where((_, idx) => idx != i).ToList();
                 try
                 {
@@ -192,10 +203,37 @@ public static class CustomAppPackageInstaller
                 }
             }
 
+            if (skipRegistration)
+            {
+                var manifestXml = await File.ReadAllTextAsync(
+                    Path.Combine(target, "AppxManifest.xml"), cancellationToken);
+
+                var exePath = FindExecutable(target, manifestXml);
+                if (string.IsNullOrEmpty(exePath))
+                {
+                    logger?.LogWarning("Custom install: executable not found in {Folder}; unregistered app may fail to run.", target);
+                    throw new CustomInstallException(
+                        CustomInstallError.ExecutableNotFound,
+                        "Unable to find executable. This app might not be able to run unregistered.");
+                }
+
+                if (createStartMenuShortcut || createDesktopShortcut)
+                {
+                    progress?.Report(new AppPackageInstaller.InstallProgress(85, "Creating shortcut", "Install"));
+                    CreateAppShortcuts(target, appName, exePath, createStartMenuShortcut, createDesktopShortcut, logger);
+                }
+
+                logger?.LogInformation(
+                    "Custom install completed without package registration | Folder={Folder} | StartMenuShortcut={StartMenu} | DesktopShortcut={Desktop}",
+                    target, createStartMenuShortcut, createDesktopShortcut);
+                progress?.Report(new AppPackageInstaller.InstallProgress(100, "Completed", "Install"));
+                return;
+            }
+
             var manifestUri = new Uri(Path.Combine(target, "AppxManifest.xml"));
             var op = packageManager.RegisterPackageAsync(
                 manifestUri,
-               [],
+                [],
                 DeploymentOptions.DevelopmentMode | DeploymentOptions.ForceApplicationShutdown);
 
             op.Progress = (_, p) =>
@@ -218,8 +256,6 @@ public static class CustomAppPackageInstaller
             }
             catch (Exception ex)
             {
-                // The raw COMException only carries an HRESULT; the real diagnostic
-                // (missing dependency, signature, disk error) lives in the DeploymentResult.
                 string? deploymentErrorText = null;
                 string? extendedErrorCode = null;
                 try
@@ -232,7 +268,6 @@ public static class CustomAppPackageInstaller
                 }
                 catch
                 {
-                    // Best-effort; fall through with the original exception.
                 }
 
                 if (!string.IsNullOrWhiteSpace(deploymentErrorText))
@@ -253,8 +288,8 @@ public static class CustomAppPackageInstaller
         {
             logger?.LogError(
                 ex,
-                "Custom install failed | Path={Path} | Folder={Folder} | RemoveSig={RemoveSig}",
-                packagePath, targetParentFolder, removeSignature);
+                "Custom install failed | Path={Path} | Folder={Folder} | RemoveSig={RemoveSig} | SkipRegistration={SkipRegistration}",
+                packagePath, targetParentFolder, removeSignature, skipRegistration);
             throw;
         }
         finally
@@ -269,6 +304,135 @@ public static class CustomAppPackageInstaller
                 logger?.LogDebug(ex, "Custom install: temp cleanup failed (ignored)");
             }
         }
+    }
+
+    private static string? FindExecutable(string appFolder, string manifestXml)
+    {
+        var exeName = ExtractExecutableFromManifest(manifestXml);
+        if (string.IsNullOrEmpty(exeName))
+            return null;
+
+        var cleanExeName = exeName.TrimStart('\\', '/').Replace('/', Path.DirectorySeparatorChar);
+        var exePath = Path.GetFullPath(Path.Combine(appFolder, cleanExeName));
+        if (File.Exists(exePath))
+            return exePath;
+
+        return null;
+    }
+
+    private static void CreateAppShortcuts(
+        string appFolder,
+        string appName,
+        string exePath,
+        bool createStartMenuShortcut,
+        bool createDesktopShortcut,
+        ILogger? logger)
+    {
+        if (!createStartMenuShortcut && !createDesktopShortcut)
+            return;
+
+        var workingDir = Path.GetDirectoryName(exePath) ?? appFolder;
+
+        if (createStartMenuShortcut)
+            CreateSingleShortcut(Environment.GetFolderPath(Environment.SpecialFolder.Programs), appName, exePath, workingDir, "Start Menu", logger);
+
+        if (createDesktopShortcut)
+            CreateSingleShortcut(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), appName, exePath, workingDir, "Desktop", logger);
+    }
+
+    private static void CreateSingleShortcut(
+        string targetFolder, string appName, string exePath, string workingDir, string locationName, ILogger? logger)
+    {
+        if (string.IsNullOrEmpty(targetFolder) || !Directory.Exists(targetFolder))
+            return;
+
+        var cleanName = string.Join("_", appName.Split(Path.GetInvalidFileNameChars())).Trim();
+        var safeAppName = string.IsNullOrEmpty(cleanName) ? "App" : cleanName;
+
+        var shortcutPath = Path.Combine(targetFolder, $"{safeAppName}.lnk");
+        var counter = 1;
+        while (File.Exists(shortcutPath))
+        {
+            shortcutPath = Path.Combine(targetFolder, $"{safeAppName} ({counter++}).lnk");
+        }
+
+        try
+        {
+            var shellType = Type.GetTypeFromProgID("WScript.Shell");
+            if (shellType is null) return;
+
+            dynamic shell = Activator.CreateInstance(shellType)!;
+            dynamic shortcut = shell.CreateShortcut(shortcutPath);
+            shortcut.TargetPath = exePath;
+            shortcut.WorkingDirectory = workingDir;
+            shortcut.Description = appName;
+            shortcut.Save();
+
+            Marshal.ReleaseComObject(shortcut);
+            Marshal.ReleaseComObject(shell);
+
+            logger?.LogInformation(
+                "Custom install: created {Location} shortcut at {Path}", locationName, shortcutPath);
+        }
+        catch (Exception ex)
+        {
+            logger?.LogWarning(ex, "Custom install: {Location} shortcut creation failed (ignored)", locationName);
+        }
+    }
+
+    private static string? ExtractExecutableFromManifest(string manifestXml)
+    {
+        var doc = XDocument.Parse(manifestXml);
+        var app = doc.Descendants().FirstOrDefault(e => e.Name.LocalName == "Application");
+        return (string?)app?.Attribute("Executable");
+    }
+
+    private static void ExtractPackageToDirectory(
+        string zipPath, string destinationDir, bool overwrite = true, bool ignoreFootprint = false)
+    {
+        using var archive = ZipFile.OpenRead(zipPath);
+        var fullDestDir = Path.GetFullPath(destinationDir);
+        if (!fullDestDir.EndsWith(Path.DirectorySeparatorChar))
+            fullDestDir += Path.DirectorySeparatorChar;
+
+        foreach (var entry in archive.Entries)
+        {
+            var decodedName = Uri.UnescapeDataString(entry.FullName).Replace('/', Path.DirectorySeparatorChar);
+            if (ignoreFootprint && IsFootprintFile(decodedName))
+                continue;
+
+            var destPath = Path.GetFullPath(Path.Combine(destinationDir, decodedName));
+
+            if (!destPath.StartsWith(fullDestDir, StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            if (entry.Name.Length == 0)
+            {
+                Directory.CreateDirectory(destPath);
+            }
+            else
+            {
+                if (!overwrite && File.Exists(destPath))
+                    continue;
+
+                Directory.CreateDirectory(Path.GetDirectoryName(destPath)!);
+                entry.ExtractToFile(destPath, overwrite: overwrite);
+            }
+        }
+    }
+
+    private static bool IsFootprintFile(string entryName)
+    {
+        var fileName = Path.GetFileName(entryName);
+        if (fileName.Equals("AppxManifest.xml", StringComparison.OrdinalIgnoreCase) ||
+            fileName.Equals("AppxBlockMap.xml", StringComparison.OrdinalIgnoreCase) ||
+            fileName.Equals("AppxSignature.p7x", StringComparison.OrdinalIgnoreCase) ||
+            fileName.Equals("[Content_Types].xml", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        return entryName.StartsWith("AppxMetadata" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool IsDependencyAlreadyInstalled(
@@ -300,7 +464,6 @@ public static class CustomAppPackageInstaller
 
             foreach (var pkg in packageManager.FindPackagesForUser(string.Empty, name, publisher))
             {
-                // Architecture must match (a neutral dependency matches anything).
                 if (archStr.Length > 0
                     && !archStr.Equals("neutral", StringComparison.OrdinalIgnoreCase)
                     && !pkg.Id.Architecture.ToString().Equals(archStr, StringComparison.OrdinalIgnoreCase))
@@ -316,7 +479,6 @@ public static class CustomAppPackageInstaller
         }
         catch (Exception ex)
         {
-            // Fail open: if we can't determine installed state, attempt the install.
             logger?.LogDebug(ex, "Custom install: dependency-installed check failed for {Dep}", depPackagePath);
             return false;
         }
@@ -330,7 +492,6 @@ public static class CustomAppPackageInstaller
         }
         catch (IOException)
         {
-            // Cross-volume move is not supported by Directory.Move; copy then delete.
             Directory.CreateDirectory(dest);
             foreach (var file in Directory.EnumerateFiles(source, "*", SearchOption.AllDirectories))
             {

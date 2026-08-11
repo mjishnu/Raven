@@ -612,8 +612,17 @@
   <data name="Install_Error_MissingDependency" xml:space="preserve">
     <value>A required component or dependency is missing. Try installing the app from the Microsoft Store instead.</value>
   </data>
+  <data name="Install_Error_InvalidManifest" xml:space="preserve">
+    <value>A csomag leírója (AppxManifest.xml) érvénytelen vagy hibás.</value>
+  </data>
+  <data name="Install_Error_UntrustedRoot" xml:space="preserve">
+    <value>A csomag aláírásának gyökértanúsítványa nem megbízható ezen a rendszeren.</value>
+  </data>
   <data name="Install_Error_SignatureInvalid" xml:space="preserve">
     <value>The package signature is invalid or untrusted.</value>
+  </data>
+  <data name="Install_Error_SignatureVerificationHint" xml:space="preserve">
+    <value>Az aláírás ellenőrzése meghiúsult. Próbálja meg engedélyezni az "Aláírás-ellenőrzés eltávolítása" opciót, majd próbálja újra.</value>
   </data>
   <data name="Install_Error_NotSigned" xml:space="preserve">
     <value>The package is not digitally signed.</value>
@@ -854,6 +863,15 @@ A Windows beállításokban a Fejlesztői mód bekapcsolásával engedélyezheti
   <data name="InstallationsPage_RemoveSignature.Content" xml:space="preserve">
     <value>Aláírás ellenőrzés eltávolítása</value>
   </data>
+  <data name="InstallationsPage_BypassRegistration.Content" xml:space="preserve">
+    <value>Csomagregisztráció kihagyása</value>
+  </data>
+  <data name="InstallationsPage_CreateStartMenuShortcut.Content" xml:space="preserve">
+    <value>Start menü parancsikon létrehozása</value>
+  </data>
+  <data name="InstallationsPage_CreateDesktopShortcut.Content" xml:space="preserve">
+    <value>Asztali parancsikon létrehozása</value>
+  </data>
   <data name="InstallationsPage_SelectDependenciesBtn.Content" xml:space="preserve">
     <value>Válassza ki a függőségeket</value>
   </data>
@@ -877,6 +895,9 @@ A Windows beállításokban a Fejlesztői mód bekapcsolásával engedélyezheti
   </data>
   <data name="Install_Error_ManifestMissing" xml:space="preserve">
     <value>Nem található az AppxManifest.xml a csomagban.</value>
+  </data>
+  <data name="Install_Error_ExecutableNotFound" xml:space="preserve">
+    <value>Nem található a végrehajtható fájl. Előfordulhat, hogy ez az alkalmazás nem futtatható regisztráció nélkül.</value>
   </data>
   <data name="DeveloperMode_DisabledTitle" xml:space="preserve">
     <value>Fejlesztői mód szükséges</value>

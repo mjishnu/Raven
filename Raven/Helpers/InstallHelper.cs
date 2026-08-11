@@ -112,19 +112,26 @@ public static partial class InstallHelper
     {
         const int ERROR_FILE_CORRUPT = unchecked((int)0x80070570);
         const int ERROR_NOT_FOUND = unchecked((int)0x80070490);
-        const int ERROR_SIGNATURE_INVALID = unchecked((int)0x80080204);
+        const int ERROR_INVALID_MANIFEST = unchecked((int)0x80080204);
+        const int ERROR_CORRUPT_CONTENT = unchecked((int)0x80080206);
         const int ERROR_NOT_SIGNED = unchecked((int)0x800B0100);
+        const int ERROR_UNTRUSTED_ROOT = unchecked((int)0x800B0109);
+        const int ERROR_SIGNATURE_INVALID = unchecked((int)0x800B010A);
         const int ERROR_ACCESS_DENIED = unchecked((int)0x80070005);
         const int ERROR_NOT_SUPPORTED = unchecked((int)0x80070032);
+        const int ERROR_PACKAGE_RESTRICTED = unchecked((int)0x80073CFF);
 
         return extendedHresult switch
         {
-            ERROR_FILE_CORRUPT => "Install_Error_PackageCorrupt".GetLocalized(),
+            ERROR_FILE_CORRUPT or ERROR_CORRUPT_CONTENT => "Install_Error_PackageCorrupt".GetLocalized(),
             ERROR_NOT_FOUND => "Install_Error_MissingDependency".GetLocalized(),
-            ERROR_SIGNATURE_INVALID => "Install_Error_SignatureInvalid".GetLocalized(),
+            ERROR_INVALID_MANIFEST => "Install_Error_InvalidManifest".GetLocalized(),
             ERROR_NOT_SIGNED => "Install_Error_NotSigned".GetLocalized(),
+            ERROR_UNTRUSTED_ROOT => "Install_Error_UntrustedRoot".GetLocalized(),
+            ERROR_SIGNATURE_INVALID => "Install_Error_SignatureInvalid".GetLocalized(),
             ERROR_ACCESS_DENIED => "Install_Error_AccessDenied".GetLocalizedFormat(""),
             ERROR_NOT_SUPPORTED => "Install_Error_NotSupported".GetLocalized(),
+            ERROR_PACKAGE_RESTRICTED => "Install_Error_SignatureVerificationHint".GetLocalized(),
             _ => null,
         };
     }
@@ -135,6 +142,7 @@ public static partial class InstallHelper
         const int ERROR_INVALID_PACKAGE = unchecked((int)0x80073CF3);
         const int ERROR_PACKAGE_NOT_FOUND = unchecked((int)0x80073CFA);
         const int ERROR_DEPLOYMENT_FAILURE = unchecked((int)0x80073CF9);
+        const int ERROR_PACKAGE_RESTRICTED = unchecked((int)0x80073CFF);
 
         return hresult switch
         {
@@ -146,6 +154,8 @@ public static partial class InstallHelper
                 "Install_Error_InvalidPackage".GetLocalized(),
             ERROR_PACKAGE_NOT_FOUND =>
                 "Install_Error_PackageNotFound".GetLocalized(),
+            ERROR_PACKAGE_RESTRICTED =>
+                "Install_Error_SignatureVerificationHint".GetLocalized(),
             ERROR_DEPLOYMENT_FAILURE =>
                 "Install_Error_DeploymentFailure".GetLocalizedFormat(
                     extendedHresult.HasValue ? GetFriendlyExtendedError(extendedHresult.Value) ?? "" : ""
@@ -191,7 +201,7 @@ public static partial class InstallHelper
             return;
         }
 
-        // 2. Everything else → plain error
+        // 2. Everything else → plain error or signature hint
         var content = exception switch
         {
             UnauthorizedAccessException ua =>
