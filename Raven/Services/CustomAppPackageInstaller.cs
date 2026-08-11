@@ -85,8 +85,8 @@ public static class CustomAppPackageInstaller
                     throw new CustomInstallException(
                         CustomInstallError.ManifestMissing, "AppxBundleManifest.xml not found.");
 
-                var packages = LoosePackageInspector.ParseBundleApplicationPackages(
-                    await File.ReadAllTextAsync(bundleManifestPath, cancellationToken));
+                var bundleXml = await File.ReadAllTextAsync(bundleManifestPath, cancellationToken);
+                var packages = LoosePackageInspector.ParseBundleApplicationPackages(bundleXml);
                 var archRid = App.GetService<IArchitectureSelectorService>().SelectedArchRid;
                 var selected = LoosePackageInspector.SelectApplicationPackage(packages, archRid)
                     ?? throw new CustomInstallException(
@@ -107,6 +107,17 @@ public static class CustomAppPackageInstaller
                 var innerDir = Path.Combine(workRoot, "inner");
                 Directory.CreateDirectory(innerDir);
                 ExtractPackageToDirectory(innerPkgPath, innerDir);
+
+                foreach (var resFile in LoosePackageInspector.ParseBundleResourcePackageFiles(bundleXml))
+                {
+                    var resPkgPath = Path.Combine(outerDir, resFile);
+                    if (File.Exists(resPkgPath))
+                    {
+                        logger?.LogInformation("Custom install: overlaying bundle resource package {File}", resFile);
+                        ExtractPackageToDirectory(resPkgPath, innerDir, overwrite: false, ignoreFootprint: true);
+                    }
+                }
+
                 looseDir = innerDir;
             }
             else
@@ -376,7 +387,8 @@ public static class CustomAppPackageInstaller
         return (string?)app?.Attribute("Executable");
     }
 
-    private static void ExtractPackageToDirectory(string zipPath, string destinationDir)
+    private static void ExtractPackageToDirectory(
+        string zipPath, string destinationDir, bool overwrite = true, bool ignoreFootprint = false)
     {
         using var archive = ZipFile.OpenRead(zipPath);
         var fullDestDir = Path.GetFullPath(destinationDir);
@@ -386,6 +398,9 @@ public static class CustomAppPackageInstaller
         foreach (var entry in archive.Entries)
         {
             var decodedName = Uri.UnescapeDataString(entry.FullName).Replace('/', Path.DirectorySeparatorChar);
+            if (ignoreFootprint && IsFootprintFile(decodedName))
+                continue;
+
             var destPath = Path.GetFullPath(Path.Combine(destinationDir, decodedName));
 
             if (!destPath.StartsWith(fullDestDir, StringComparison.OrdinalIgnoreCase))
@@ -397,10 +412,27 @@ public static class CustomAppPackageInstaller
             }
             else
             {
+                if (!overwrite && File.Exists(destPath))
+                    continue;
+
                 Directory.CreateDirectory(Path.GetDirectoryName(destPath)!);
-                entry.ExtractToFile(destPath, overwrite: true);
+                entry.ExtractToFile(destPath, overwrite: overwrite);
             }
         }
+    }
+
+    private static bool IsFootprintFile(string entryName)
+    {
+        var fileName = Path.GetFileName(entryName);
+        if (fileName.Equals("AppxManifest.xml", StringComparison.OrdinalIgnoreCase) ||
+            fileName.Equals("AppxBlockMap.xml", StringComparison.OrdinalIgnoreCase) ||
+            fileName.Equals("AppxSignature.p7x", StringComparison.OrdinalIgnoreCase) ||
+            fileName.Equals("[Content_Types].xml", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        return entryName.StartsWith("AppxMetadata" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
     }
 
     private static bool IsDependencyAlreadyInstalled(

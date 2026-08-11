@@ -59,6 +59,19 @@ public static class LoosePackageInspector
             .ToList();
     }
 
+    public static IReadOnlyList<string> ParseBundleResourcePackageFiles(string bundleManifestXml)
+    {
+        var doc = XDocument.Parse(bundleManifestXml);
+        return doc.Descendants()
+            .Where(e => e.Name.LocalName == "Package")
+            .Where(e => string.Equals(
+                (string?)e.Attribute("Type"), "resource", StringComparison.OrdinalIgnoreCase))
+            .Select(e => (string?)e.Attribute("FileName"))
+            .Where(fn => !string.IsNullOrEmpty(fn))
+            .Cast<string>()
+            .ToList();
+    }
+
     public static BundlePackageRef? SelectApplicationPackage(
         IReadOnlyList<BundlePackageRef> packages, string archRid)
     {

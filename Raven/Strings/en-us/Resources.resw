@@ -614,8 +614,17 @@ Installed version: {0}</value>
   <data name="Install_Error_MissingDependency" xml:space="preserve">
     <value>A required component or dependency is missing. Try installing the app from the Microsoft Store instead.</value>
   </data>
+  <data name="Install_Error_InvalidManifest" xml:space="preserve">
+    <value>The package manifest (AppxManifest.xml) is invalid or malformed.</value>
+  </data>
+  <data name="Install_Error_UntrustedRoot" xml:space="preserve">
+    <value>The package signature root certificate is not trusted by this system.</value>
+  </data>
   <data name="Install_Error_SignatureInvalid" xml:space="preserve">
     <value>The package signature is invalid or untrusted.</value>
+  </data>
+  <data name="Install_Error_SignatureVerificationHint" xml:space="preserve">
+    <value>Signature verification failed. Try enabling the "Remove signature verification" option and try again.</value>
   </data>
   <data name="Install_Error_NotSigned" xml:space="preserve">
     <value>The package is not digitally signed.</value>

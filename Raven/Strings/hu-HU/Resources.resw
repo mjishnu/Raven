@@ -612,8 +612,17 @@
   <data name="Install_Error_MissingDependency" xml:space="preserve">
     <value>A required component or dependency is missing. Try installing the app from the Microsoft Store instead.</value>
   </data>
+  <data name="Install_Error_InvalidManifest" xml:space="preserve">
+    <value>A csomag leírója (AppxManifest.xml) érvénytelen vagy hibás.</value>
+  </data>
+  <data name="Install_Error_UntrustedRoot" xml:space="preserve">
+    <value>A csomag aláírásának gyökértanúsítványa nem megbízható ezen a rendszeren.</value>
+  </data>
   <data name="Install_Error_SignatureInvalid" xml:space="preserve">
     <value>The package signature is invalid or untrusted.</value>
+  </data>
+  <data name="Install_Error_SignatureVerificationHint" xml:space="preserve">
+    <value>Az aláírás ellenőrzése meghiúsult. Próbálja meg engedélyezni az "Aláírás-ellenőrzés eltávolítása" opciót, majd próbálja újra.</value>
   </data>
   <data name="Install_Error_NotSigned" xml:space="preserve">
     <value>The package is not digitally signed.</value>
