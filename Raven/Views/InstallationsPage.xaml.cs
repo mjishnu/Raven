@@ -489,7 +489,7 @@ public sealed partial class InstallationsPage : Page
     {
         var dialogTitle = "Install_Dialog_Title".GetLocalized();
 
-        if (!SideloadingCheckService.IsDeveloperModeEnabled(_installLogger))
+        if (!ViewModel.SkipRegistration && !SideloadingCheckService.IsDeveloperModeEnabled(_installLogger))
         {
             await ShowDeveloperModeRequiredDialogAsync();
             return;
