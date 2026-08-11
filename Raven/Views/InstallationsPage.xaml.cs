@@ -94,6 +94,9 @@ public sealed partial class InstallationsPage : Page
             ? Visibility.Visible
             : Visibility.Collapsed;
         RemoveSignatureCheckBox.IsChecked = ViewModel.RemoveSignature;
+        SkipRegistrationCheckBox.IsChecked = ViewModel.SkipRegistration;
+        CreateStartMenuShortcutCheckBox.IsChecked = ViewModel.CreateStartMenuShortcut;
+        CreateDesktopShortcutCheckBox.IsChecked = ViewModel.CreateDesktopShortcut;
 
         CustomFolderText.Text = ViewModel.CustomInstallFolder ?? string.Empty;
         ClearFolderButton.Visibility = string.IsNullOrWhiteSpace(CustomFolderText.Text)
@@ -101,6 +104,7 @@ public sealed partial class InstallationsPage : Page
             : Visibility.Visible;
 
         UpdateDependenciesCount();
+        UpdateCheckBoxEnabledStates();
     }
 
     private void OnViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -117,6 +121,17 @@ public sealed partial class InstallationsPage : Page
                 InstallProgressBar.Value = percent;
                 ProgressPercentText.Text = $"{percent}%";
             }
+        }
+        else if (e.PropertyName == nameof(InstallationsViewModel.RemoveSignature) ||
+                 e.PropertyName == nameof(InstallationsViewModel.SkipRegistration) ||
+                 e.PropertyName == nameof(InstallationsViewModel.CreateStartMenuShortcut) ||
+                 e.PropertyName == nameof(InstallationsViewModel.CreateDesktopShortcut))
+        {
+            RemoveSignatureCheckBox.IsChecked = ViewModel.RemoveSignature;
+            SkipRegistrationCheckBox.IsChecked = ViewModel.SkipRegistration;
+            CreateStartMenuShortcutCheckBox.IsChecked = ViewModel.CreateStartMenuShortcut;
+            CreateDesktopShortcutCheckBox.IsChecked = ViewModel.CreateDesktopShortcut;
+            UpdateCheckBoxEnabledStates();
         }
     }
 
@@ -139,6 +154,10 @@ public sealed partial class InstallationsPage : Page
             BrowseFolderButton.IsEnabled = false;
             SelectDependenciesButton.IsEnabled = false;
             AdvancedInstallToggle.IsEnabled = false;
+            RemoveSignatureCheckBox.IsEnabled = false;
+            SkipRegistrationCheckBox.IsEnabled = false;
+            CreateStartMenuShortcutCheckBox.IsEnabled = false;
+            CreateDesktopShortcutCheckBox.IsEnabled = false;
 
             ClearButton.Visibility = Visibility.Collapsed;
             ClearFolderButton.Visibility = Visibility.Collapsed;
@@ -325,6 +344,13 @@ public sealed partial class InstallationsPage : Page
         {
             ViewModel.RemoveSignature = false;
             RemoveSignatureCheckBox.IsChecked = false;
+            ViewModel.SkipRegistration = false;
+            SkipRegistrationCheckBox.IsChecked = false;
+            ViewModel.CreateStartMenuShortcut = true;
+            CreateStartMenuShortcutCheckBox.IsChecked = true;
+            ViewModel.CreateDesktopShortcut = true;
+            CreateDesktopShortcutCheckBox.IsChecked = true;
+            UpdateCheckBoxEnabledStates();
         }
 
         UpdateInstallDependenciesSeparatelyState();
@@ -353,6 +379,39 @@ public sealed partial class InstallationsPage : Page
     private void RemoveSignatureCheckBox_Click(object sender, RoutedEventArgs e)
     {
         ViewModel.RemoveSignature = RemoveSignatureCheckBox.IsChecked == true;
+        UpdateCheckBoxEnabledStates();
+    }
+
+    private void SkipRegistrationCheckBox_Click(object sender, RoutedEventArgs e)
+    {
+        ViewModel.SkipRegistration = SkipRegistrationCheckBox.IsChecked == true;
+        UpdateCheckBoxEnabledStates();
+    }
+
+    private void UpdateCheckBoxEnabledStates()
+    {
+        if (ViewModel.IsInstalling)
+        {
+            RemoveSignatureCheckBox.IsEnabled = false;
+            SkipRegistrationCheckBox.IsEnabled = false;
+            CreateStartMenuShortcutCheckBox.IsEnabled = false;
+            CreateDesktopShortcutCheckBox.IsEnabled = false;
+        }
+        else
+        {
+            var removeSig = RemoveSignatureCheckBox.IsChecked == true;
+            var skipReg = SkipRegistrationCheckBox.IsChecked == true;
+
+            RemoveSignatureCheckBox.IsEnabled = true;
+            SkipRegistrationCheckBox.IsEnabled = true;
+
+            RemoveSignatureCheckBox.Visibility = skipReg ? Visibility.Collapsed : Visibility.Visible;
+            SkipRegistrationCheckBox.Visibility = removeSig ? Visibility.Collapsed : Visibility.Visible;
+            ShortcutOptionsPanel.Visibility = skipReg ? Visibility.Visible : Visibility.Collapsed;
+
+            CreateStartMenuShortcutCheckBox.IsEnabled = skipReg;
+            CreateDesktopShortcutCheckBox.IsEnabled = skipReg;
+        }
     }
 
     private void SelectDependenciesButton_Click(object sender, RoutedEventArgs e)
@@ -464,6 +523,9 @@ public sealed partial class InstallationsPage : Page
 
         // Snapshot the inputs on the UI thread; the install itself runs on a background thread.
         var removeSignature = ViewModel.RemoveSignature;
+        var skipRegistration = ViewModel.SkipRegistration;
+        var createStartMenuShortcut = ViewModel.CreateStartMenuShortcut;
+        var createDesktopShortcut = ViewModel.CreateDesktopShortcut;
         var dependencyPaths = ViewModel.DependencyPaths.ToList();
 
         var succeeded = false;
@@ -474,6 +536,9 @@ public sealed partial class InstallationsPage : Page
                 path,
                 folder!,
                 removeSignature,
+                skipRegistration,
+                createStartMenuShortcut,
+                createDesktopShortcut,
                 dependencyPaths,
                 progress,
                 CancellationToken.None,
@@ -490,6 +555,9 @@ public sealed partial class InstallationsPage : Page
             ViewModel.SelectedPackagePath = null;
             ViewModel.CustomInstallFolder = null;
             ViewModel.RemoveSignature = false;
+            ViewModel.SkipRegistration = false;
+            ViewModel.CreateStartMenuShortcut = true;
+            ViewModel.CreateDesktopShortcut = true;
             ViewModel.DependencyPaths.Clear();
             ViewModel.IsInstalling = false;
         }
@@ -615,6 +683,9 @@ public sealed partial class InstallationsPage : Page
             ViewModel.SelectedPackagePath = null;
             ViewModel.CustomInstallFolder = null;
             ViewModel.RemoveSignature = false;
+            ViewModel.SkipRegistration = false;
+            ViewModel.CreateStartMenuShortcut = true;
+            ViewModel.CreateDesktopShortcut = true;
             ViewModel.DependencyPaths.Clear();
             ViewModel.IsInstalling = false;
         }

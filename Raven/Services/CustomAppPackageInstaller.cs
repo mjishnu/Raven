@@ -1,9 +1,9 @@
 using System.IO.Compression;
+using System.Runtime.InteropServices;
 using System.Xml.Linq;
 using Microsoft.Extensions.Logging;
 using Raven.Contracts.Services;
 using Raven.Helpers;
-using Raven.ViewModels;
 using Windows.Management.Deployment;
 
 namespace Raven.Services;
@@ -39,7 +39,7 @@ public sealed class CustomInstallException : Exception
 /// Loose-file ("developer mode") installer. Extracts a package/bundle, selects the
 /// correct architecture from a bundle, moves the loose files to a user-chosen folder,
 /// optionally strips the signature, and either registers from the loose AppxManifest.xml
-/// or leaves the package unregistered and adds the app folder to the user's PATH.
+/// or leaves the package unregistered and creates a Start Menu shortcut.
 /// </summary>
 public static class CustomAppPackageInstaller
 {
@@ -49,6 +49,9 @@ public static class CustomAppPackageInstaller
         string packagePath,
         string targetParentFolder,
         bool removeSignature,
+        bool skipRegistration,
+        bool createStartMenuShortcut,
+        bool createDesktopShortcut,
         IEnumerable<string>? dependencyPackagePaths,
         IProgress<AppPackageInstaller.InstallProgress>? progress,
         CancellationToken cancellationToken,
@@ -58,9 +61,6 @@ public static class CustomAppPackageInstaller
             throw new FileNotFoundException("Package file not found.", packagePath);
         if (string.IsNullOrWhiteSpace(targetParentFolder) || !Directory.Exists(targetParentFolder))
             throw new DirectoryNotFoundException($"Install folder not found: {targetParentFolder}");
-
-        var disableRegistrationAndAddToPath =
-            App.GetService<InstallationsViewModel>().DisableRegistrationAndAddToPath;
 
         var ext = Path.GetExtension(packagePath).ToLowerInvariant();
         var isBundle = BundleExtensions.Contains(ext);
@@ -73,7 +73,7 @@ public static class CustomAppPackageInstaller
         try
         {
             progress?.Report(new AppPackageInstaller.InstallProgress(0, "Extracting", "Install"));
-            ZipFile.ExtractToDirectory(packagePath, outerDir);
+            ExtractPackageToDirectory(packagePath, outerDir);
             progress?.Report(new AppPackageInstaller.InstallProgress(30, "Extracting", "Install"));
 
             string looseDir;
@@ -105,7 +105,7 @@ public static class CustomAppPackageInstaller
 
                 var innerDir = Path.Combine(workRoot, "inner");
                 Directory.CreateDirectory(innerDir);
-                ZipFile.ExtractToDirectory(innerPkgPath, innerDir);
+                ExtractPackageToDirectory(innerPkgPath, innerDir);
                 looseDir = innerDir;
             }
             else
@@ -191,12 +191,15 @@ public static class CustomAppPackageInstaller
                 }
             }
 
-            if (disableRegistrationAndAddToPath)
+            if (skipRegistration)
             {
-                progress?.Report(new AppPackageInstaller.InstallProgress(85, "Adding to PATH", "Install"));
-                AddDirectoryToUserPath(target);
+                progress?.Report(new AppPackageInstaller.InstallProgress(85, "Creating shortcut", "Install"));
+                var manifestXml = await File.ReadAllTextAsync(
+                    Path.Combine(target, "AppxManifest.xml"), cancellationToken);
+                CreateAppShortcuts(target, appName, manifestXml, createStartMenuShortcut, createDesktopShortcut, logger);
                 logger?.LogInformation(
-                    "Custom install completed without package registration | Folder={Folder}", target);
+                    "Custom install completed without package registration | Folder={Folder} | StartMenuShortcut={StartMenu} | DesktopShortcut={Desktop}",
+                    target, createStartMenuShortcut, createDesktopShortcut);
                 progress?.Report(new AppPackageInstaller.InstallProgress(100, "Completed", "Install"));
                 return;
             }
@@ -259,8 +262,8 @@ public static class CustomAppPackageInstaller
         {
             logger?.LogError(
                 ex,
-                "Custom install failed | Path={Path} | Folder={Folder} | RemoveSig={RemoveSig} | NoRegistration={NoRegistration}",
-                packagePath, targetParentFolder, removeSignature, disableRegistrationAndAddToPath);
+                "Custom install failed | Path={Path} | Folder={Folder} | RemoveSig={RemoveSig} | SkipRegistration={SkipRegistration}",
+                packagePath, targetParentFolder, removeSignature, skipRegistration);
             throw;
         }
         finally
@@ -277,34 +280,111 @@ public static class CustomAppPackageInstaller
         }
     }
 
-    private static void AddDirectoryToUserPath(string directory)
+    private static void CreateAppShortcuts(
+        string appFolder,
+        string appName,
+        string manifestXml,
+        bool createStartMenuShortcut,
+        bool createDesktopShortcut,
+        ILogger? logger)
     {
-        directory = Path.GetFullPath(directory).TrimEnd(Path.DirectorySeparatorChar);
-        var userPath = Environment.GetEnvironmentVariable("Path", EnvironmentVariableTarget.User) ?? string.Empty;
-        var parts = userPath.Split(
-            Path.PathSeparator,
-            StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (!createStartMenuShortcut && !createDesktopShortcut)
+            return;
 
-        if (!parts.Any(p => string.Equals(
-                p.TrimEnd(Path.DirectorySeparatorChar), directory, StringComparison.OrdinalIgnoreCase)))
+        var exeName = ExtractExecutableFromManifest(manifestXml);
+        if (string.IsNullOrEmpty(exeName))
+            return;
+
+        var cleanExeName = exeName.TrimStart('\\', '/').Replace('/', Path.DirectorySeparatorChar);
+        var exePath = Path.GetFullPath(Path.Combine(appFolder, cleanExeName));
+        if (!File.Exists(exePath))
         {
-            var newPath = string.IsNullOrWhiteSpace(userPath)
-                ? directory
-                : userPath.TrimEnd(Path.PathSeparator) + Path.PathSeparator + directory;
-            Environment.SetEnvironmentVariable("Path", newPath, EnvironmentVariableTarget.User);
+            logger?.LogWarning(
+                "Custom install: executable {Exe} not found at {Path}; skipping shortcut creation.",
+                cleanExeName, exePath);
+            return;
         }
 
-        var processPath = Environment.GetEnvironmentVariable("Path") ?? string.Empty;
-        var processParts = processPath.Split(
-            Path.PathSeparator,
-            StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        if (!processParts.Any(p => string.Equals(
-                p.TrimEnd(Path.DirectorySeparatorChar), directory, StringComparison.OrdinalIgnoreCase)))
+        var workingDir = Path.GetDirectoryName(exePath) ?? appFolder;
+
+        if (createStartMenuShortcut)
+            CreateSingleShortcut(Environment.GetFolderPath(Environment.SpecialFolder.Programs), appName, exePath, workingDir, "Start Menu", logger);
+
+        if (createDesktopShortcut)
+            CreateSingleShortcut(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), appName, exePath, workingDir, "Desktop", logger);
+    }
+
+    private static void CreateSingleShortcut(
+        string targetFolder, string appName, string exePath, string workingDir, string locationName, ILogger? logger)
+    {
+        if (string.IsNullOrEmpty(targetFolder) || !Directory.Exists(targetFolder))
+            return;
+
+        var cleanName = string.Join("_", appName.Split(Path.GetInvalidFileNameChars())).Trim();
+        var safeAppName = string.IsNullOrEmpty(cleanName) ? "App" : cleanName;
+
+        var shortcutPath = Path.Combine(targetFolder, $"{safeAppName}.lnk");
+        var counter = 1;
+        while (File.Exists(shortcutPath))
         {
-            Environment.SetEnvironmentVariable(
-                "Path",
-                processPath.TrimEnd(Path.PathSeparator) + Path.PathSeparator + directory,
-                EnvironmentVariableTarget.Process);
+            shortcutPath = Path.Combine(targetFolder, $"{safeAppName} ({counter++}).lnk");
+        }
+
+        try
+        {
+            var shellType = Type.GetTypeFromProgID("WScript.Shell");
+            if (shellType is null) return;
+
+            dynamic shell = Activator.CreateInstance(shellType)!;
+            dynamic shortcut = shell.CreateShortcut(shortcutPath);
+            shortcut.TargetPath = exePath;
+            shortcut.WorkingDirectory = workingDir;
+            shortcut.Description = appName;
+            shortcut.Save();
+
+            Marshal.ReleaseComObject(shortcut);
+            Marshal.ReleaseComObject(shell);
+
+            logger?.LogInformation(
+                "Custom install: created {Location} shortcut at {Path}", locationName, shortcutPath);
+        }
+        catch (Exception ex)
+        {
+            logger?.LogWarning(ex, "Custom install: {Location} shortcut creation failed (ignored)", locationName);
+        }
+    }
+
+    private static string? ExtractExecutableFromManifest(string manifestXml)
+    {
+        var doc = XDocument.Parse(manifestXml);
+        var app = doc.Descendants().FirstOrDefault(e => e.Name.LocalName == "Application");
+        return (string?)app?.Attribute("Executable");
+    }
+
+    private static void ExtractPackageToDirectory(string zipPath, string destinationDir)
+    {
+        using var archive = ZipFile.OpenRead(zipPath);
+        var fullDestDir = Path.GetFullPath(destinationDir);
+        if (!fullDestDir.EndsWith(Path.DirectorySeparatorChar))
+            fullDestDir += Path.DirectorySeparatorChar;
+
+        foreach (var entry in archive.Entries)
+        {
+            var decodedName = Uri.UnescapeDataString(entry.FullName).Replace('/', Path.DirectorySeparatorChar);
+            var destPath = Path.GetFullPath(Path.Combine(destinationDir, decodedName));
+
+            if (!destPath.StartsWith(fullDestDir, StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            if (entry.Name.Length == 0)
+            {
+                Directory.CreateDirectory(destPath);
+            }
+            else
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(destPath)!);
+                entry.ExtractToFile(destPath, overwrite: true);
+            }
         }
     }
 
