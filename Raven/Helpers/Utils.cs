@@ -99,6 +99,60 @@ class Utils
         return false;
     }
 
+    /// <summary>
+    /// Orders candidate packages by architecture preference and version.
+    /// Native architecture is preferred over fallbacks (e.g. x64 over x86 regardless of version),
+    /// but a Neutral package will be prioritized if its version is strictly newer than the native build.
+    /// </summary>
+    public static IEnumerable<T> OrderCandidatesByVersionAndArch<T, TVersion>(
+        IEnumerable<T> candidates,
+        Func<T, string?> getArchName,
+        Func<T, TVersion> getVersion,
+        string archRid,
+        bool isPackaged
+    )
+    {
+        var priorities = GetArchPriorities(archRid, isPackaged);
+
+        var compatible = candidates
+            .Select(c =>
+            {
+                var arch = ParseArchString(getArchName(c), isPackaged);
+                var rank = Array.IndexOf(priorities, arch);
+                return (Candidate: c, Arch: arch, Rank: rank, Version: getVersion(c));
+            })
+            .Where(x => x.Rank >= 0)
+            .ToList();
+
+        if (compatible.Count == 0)
+            return Array.Empty<T>();
+
+        var neutralRank = Array.IndexOf(priorities, "neutral");
+        var comparer = Comparer<TVersion>.Default;
+
+        var bestNeutral = compatible
+            .Where(x => x.Rank == neutralRank)
+            .OrderByDescending(x => x.Version, comparer)
+            .FirstOrDefault();
+
+        var bestArch = priorities
+            .Where(p => p != "neutral")
+            .Select(p => compatible
+                .Where(x => x.Arch == p)
+                .OrderByDescending(x => x.Version, comparer)
+                .FirstOrDefault())
+            .FirstOrDefault(x => x.Candidate != null);
+
+        bool preferNeutral = bestNeutral.Candidate != null &&
+            (bestArch.Candidate == null || comparer.Compare(bestNeutral.Version, bestArch.Version) > 0);
+
+        return compatible
+            .OrderByDescending(x => preferNeutral ? (x.Rank == neutralRank ? 1 : 0) : (x.Rank == neutralRank ? -1 : 0))
+            .ThenBy(x => x.Rank)
+            .ThenByDescending(x => x.Version, comparer)
+            .Select(x => x.Candidate);
+    }
+
     public static async Task<Product> ProductOrBundle(
         string productId,
         InstallerType installerType,
@@ -134,32 +188,13 @@ class Utils
             // Architecture Selection
             // ---------------------------------------------------------
             var archRid = SystemInfo.GetOsArchRid();
-            var priorities = GetArchPriorities(archRid, isPackaged: true);
-            DCATPackage? best = null;
-
-            foreach (var priority in priorities)
-            {
-                var matches = packages
-                    .Where(p =>
-                        ParseArchString(
-                            p.PackageFullName ?? p.PackageIdentityName,
-                            isPackaged: true
-                        ) == priority
-                    )
-                    .OrderByDescending(p => p.AppVersion)
-                    .ToList();
-
-                if (matches.Any())
-                {
-                    best = matches.First();
-                    break;
-                }
-            }
-
-            if (best == null)
-            {
-                best = packages.OrderByDescending(p => p.AppVersion).FirstOrDefault();
-            }
+            var best = OrderCandidatesByVersionAndArch(
+                packages,
+                p => p.PackageFullName ?? p.PackageIdentityName,
+                p => p.AppVersion ?? default,
+                archRid,
+                isPackaged: true
+            ).FirstOrDefault();
 
             if (best == null)
                 throw new Exception("Unable to determine a valid package for this product.");

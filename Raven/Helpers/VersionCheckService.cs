@@ -255,30 +255,23 @@ public static class VersionCheckService
             return null;
         }
 
-        var priorities = Utils.GetArchPriorities(resolvedArchRid, isPackaged: false);
+        var bestCandidate = Utils.OrderCandidatesByVersionAndArch(
+            unpackagedResult.Value,
+            i => i.architecture,
+            i => StoreListings.Library.Version.TryParse(i.Version, null, out var v) ? v : default,
+            resolvedArchRid,
+            isPackaged: false
+        ).FirstOrDefault();
 
-        foreach (var prefArch in priorities)
+        if (!string.IsNullOrEmpty(bestCandidate.InstallerUrl))
         {
-            var matchingCandidates = unpackagedResult.Value
-                .Where(i => Utils.ParseArchString(i.architecture, isPackaged: false) == prefArch)
-                .ToList();
-
-            if (matchingCandidates.Any())
-            {
-                var bestCandidate = matchingCandidates
-                    .OrderByDescending(c =>
-                        System.Version.TryParse(c.Version, out var v) ? v : new System.Version(0, 0)
-                    )
-                    .First();
-
-                return new UnpackagedSelectionContext(
-                    bestCandidate.InstallerUrl,
-                    bestCandidate.FileName,
-                    bestCandidate.Version,
-                    bestCandidate.InstallerSha256,
-                    bestCandidate.architecture
-                );
-            }
+            return new UnpackagedSelectionContext(
+                bestCandidate.InstallerUrl,
+                bestCandidate.FileName,
+                bestCandidate.Version,
+                bestCandidate.InstallerSha256,
+                bestCandidate.architecture
+            );
         }
 
         onFailure?.Invoke(DownloadUrlFailureReason.ArchitectureIncompatible);
@@ -326,19 +319,15 @@ public static class VersionCheckService
                 if (selectionContext is null)
                     return null;
 
-                var priorities = Utils.GetArchPriorities(selectionContext.ArchRid, isPackaged: true);
+                var bestMatch = Utils.OrderCandidatesByVersionAndArch(
+                    selectionContext.Candidates,
+                    c => c.FileName ?? c.PackageIdentityName,
+                    c => c.Version,
+                    selectionContext.ArchRid,
+                    isPackaged: true
+                ).FirstOrDefault();
 
-                foreach (var archPref in priorities)
-                {
-                    var match = selectionContext.Candidates.FirstOrDefault(c =>
-                        Utils.ParseArchString(c.FileName ?? c.PackageIdentityName, isPackaged: true)
-                        == archPref
-                    );
-
-                    if (match != null)
-                        return match.Version.ToString();
-                }
-                return null;
+                return bestMatch?.Version.ToString();
             }
 
             case InstallerType.Unpackaged:

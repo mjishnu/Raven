@@ -78,22 +78,12 @@ public static class LoosePackageInspector
         if (packages.Count == 0)
             return null;
 
-        foreach (var pref in Utils.GetArchPriorities(archRid, isPackaged: true))
-        {
-            var match = packages.FirstOrDefault(p =>
-                Utils.ParseArchString(
-                    // The bundle manifest's Architecture attribute is authoritative;
-                    // fall back to the file name only for malformed (arch-less) entries.
-                    string.IsNullOrEmpty(p.Architecture) ? p.FileName : p.Architecture,
-                    isPackaged: true) == pref);
-            if (match is not null)
-                return match;
-        }
-
-        // Final fallback (mirrors Utils.ProductOrBundle): highest-version application package.
-        return packages
-            .OrderByDescending(p =>
-                Version.TryParse(p.Version, out var v) ? v : new Version(0, 0))
-            .First();
+        return Utils.OrderCandidatesByVersionAndArch(
+            packages,
+            p => string.IsNullOrEmpty(p.Architecture) ? p.FileName : p.Architecture,
+            p => StoreListings.Library.Version.TryParse(p.Version, null, out var v) ? v : default,
+            archRid,
+            isPackaged: true
+        ).FirstOrDefault();
     }
 }
