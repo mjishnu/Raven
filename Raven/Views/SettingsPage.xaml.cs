@@ -222,6 +222,91 @@ public sealed partial class SettingsPage : Page
         InitializeComponent();
     }
 
+    // ------------------------------------------------------------------
+    // Proxy input masking
+    // ------------------------------------------------------------------
+
+    // Reentrancy guard: setting sender.Text inside the handler re-fires TextChanging.
+    private bool _isMaskingHost;
+    private bool _isMaskingPort;
+
+    /// <summary>
+    /// Strict IP mask: digits and dots only. Dots the user types are preserved so
+    /// short octets like 127.0.0.1 work; a dot is auto-inserted when a group would
+    /// exceed three digits (---.---.---.---, four groups max).
+    /// </summary>
+    public void ProxyHostBox_TextChanged(object sender, RoutedEventArgs e)
+    {
+        if (_isMaskingHost)
+            return;
+
+        var box = (TextBox)sender;
+        var text = box.Text;
+
+        // Keep only digits and dots.
+        var cleaned = new string(text.Where(c => char.IsAsciiDigit(c) || c == '.').ToArray());
+
+        // Split on user dots; any group longer than three digits is split with
+        // auto-dots at every third digit. Never more than four groups.
+        var groups = new List<string>();
+        foreach (var seg in cleaned.Split('.'))
+        {
+            var remaining = seg;
+            while (remaining.Length > 3)
+            {
+                groups.Add(remaining[..3]);
+                remaining = remaining[3..];
+            }
+            groups.Add(remaining);
+        }
+
+        // Hard cap: four octets; extra digits beyond the fourth group are dropped.
+        if (groups.Count > 4)
+        {
+            var overflow = string.Concat(groups.Skip(3));
+            groups = [.. groups.Take(3), overflow.Length > 3 ? overflow[..3] : overflow];
+        }
+
+        var masked = string.Join('.', groups);
+
+        if (masked != text)
+        {
+            _isMaskingHost = true;
+            try
+            {
+                box.Text = masked;
+                box.SelectionStart = box.Text.Length;
+            }
+            finally
+            {
+                _isMaskingHost = false;
+            }
+        }
+    }
+
+    /// <summary>Port box: digits only (the MaxLength=5 caps it at 65535).</summary>
+    public void ProxyPortBox_TextChanged(object sender, RoutedEventArgs e)
+    {
+        if (_isMaskingPort)
+            return;
+
+        var box = (TextBox)sender;
+        var filtered = new string(box.Text.Where(char.IsAsciiDigit).ToArray());
+        if (filtered != box.Text)
+        {
+            _isMaskingPort = true;
+            try
+            {
+                box.Text = filtered;
+                box.SelectionStart = box.Text.Length;
+            }
+            finally
+            {
+                _isMaskingPort = false;
+            }
+        }
+    }
+
     private async void ResetButton_Click(object sender, RoutedEventArgs e)
     {
         var dialog = new ContentDialog

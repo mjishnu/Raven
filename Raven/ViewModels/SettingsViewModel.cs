@@ -6,6 +6,7 @@ using CommunityToolkit.Mvvm.Input;
 using Microsoft.UI.Xaml;
 using Raven.Contracts.Services;
 using Raven.Helpers;
+using Raven.Models;
 using Raven.Services;
 using StoreListings.Library;
 
@@ -16,6 +17,7 @@ public partial class SettingsViewModel : ObservableRecipient
     private readonly IThemeSelectorService _themeSelectorService;
     private readonly ILocaleService _localeService;
     private readonly IArchitectureSelectorService _architectureSelectorService;
+    private readonly IProxyService _proxyService;
     private bool _isInitialized;
 
     [ObservableProperty]
@@ -71,12 +73,15 @@ public partial class SettingsViewModel : ObservableRecipient
     public SettingsViewModel(
         IThemeSelectorService themeSelectorService,
         ILocaleService localeService,
-        IArchitectureSelectorService architectureSelectorService
+        IArchitectureSelectorService architectureSelectorService,
+        IProxyService proxyService
     )
     {
         _themeSelectorService = themeSelectorService;
         _localeService = localeService;
         _architectureSelectorService = architectureSelectorService;
+        _proxyService = proxyService;
+        _proxyService.Changed += (_, _) => RefreshProxySelection();
         _elementTheme = _themeSelectorService.Theme;
         _versionDescription = GetVersionDescription();
 
@@ -187,6 +192,168 @@ public partial class SettingsViewModel : ObservableRecipient
         {
             return lang.ToString();
         }
+    }
+
+    // ------------------------------------------------------------------
+    // Proxy management
+    // ------------------------------------------------------------------
+
+    public IReadOnlyList<ProxyEntry> Proxies => _proxyService.Proxies;
+
+    [ObservableProperty]
+    private ProxyEntry? _selectedProxy;
+
+    /// <summary>True when the user wants a direct connection (no proxy).</summary>
+    [ObservableProperty]
+    private bool _isDirectConnectionSelected;
+
+    // New-proxy form fields
+    [ObservableProperty]
+    private string _newProxyName = string.Empty;
+
+    /// <summary>Index into ProxySchemeNames for the type combo (http/socks5/socks4).</summary>
+    [ObservableProperty]
+    private int _newProxySchemeIndex;
+
+    [ObservableProperty]
+    private string _newProxyHost = string.Empty;
+
+    [ObservableProperty]
+    private string _newProxyPort = string.Empty;
+
+    [ObservableProperty]
+    private string _newProxyUsername = string.Empty;
+
+    [ObservableProperty]
+    private string _newProxyPassword = string.Empty;
+
+    [ObservableProperty]
+    private string _newProxyError = string.Empty;
+
+    public bool HasNewProxyError => !string.IsNullOrEmpty(NewProxyError);
+
+    /// <summary>Selectable proxy types.</summary>
+    public IReadOnlyList<string> ProxySchemeNames { get; } = ["HTTP", "HTTPS", "SOCKS4", "SOCKS5"];
+
+    partial void OnNewProxyErrorChanged(string value) => OnPropertyChanged(nameof(HasNewProxyError));
+
+    public ICommand AddProxyCommand => field ??= new AsyncRelayCommand(AddProxyAsync);
+    public ICommand RemoveProxyCommand => field ??= new AsyncRelayCommand<ProxyEntry>(RemoveProxyAsync!);
+    public ICommand ActivateProxyCommand => field ??= new AsyncRelayCommand<ProxyEntry>(ActivateProxyAsync!);
+    public ICommand UseDirectConnectionCommand => field ??= new AsyncRelayCommand(UseDirectConnectionAsync);
+
+    private async Task AddProxyAsync()
+    {
+        NewProxyError = string.Empty;
+
+        var host = NewProxyHost.Trim();
+        if (string.IsNullOrWhiteSpace(host))
+        {
+            NewProxyError = "Settings_Proxy_Error_HostRequired".GetLocalized();
+            return;
+        }
+
+        if (!int.TryParse(NewProxyPort.Trim(), out var port) || port is < 1 or > 65535)
+        {
+            NewProxyError = "Settings_Proxy_Error_PortInvalid".GetLocalized();
+            return;
+        }
+
+        var scheme = NewProxySchemeIndex >= 0 && NewProxySchemeIndex < ProxySchemeNames.Count
+            ? ProxySchemeNames[NewProxySchemeIndex].ToLowerInvariant()
+            : "http";
+
+        // Full URI validation up-front: reject hosts Uri would choke on (spaces,
+        // invalid chars, "host:port" pasted into the host box, ...) with a friendly
+        // error instead of a crash later when the proxy is activated.
+        if (!ProxyEntry.IsValidHost(host))
+        {
+            NewProxyError = "Settings_Proxy_Error_HostInvalid".GetLocalized();
+            return;
+        }
+
+        var entry = new ProxyEntry
+        {
+            Name = string.IsNullOrWhiteSpace(NewProxyName) ? $"Proxy {Proxies.Count + 1}" : NewProxyName.Trim(),
+            Scheme = scheme,
+            Host = host,
+            Port = port,
+            Username = NewProxyUsername.Trim(),
+            Password = NewProxyPassword,
+        };
+
+        await _proxyService.AddProxyAsync(entry);
+
+        // Reset the form.
+        NewProxyName = NewProxyHost = NewProxyPort = NewProxyUsername = NewProxyPassword = string.Empty;
+        NewProxySchemeIndex = 0;
+        RefreshProxySelection();
+    }
+
+    private async Task RemoveProxyAsync(ProxyEntry entry)
+    {
+        await _proxyService.RemoveProxyAsync(entry.Id);
+        RefreshProxySelection();
+    }
+
+    private async Task ActivateProxyAsync(ProxyEntry entry)
+    {
+        await _proxyService.SetActiveProxyAsync(entry);
+        RefreshProxySelection();
+    }
+
+    private async Task UseDirectConnectionAsync()
+    {
+        await _proxyService.SetActiveProxyAsync(null);
+        RefreshProxySelection();
+    }
+
+    private void RefreshProxySelection()
+    {
+        OnPropertyChanged(nameof(Proxies));
+        IsDirectConnectionSelected = _proxyService.ActiveProxy is null;
+        SelectedProxy = _proxyService.ActiveProxy;
+    }
+
+    // ------------------------------------------------------------------
+    // Download folder
+    // ------------------------------------------------------------------
+
+    [ObservableProperty]
+    private string _effectiveDownloadFolder =
+        DownloadLocationService.Instance.EffectiveDownloadFolder;
+
+    [ObservableProperty]
+    private bool _isUsingDefaultDownloadFolder =
+        string.IsNullOrWhiteSpace(DownloadLocationService.Instance.ConfiguredDownloadFolder);
+
+    public bool IsUsingDefaultDownloadFolderInverse => !IsUsingDefaultDownloadFolder;
+
+    partial void OnIsUsingDefaultDownloadFolderChanged(bool value) =>
+        OnPropertyChanged(nameof(IsUsingDefaultDownloadFolderInverse));
+
+    public ICommand BrowseDownloadFolderCommand => field ??= new AsyncRelayCommand(BrowseDownloadFolderAsync);
+    public ICommand ResetDownloadFolderCommand => field ??= new AsyncRelayCommand(ResetDownloadFolderAsync);
+
+    private async Task BrowseDownloadFolderAsync()
+    {
+        var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow);
+        var folder = NativeFilePicker.PickFolder(
+            hwnd, "Settings_DownloadFolder_PickerTitle".GetLocalized());
+
+        if (string.IsNullOrWhiteSpace(folder))
+            return;
+
+        await App.GetService<DownloadLocationService>().SetDownloadFolderAsync(folder);
+        EffectiveDownloadFolder = folder;
+        IsUsingDefaultDownloadFolder = false;
+    }
+
+    private async Task ResetDownloadFolderAsync()
+    {
+        await App.GetService<DownloadLocationService>().SetDownloadFolderAsync(null);
+        EffectiveDownloadFolder = DownloadLocationService.Instance.EffectiveDownloadFolder;
+        IsUsingDefaultDownloadFolder = true;
     }
 
     public async Task ResetAppToDefaultAsync()

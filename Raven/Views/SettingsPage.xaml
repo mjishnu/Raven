@@ -5,10 +5,12 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:helpers="using:Raven.Helpers"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:models="using:Raven.Models"
     xmlns:xaml="using:Microsoft.UI.Xaml"
     mc:Ignorable="d">
     <Page.Resources>
         <helpers:EnumToBooleanConverter x:Key="EnumToBooleanConverter" />
+        <helpers:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter" />
     </Page.Resources>
     <Grid>
         <Grid Margin="{StaticResource NavigationViewPageContentMargin}">
@@ -151,6 +153,232 @@
                             HorizontalAlignment="Left"
                             ItemsSource="{x:Bind ViewModel.AllArchitectureNames}"
                             SelectedIndex="{x:Bind ViewModel.SelectedArchitectureIndex, Mode=TwoWay}" />
+                    </Grid>
+                    <Grid
+                        Padding="20"
+                        Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        RowSpacing="12">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <TextBlock
+                            x:Uid="Settings_Proxy"
+                            Grid.Row="0"
+                            Style="{ThemeResource SubtitleTextBlockStyle}" />
+                        <TextBlock
+                            x:Uid="Settings_ProxyDescription"
+                            Grid.Row="1"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{ThemeResource BodyTextBlockStyle}"
+                            TextWrapping="Wrap" />
+
+                        <!--  Saved proxies: radio list, one per entry, plus a Direct option  -->
+                        <!--  Direct connection first, then saved proxies below it.
+                              Negative margins align the proxy circles with the Direct circle.  -->
+                        <RadioButton
+                            x:Uid="Settings_Proxy_Direct"
+                            Grid.Row="3"
+                            Margin="-12,0,0,0"
+                            HorizontalAlignment="Left"
+                            Command="{x:Bind ViewModel.UseDirectConnectionCommand}"
+                            GroupName="ActiveProxy"
+                            IsChecked="{x:Bind ViewModel.IsDirectConnectionSelected, Mode=TwoWay}" />
+
+                        <ListView
+                            Grid.Row="4"
+                            Margin="-12,0,0,0"
+                            IsItemClickEnabled="False"
+                            ItemsSource="{x:Bind ViewModel.Proxies, Mode=OneWay}"
+                            SelectionMode="None">
+                            <ListView.ItemTemplate>
+                                <DataTemplate x:DataType="models:ProxyEntry">
+                                    <Grid
+                                        Padding="8,6"
+                                        ColumnSpacing="8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <RadioButton
+                                            Grid.Column="0"
+                                            MinWidth="0"
+                                            Command="{x:Bind ActivateCommand}"
+                                            CommandParameter="{x:Bind}"
+                                            GroupName="ActiveProxy"
+                                            IsChecked="{x:Bind IsActive, Mode=OneWay}" />
+                                        <StackPanel Grid.Column="1" Spacing="0">
+                                            <TextBlock Style="{ThemeResource BodyStrongTextBlockStyle}" Text="{x:Bind Name}" />
+                                            <TextBlock
+                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                Style="{ThemeResource CaptionTextBlockStyle}"
+                                                Text="{x:Bind AddressText}" />
+                                        </StackPanel>
+                                        <Button
+                                            x:Uid="Settings_Proxy_RemoveButton"
+                                            Grid.Column="2"
+                                            Padding="8,4"
+                                            VerticalAlignment="Center"
+                                            Command="{x:Bind RemoveCommand}"
+                                            CommandParameter="{x:Bind}">
+                                            <FontIcon
+                                                AutomationProperties.AccessibilityView="Raw"
+                                                FontSize="14"
+                                                Glyph="&#xE74D;" />
+                                        </Button>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
+
+                        <InfoBar
+                            x:Uid="Settings_Proxy_Error"
+                            Grid.Row="5"
+                            IsOpen="False"
+                            Visibility="Collapsed"
+                            Severity="Error" />
+
+                        <!--  Add-proxy form  -->
+                        <StackPanel Grid.Row="6" Spacing="8">
+                            <TextBlock x:Uid="Settings_Proxy_AddTitle" Style="{ThemeResource BodyStrongTextBlockStyle}" />
+                            <TextBox
+                                x:Uid="Settings_Proxy_NameBox"
+                                Width="280"
+                                HorizontalAlignment="Left"
+                                Header=""
+                                Text="{x:Bind ViewModel.NewProxyName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <ComboBox
+                                    x:Uid="Settings_Proxy_TypeCombo"
+                                    MinWidth="120"
+                                    VerticalAlignment="Center"
+                                    ItemsSource="{x:Bind ViewModel.ProxySchemeNames}"
+                                    SelectedIndex="{x:Bind ViewModel.NewProxySchemeIndex, Mode=TwoWay}" />
+                                <TextBox
+                                    x:Name="ProxyHostBox"
+                                    x:Uid="Settings_Proxy_HostBox"
+                                    Width="200"
+                                    VerticalAlignment="Center"
+                                    TextAlignment="Left"
+                                    MaxLength="15"
+                                    TextChanged="ProxyHostBox_TextChanged"
+                                    Text="{x:Bind ViewModel.NewProxyHost, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBox
+                                    x:Name="ProxyPortBox"
+                                    x:Uid="Settings_Proxy_PortBox"
+                                    Width="90"
+                                    VerticalAlignment="Center"
+                                    TextAlignment="Left"
+                                    MaxLength="5"
+                                    TextChanged="ProxyPortBox_TextChanged"
+                                    Text="{x:Bind ViewModel.NewProxyPort, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBox
+                                    x:Uid="Settings_Proxy_UsernameBox"
+                                    Width="160"
+                                    VerticalAlignment="Center"
+                                    TextAlignment="Left"
+                                    Text="{x:Bind ViewModel.NewProxyUsername, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <PasswordBox
+                                    x:Uid="Settings_Proxy_PasswordBox"
+                                    Width="160"
+                                    VerticalAlignment="Center"
+                                    Password="{x:Bind ViewModel.NewProxyPassword, Mode=TwoWay}" />
+                                <Border
+                                    x:Name="ProxyErrorChip"
+                                    MaxWidth="420"
+                                    Height="32"
+                                    Padding="10,0"
+                                    VerticalAlignment="Center"
+                                    HorizontalAlignment="Left"
+                                    Background="{ThemeResource SubtleFillColorSecondaryBrush}"
+                                    BorderBrush="{ThemeResource SystemFillColorCriticalBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="4"
+                                    Visibility="{x:Bind ViewModel.HasNewProxyError, Mode=OneWay, Converter={StaticResource BoolToVisibilityConverter}}">
+                                    <StackPanel
+                                        Orientation="Horizontal"
+                                        VerticalAlignment="Center"
+                                        Spacing="6">
+                                        <FontIcon
+                                            AutomationProperties.AccessibilityView="Raw"
+                                            FontSize="14"
+                                            Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                                            Glyph="&#xE783;" />
+                                        <TextBlock
+                                            x:Uid="Settings_Proxy_Error_Chip"
+                                            VerticalAlignment="Center"
+                                            FontSize="13"
+                                            Foreground="{ThemeResource SystemFillColorCriticalBrush}" />
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                            <Button
+                                x:Uid="Settings_Proxy_AddButton"
+                                Command="{x:Bind ViewModel.AddProxyCommand}"
+                                Style="{StaticResource AccentButtonStyle}" />
+                        </StackPanel>
+                    </Grid>
+                    <Grid
+                        Padding="20"
+                        Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        RowSpacing="10">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <TextBlock
+                            x:Uid="Settings_DownloadFolder"
+                            Grid.Row="0"
+                            Style="{ThemeResource SubtitleTextBlockStyle}" />
+                        <TextBlock
+                            x:Uid="Settings_DownloadFolderDescription"
+                            Grid.Row="1"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{ThemeResource BodyTextBlockStyle}"
+                            TextWrapping="Wrap" />
+                        <StackPanel
+                            Grid.Row="2"
+                            Orientation="Horizontal"
+                            Spacing="8">
+                            <FontIcon FontSize="16" Glyph="&#xE8B7;" />
+                            <TextBlock
+                                IsTextSelectionEnabled="True"
+                                Style="{ThemeResource BodyTextBlockStyle}"
+                                Text="{x:Bind ViewModel.EffectiveDownloadFolder, Mode=OneWay}"
+                                TextWrapping="Wrap" />
+                        </StackPanel>
+                        <TextBlock
+                            x:Uid="Settings_DownloadFolder_CurrentLabel"
+                            Grid.Row="3"
+                            Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                            Style="{ThemeResource CaptionTextBlockStyle}" />
+                        <StackPanel
+                            Grid.Row="4"
+                            Orientation="Horizontal"
+                            Spacing="8">
+                            <Button
+                                x:Uid="Settings_DownloadFolder_BrowseButton"
+                                Command="{x:Bind ViewModel.BrowseDownloadFolderCommand}" />
+                            <Button
+                                x:Uid="Settings_DownloadFolder_ResetButton"
+                                Command="{x:Bind ViewModel.ResetDownloadFolderCommand}"
+                                IsEnabled="{x:Bind ViewModel.IsUsingDefaultDownloadFolderInverse, Mode=OneWay}" />
+                        </StackPanel>
                     </Grid>
                     <Grid
                         Padding="20"

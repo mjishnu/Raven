@@ -1,5 +1,7 @@
 using System.Diagnostics;
 using System.IO.Compression;
+using System.Net;
+using System.Net.Http;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text.Json;
@@ -8,7 +10,20 @@ namespace Raven.Services;
 
 public sealed class GitHubUpdaterService
 {
-    private static readonly HttpClient HttpClient = CreateHttpClient();
+    private static HttpClient? _httpClient;
+    private static IWebProxy? _proxy;
+
+    private static HttpClient HttpClient => _httpClient ??= CreateHttpClient();
+
+    /// <summary>Rebuilds the update-check client so it routes through the given proxy (null = direct).</summary>
+    public static void ApplyProxy(IWebProxy? proxy)
+    {
+        if (_proxy == proxy)
+            return;
+        _proxy = proxy;
+        _httpClient?.Dispose();
+        _httpClient = null;
+    }
 
     public static async Task<GitHubReleaseInfo> GetLatestReleaseAsync(CancellationToken cancellationToken = default)
     {
@@ -275,7 +290,11 @@ public sealed class GitHubUpdaterService
 
     private static HttpClient CreateHttpClient()
     {
-        var client = new HttpClient();
+        var client = new HttpClient(new SocketsHttpHandler
+        {
+            UseProxy = _proxy is not null,
+            Proxy = _proxy,
+        });
         client.DefaultRequestHeaders.UserAgent.ParseAdd("Raven-Updater");
         client.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
         return client;

@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Net;
+using System.Net.Http;
 using Microsoft.Extensions.Logging;
 using Downloader;
 using StoreListings.Library;
@@ -21,11 +22,31 @@ public sealed class DownloadHelper
         public void Report(T value) => handler(value);
     }
 
+    private static HttpClient? _deltaHttpClient;
+    private static IWebProxy? _deltaProxy;
+
     // Shared client for blockmap/delta downloads: reuses pooled CDN connections across
     // files of an install instead of paying a fresh DNS+TCP+TLS handshake per file.
     // PooledConnectionLifetime bounds DNS staleness for the long-lived client.
-    private static readonly HttpClient s_deltaHttpClient = new(
-        new SocketsHttpHandler { PooledConnectionLifetime = TimeSpan.FromMinutes(5) }
+    private static HttpClient s_deltaHttpClient => _deltaHttpClient ??= CreateDeltaClient();
+
+    /// <summary>Rebuilds the shared delta client so it routes through the given proxy (null = direct).</summary>
+    public static void ApplyProxy(IWebProxy? proxy)
+    {
+        if (_deltaProxy == proxy)
+            return;
+        _deltaProxy = proxy;
+        _deltaHttpClient?.Dispose();
+        _deltaHttpClient = null;
+    }
+
+    private static HttpClient CreateDeltaClient() => new(
+        new SocketsHttpHandler
+        {
+            PooledConnectionLifetime = TimeSpan.FromMinutes(5),
+            UseProxy = _deltaProxy is not null,
+            Proxy = _deltaProxy,
+        }
     );
 
     private static async Task DownloadAsync(
@@ -116,6 +137,9 @@ public sealed class DownloadHelper
             // Best practice for large files: avoid up-front reservation / pre-allocation.
             // Pre-allocating multi-GB files can look like a hang due to long disk writes.
             ReserveStorageSpaceBeforeStartingDownload = false,
+
+            // Route the download through the user's active proxy, if any.
+            RequestConfiguration = { Proxy = ProxyService.Instance.GetWebProxy() },
 
             // CRITICAL for large files: Disable parallel chunking.
             // With ParallelDownload=true, the library holds chunk data in memory before merging.
@@ -464,6 +488,7 @@ public sealed class DownloadHelper
                         {
                             ReserveStorageSpaceBeforeStartingDownload =
                                 config.ReserveStorageSpaceBeforeStartingDownload,
+                            RequestConfiguration = { Proxy = config.RequestConfiguration.Proxy },
                             ParallelDownload = false,
                             ChunkCount = 1,
                             ParallelCount = 1,

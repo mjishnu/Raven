@@ -59,10 +59,25 @@ public class DownloadManagerService
             or DownloadStatus.Installing
             or DownloadStatus.Cancelling;
 
-    public static string GetDownloadsRootFolder() => Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "Raven",
-        "Downloads"
+    public static string GetDownloadsRootFolder()
+    {
+        // User-configured download folder wins; fall back to %LOCALAPPDATA%\Raven\Downloads.
+        var configured = DownloadLocationService.Instance.ConfiguredDownloadFolder;
+        if (!string.IsNullOrWhiteSpace(configured))
+            return configured;
+
+        return Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "Raven",
+            "Downloads"
+        );
+    }
+
+    /// <summary>Default location used when the user has not chosen a custom folder.</summary>
+    public static string GetDefaultDownloadsRootFolder() => Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+        "Downloads",
+        "Raven"
     );
 
     private DownloadItem? TouchDownload(string productId)

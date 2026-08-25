@@ -99,6 +99,8 @@ public partial class App : Application
                     services.AddSingleton<IThemeSelectorService, ThemeSelectorService>();
                     services.AddSingleton<ILocaleService, LocaleService>();
                     services.AddSingleton<IArchitectureSelectorService, ArchitectureSelectorService>();
+                    services.AddSingleton<IProxyService>(_ => ProxyService.Instance);
+                    services.AddSingleton<DownloadLocationService>(_ => DownloadLocationService.Instance);
                     services.AddTransient<INavigationViewService, NavigationViewService>();
 
                     services.AddSingleton<IActivationService, ActivationService>();
