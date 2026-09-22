@@ -15,5 +15,7 @@ public interface INavigationService
 
     bool NavigateTo(string pageKey, object? parameter = null, bool clearNavigation = false);
 
+    void RefreshCurrentPage();
+
     bool GoBack();
 }

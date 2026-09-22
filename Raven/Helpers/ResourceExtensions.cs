@@ -67,7 +67,7 @@ public static class ResourceExtensions
 
     private static ResourceContext GetContext()
     {
-        var language = ApplicationLanguages.PrimaryLanguageOverride;
+        var language = NormalizeLanguageTag(ApplicationLanguages.PrimaryLanguageOverride);
 
         lock (_contextLock)
         {
@@ -83,5 +83,24 @@ public static class ResourceExtensions
 
             return _context;
         }
+    }
+
+    private static string? NormalizeLanguageTag(string? language)
+    {
+        if (string.IsNullOrWhiteSpace(language))
+            return null;
+
+        // Keep the tag shape used by the generated PRI resource folders. MRT's
+        // language qualifier is case-insensitive in principle, but using the
+        // exact shipped tag avoids falling back to the default candidate on
+        // unpackaged WinUI apps.
+        return language.ToLowerInvariant() switch
+        {
+            "zh-cn" => "zh-cn",
+            "ko-kr" => "ko-kr",
+            "hu-hu" => "hu-HU",
+            "en-us" => "en-us",
+            _ => language,
+        };
     }
 }

@@ -298,8 +298,8 @@ public sealed partial class CardViewControl : UserControl
             if (loadException != null && IsNetworkError(loadException))
             {
                 ErrorPanel.Glyph = "\uF384";
-                ErrorPanel.Title = "No Internet Connection";
-                ErrorPanel.Subtitle = "Please check your network settings and try again.";
+                ErrorPanel.Title = "Common_NoInternetConnectionTitle".GetLocalized();
+                ErrorPanel.Subtitle = "Common_NoInternetConnectionMessage".GetLocalized();
             }
             else
             {
@@ -705,8 +705,8 @@ public sealed partial class CardViewControl : UserControl
             if (IsNetworkError(ex))
             {
                 ErrorPanel.Glyph = "\uF384";
-                ErrorPanel.Title = "No Internet Connection";
-                ErrorPanel.Subtitle = "Please check your network settings and try again.";
+                ErrorPanel.Title = "Common_NoInternetConnectionTitle".GetLocalized();
+                ErrorPanel.Subtitle = "Common_NoInternetConnectionMessage".GetLocalized();
             }
             else
             {

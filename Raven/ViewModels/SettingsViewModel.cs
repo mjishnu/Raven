@@ -6,6 +6,7 @@ using CommunityToolkit.Mvvm.Input;
 using Microsoft.UI.Xaml;
 using Raven.Contracts.Services;
 using Raven.Helpers;
+using Raven.Models;
 using Raven.Services;
 using StoreListings.Library;
 
@@ -16,7 +17,14 @@ public partial class SettingsViewModel : ObservableRecipient
     private readonly IThemeSelectorService _themeSelectorService;
     private readonly ILocaleService _localeService;
     private readonly IArchitectureSelectorService _architectureSelectorService;
+    private readonly ILocalSettingsService _localSettingsService;
     private bool _isInitialized;
+    private bool _downloadConnectionModeLoaded;
+    private bool _proxySettingsLoaded;
+
+    private const string DownloadConnectionModeSettingsKey = "DownloadConnectionMode";
+    private const string ProxyModeSettingsKey = "ProxyMode";
+    private const string ProxyUriSettingsKey = "ProxyUri";
 
     [ObservableProperty]
     private ElementTheme _elementTheme;
@@ -34,16 +42,22 @@ public partial class SettingsViewModel : ObservableRecipient
     private int _selectedArchitectureIndex;
 
     [ObservableProperty]
-    private bool _showRelaunchPrompt;
+    private int _selectedDownloadConnectionIndex;
 
-    // Language/Market that were active when the app started. A relaunch is needed only when the
-    // current selection differs from these, because already-loaded XAML strings don't re-localize.
-    private readonly Lang _initialLanguage;
-    private readonly Market _initialMarket;
+    [ObservableProperty]
+    private int _selectedProxyModeIndex;
+
+    [ObservableProperty]
+    private string _proxyUri = string.Empty;
+
+    [ObservableProperty]
+    private string _proxyValidationMessage = string.Empty;
 
     private readonly List<(string DisplayName, Market Value)> _marketItems;
     private readonly List<(string DisplayName, Lang Value)> _languageItems;
     private readonly List<(string DisplayName, StoreEdgeFDArch Value)> _architectureItems;
+    private readonly List<(string DisplayName, DownloadConnectionMode Value)> _downloadConnectionItems;
+    private readonly List<(string DisplayName, ProxyMode Value)> _proxyModeItems;
 
     public IReadOnlyList<string> AllMarketNames
     {
@@ -58,12 +72,22 @@ public partial class SettingsViewModel : ObservableRecipient
         get;
     }
 
-    public ICommand SwitchThemeCommand
+    public IReadOnlyList<string> AllDownloadConnectionNames
     {
         get;
     }
 
-    public ICommand RelaunchCommand
+    public IReadOnlyList<string> AllProxyModeNames
+    {
+        get;
+    }
+
+    public bool IsCustomProxy =>
+        _selectedProxyModeIndex >= 0
+        && _selectedProxyModeIndex < _proxyModeItems.Count
+        && _proxyModeItems[_selectedProxyModeIndex].Value == ProxyMode.Custom;
+
+    public ICommand SwitchThemeCommand
     {
         get;
     }
@@ -71,17 +95,16 @@ public partial class SettingsViewModel : ObservableRecipient
     public SettingsViewModel(
         IThemeSelectorService themeSelectorService,
         ILocaleService localeService,
-        IArchitectureSelectorService architectureSelectorService
+        IArchitectureSelectorService architectureSelectorService,
+        ILocalSettingsService localSettingsService
     )
     {
         _themeSelectorService = themeSelectorService;
         _localeService = localeService;
         _architectureSelectorService = architectureSelectorService;
+        _localSettingsService = localSettingsService;
         _elementTheme = _themeSelectorService.Theme;
         _versionDescription = GetVersionDescription();
-
-        _initialLanguage = _localeService.Language;
-        _initialMarket = _localeService.Market;
 
         _marketItems = Enum.GetValues<Market>()
             .Select(m => (GetMarketDisplayName(m), m))
@@ -112,6 +135,18 @@ public partial class SettingsViewModel : ObservableRecipient
             _architectureItems.FindIndex(x => x.Value == _architectureSelectorService.SelectedStoreEdgeArchitecture)
         );
 
+        _downloadConnectionItems = Enum.GetValues<DownloadConnectionMode>()
+            .Select(mode => (GetDownloadConnectionDisplayName(mode), mode))
+            .ToList();
+        AllDownloadConnectionNames = _downloadConnectionItems.Select(x => x.DisplayName).ToList();
+        _selectedDownloadConnectionIndex = 0;
+
+        _proxyModeItems = Enum.GetValues<ProxyMode>()
+            .Select(mode => (GetProxyModeDisplayName(mode), mode))
+            .ToList();
+        AllProxyModeNames = _proxyModeItems.Select(x => x.DisplayName).ToList();
+        _selectedProxyModeIndex = 0;
+
         SwitchThemeCommand = new RelayCommand<ElementTheme>(
             async (param) =>
             {
@@ -123,17 +158,10 @@ public partial class SettingsViewModel : ObservableRecipient
             }
         );
 
-        RelaunchCommand = new RelayCommand(() =>
-            Microsoft.Windows.AppLifecycle.AppInstance.Restart(string.Empty)
-        );
-
         _isInitialized = true;
+        _ = LoadDownloadConnectionModeAsync();
+        _ = LoadProxySettingsAsync();
     }
-
-    // Show the relaunch prompt whenever the live language differs from what was active at
-    // startup; hide it again if the user reverts to the original values.
-    private void UpdateRelaunchPrompt() =>
-        ShowRelaunchPrompt = _localeService.Language != _initialLanguage;
 
     partial void OnSelectedMarketIndexChanged(int value)
     {
@@ -142,7 +170,6 @@ public partial class SettingsViewModel : ObservableRecipient
         var market = _marketItems[value].Value;
         if (market != _localeService.Market)
             _ = _localeService.SetMarketAsync(market);
-        UpdateRelaunchPrompt();
     }
 
     partial void OnSelectedLanguageIndexChanged(int value)
@@ -152,7 +179,6 @@ public partial class SettingsViewModel : ObservableRecipient
         var lang = _languageItems[value].Value;
         if (lang != _localeService.Language)
             _ = _localeService.SetLanguageAsync(lang);
-        UpdateRelaunchPrompt();
     }
 
     partial void OnSelectedArchitectureIndexChanged(int value)
@@ -165,11 +191,151 @@ public partial class SettingsViewModel : ObservableRecipient
             _ = _architectureSelectorService.SetSelectedArchitectureAsync(selectedArchitecture);
     }
 
+    partial void OnSelectedDownloadConnectionIndexChanged(int value)
+    {
+        if (!_isInitialized || value < 0 || value >= _downloadConnectionItems.Count)
+            return;
+
+        _downloadConnectionModeLoaded = true;
+        _ = _localSettingsService.SaveSettingAsync(
+            DownloadConnectionModeSettingsKey,
+            _downloadConnectionItems[value].Value.ToString()
+        );
+    }
+
+    partial void OnSelectedProxyModeIndexChanged(int value)
+    {
+        if (!_isInitialized || value < 0 || value >= _proxyModeItems.Count)
+            return;
+
+        OnPropertyChanged(nameof(IsCustomProxy));
+        ProxyValidationMessage = IsCustomProxy && !TryParseProxyUri(ProxyUri, out _)
+            ? "Settings_ProxyInvalidUri".GetLocalized()
+            : string.Empty;
+        if (!_proxySettingsLoaded)
+            return;
+
+        var mode = _proxyModeItems[value].Value;
+        if (mode == ProxyMode.Custom && !TryParseProxyUri(ProxyUri, out _))
+            return;
+
+        _ = _localSettingsService.SaveSettingAsync(ProxyModeSettingsKey, mode.ToString());
+    }
+
+    partial void OnProxyUriChanged(string value)
+    {
+        if (!_isInitialized || !IsCustomProxy)
+            return;
+
+        var isValid = TryParseProxyUri(value, out _);
+        ProxyValidationMessage = isValid ? string.Empty : "Settings_ProxyInvalidUri".GetLocalized();
+        if (!_proxySettingsLoaded || !isValid)
+            return;
+
+        _ = _localSettingsService.SaveSettingAsync(ProxyUriSettingsKey, value.Trim());
+        _ = _localSettingsService.SaveSettingAsync(ProxyModeSettingsKey, ProxyMode.Custom.ToString());
+    }
+
+    private async Task LoadDownloadConnectionModeAsync()
+    {
+        try
+        {
+            var saved = await _localSettingsService
+                .ReadSettingAsync<string>(DownloadConnectionModeSettingsKey)
+                .ConfigureAwait(true);
+
+            if (
+                !_downloadConnectionModeLoaded
+                && Enum.TryParse(saved, ignoreCase: true, out DownloadConnectionMode mode)
+                && Enum.IsDefined(typeof(DownloadConnectionMode), mode)
+            )
+            {
+                var index = _downloadConnectionItems.FindIndex(x => x.Value == mode);
+                if (index >= 0)
+                    SelectedDownloadConnectionIndex = index;
+            }
+        }
+        catch
+        {
+            // Keep the safe Auto default if the preference cannot be read.
+        }
+    }
+
+    private static string GetDownloadConnectionDisplayName(DownloadConnectionMode mode) =>
+        mode switch
+        {
+            DownloadConnectionMode.Auto => "Settings_ParallelConnections_Auto".GetLocalized(),
+            DownloadConnectionMode.One => "Settings_ParallelConnections_One".GetLocalized(),
+            DownloadConnectionMode.Two => "Settings_ParallelConnections_Two".GetLocalized(),
+            DownloadConnectionMode.Four => "Settings_ParallelConnections_Four".GetLocalized(),
+            DownloadConnectionMode.Eight => "Settings_ParallelConnections_Eight".GetLocalized(),
+            _ => mode.ToString(),
+        };
+
+    private async Task LoadProxySettingsAsync()
+    {
+        try
+        {
+            var savedMode = await _localSettingsService
+                .ReadSettingAsync<string>(ProxyModeSettingsKey)
+                .ConfigureAwait(true);
+            var savedUri = await _localSettingsService
+                .ReadSettingAsync<string>(ProxyUriSettingsKey)
+                .ConfigureAwait(true);
+
+            var mode = Enum.TryParse(savedMode, ignoreCase: true, out ProxyMode parsedMode)
+                && Enum.IsDefined(typeof(ProxyMode), parsedMode)
+                ? parsedMode
+                : ProxyMode.System;
+            if (mode == ProxyMode.Custom && !TryParseProxyUri(savedUri, out _))
+                mode = ProxyMode.System;
+
+            _proxyUri = savedUri ?? string.Empty;
+            _selectedProxyModeIndex = _proxyModeItems.FindIndex(x => x.Value == mode);
+            if (_selectedProxyModeIndex < 0)
+                _selectedProxyModeIndex = 0;
+            _proxySettingsLoaded = true;
+            ProxyValidationMessage = IsCustomProxy && !TryParseProxyUri(ProxyUri, out _)
+                ? "Settings_ProxyInvalidUri".GetLocalized()
+                : string.Empty;
+            OnPropertyChanged(nameof(IsCustomProxy));
+        }
+        catch
+        {
+            _proxySettingsLoaded = true;
+            ProxyValidationMessage = string.Empty;
+        }
+    }
+
+    private static string GetProxyModeDisplayName(ProxyMode mode) =>
+        mode switch
+        {
+            ProxyMode.System => "Settings_ProxyMode_System".GetLocalized(),
+            ProxyMode.Direct => "Settings_ProxyMode_Direct".GetLocalized(),
+            ProxyMode.Custom => "Settings_ProxyMode_Custom".GetLocalized(),
+            _ => mode.ToString(),
+        };
+
+    private static bool TryParseProxyUri(string? value, out Uri? uri)
+    {
+        uri = null;
+        if (
+            !Uri.TryCreate(value?.Trim(), UriKind.Absolute, out var parsed)
+            || parsed is null
+            || (parsed.Scheme != Uri.UriSchemeHttp && parsed.Scheme != Uri.UriSchemeHttps)
+            || string.IsNullOrEmpty(parsed.Host)
+        )
+            return false;
+
+        uri = parsed;
+        return true;
+    }
+
     private static string GetMarketDisplayName(Market market)
     {
         try
         {
-            return new RegionInfo(market.ToString()).EnglishName;
+            return new RegionInfo(market.ToString()).DisplayName;
         }
         catch
         {
@@ -181,7 +347,7 @@ public partial class SettingsViewModel : ObservableRecipient
     {
         try
         {
-            return new CultureInfo(lang.ToString()).EnglishName;
+            return new CultureInfo(lang.ToString()).NativeName;
         }
         catch
         {
@@ -198,6 +364,15 @@ public partial class SettingsViewModel : ObservableRecipient
 
         await _localeService.ResetToDefaultAsync();
         await _architectureSelectorService.ResetToDefaultAsync();
+        await _localSettingsService.SaveSettingAsync(
+            DownloadConnectionModeSettingsKey,
+            DownloadConnectionMode.Auto.ToString()
+        );
+        SelectedDownloadConnectionIndex = 0;
+        await _localSettingsService.SaveSettingAsync(ProxyModeSettingsKey, ProxyMode.System.ToString());
+        await _localSettingsService.SaveSettingAsync(ProxyUriSettingsKey, string.Empty);
+        SelectedProxyModeIndex = 0;
+        ProxyUri = string.Empty;
 
         SelectedMarketIndex = Math.Max(
             0,

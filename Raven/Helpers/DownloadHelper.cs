@@ -1,7 +1,9 @@
 using System.Diagnostics;
 using System.Net;
+using System.Net.Http.Headers;
 using Microsoft.Extensions.Logging;
 using Downloader;
+using Raven.Contracts.Services;
 using StoreListings.Library;
 using Raven.Models;
 using Raven.Services;
@@ -21,12 +23,185 @@ public sealed class DownloadHelper
         public void Report(T value) => handler(value);
     }
 
-    // Shared client for blockmap/delta downloads: reuses pooled CDN connections across
-    // files of an install instead of paying a fresh DNS+TCP+TLS handshake per file.
-    // PooledConnectionLifetime bounds DNS staleness for the long-lived client.
-    private static readonly HttpClient s_deltaHttpClient = new(
-        new SocketsHttpHandler { PooledConnectionLifetime = TimeSpan.FromMinutes(5) }
-    );
+    private const string DownloadConnectionModeSettingsKey = "DownloadConnectionMode";
+    private const string ProxyModeSettingsKey = "ProxyMode";
+    private const string ProxyUriSettingsKey = "ProxyUri";
+
+    private readonly record struct PackageProxySettings(ProxyMode Mode, Uri? Uri);
+
+    private static async Task<PackageProxySettings> GetProxySettingsAsync()
+    {
+        try
+        {
+            var settings = App.GetService<ILocalSettingsService>();
+            var savedMode = await settings.ReadSettingAsync<string>(ProxyModeSettingsKey)
+                .ConfigureAwait(false);
+            var mode = Enum.TryParse(savedMode, ignoreCase: true, out ProxyMode parsedMode)
+                && Enum.IsDefined(typeof(ProxyMode), parsedMode)
+                ? parsedMode
+                : ProxyMode.System;
+
+            var savedUri = await settings.ReadSettingAsync<string>(ProxyUriSettingsKey)
+                .ConfigureAwait(false);
+            if (mode == ProxyMode.Custom && TryParseProxyUri(savedUri, out var proxyUri))
+                return new PackageProxySettings(mode, proxyUri);
+
+            if (mode == ProxyMode.Custom)
+                throw new InvalidOperationException("Settings_ProxyInvalidUri".GetLocalized());
+
+            return new PackageProxySettings(mode, null);
+        }
+        catch (InvalidOperationException)
+        {
+            throw;
+        }
+        catch
+        {
+            return new PackageProxySettings(ProxyMode.System, null);
+        }
+    }
+
+    private static bool TryParseProxyUri(string? value, out Uri? uri)
+    {
+        uri = null;
+        if (
+            !Uri.TryCreate(value, UriKind.Absolute, out var parsed)
+            || parsed is null
+            || (parsed.Scheme != Uri.UriSchemeHttp && parsed.Scheme != Uri.UriSchemeHttps)
+            || string.IsNullOrEmpty(parsed.Host)
+        )
+            return false;
+
+        uri = parsed;
+        return true;
+    }
+
+    private static SocketsHttpHandler CreatePackageHandler(PackageProxySettings proxySettings) =>
+        proxySettings.Mode switch
+        {
+            ProxyMode.Direct => new SocketsHttpHandler
+            {
+                UseProxy = false,
+                PooledConnectionLifetime = TimeSpan.FromMinutes(5),
+            },
+            ProxyMode.Custom => new SocketsHttpHandler
+            {
+                UseProxy = true,
+                Proxy = new WebProxy(proxySettings.Uri!),
+                PooledConnectionLifetime = TimeSpan.FromMinutes(5),
+            },
+            _ => new SocketsHttpHandler
+            {
+                UseProxy = true,
+                Proxy = HttpClient.DefaultProxy,
+                PooledConnectionLifetime = TimeSpan.FromMinutes(5),
+            },
+        };
+
+    private static HttpClient CreatePackageHttpClient(PackageProxySettings proxySettings) =>
+        new(CreatePackageHandler(proxySettings));
+
+    private static async Task<DownloadConnectionMode> GetDownloadConnectionModeAsync()
+    {
+        try
+        {
+            var saved = await App.GetService<ILocalSettingsService>()
+                .ReadSettingAsync<string>(DownloadConnectionModeSettingsKey)
+                .ConfigureAwait(false);
+            if (
+                Enum.TryParse(saved, ignoreCase: true, out DownloadConnectionMode mode)
+                && Enum.IsDefined(typeof(DownloadConnectionMode), mode)
+            )
+                return mode;
+        }
+        catch
+        {
+            // A missing or unreadable preference must not block a download.
+        }
+
+        return DownloadConnectionMode.Auto;
+    }
+
+    private static async Task<(bool SupportsRanges, long? ContentLength)> ProbeDownloadAsync(
+        HttpClient http,
+        string url,
+        CancellationToken token
+    )
+    {
+        try
+        {
+            using var head = new HttpRequestMessage(HttpMethod.Head, url);
+            using var response = await http
+                .SendAsync(head, HttpCompletionOption.ResponseHeadersRead, token)
+                .ConfigureAwait(false);
+
+            var contentLength = response.Content.Headers.ContentLength;
+            if (
+                response.IsSuccessStatusCode
+                && response.Headers.AcceptRanges.Any(value =>
+                    string.Equals(value, "bytes", StringComparison.OrdinalIgnoreCase)
+                )
+            )
+            {
+                return (true, contentLength);
+            }
+        }
+        catch (HttpRequestException)
+        {
+            // Some CDNs reject HEAD; use the one-byte range probe below.
+        }
+
+        try
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            request.Headers.Range = new RangeHeaderValue(0, 0);
+            using var response = await http
+                .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, token)
+                .ConfigureAwait(false);
+
+            var contentLength = response.Content.Headers.ContentRange?.Length
+                ?? response.Content.Headers.ContentLength;
+            return (response.StatusCode == HttpStatusCode.PartialContent, contentLength);
+        }
+        catch (HttpRequestException)
+        {
+            return (false, null);
+        }
+    }
+
+    private static int ResolveConnectionCount(
+        DownloadConnectionMode mode,
+        bool supportsRanges,
+        long? contentLength
+    )
+    {
+        if (!supportsRanges)
+            return 1;
+
+        if (mode != DownloadConnectionMode.Auto)
+        {
+            return mode switch
+            {
+                DownloadConnectionMode.One => 1,
+                DownloadConnectionMode.Two => 2,
+                DownloadConnectionMode.Four => 4,
+                DownloadConnectionMode.Eight => 8,
+                _ => 1,
+            };
+        }
+
+        if (!contentLength.HasValue)
+            return 4;
+
+        const long MiB = 1024 * 1024;
+        return contentLength.Value switch
+        {
+            < 16 * MiB => 1,
+            < 100 * MiB => 2,
+            < 500 * MiB => 4,
+            _ => 8,
+        };
+    }
 
     private static async Task DownloadAsync(
         DownloadConfiguration config,
@@ -101,6 +276,9 @@ public sealed class DownloadHelper
 
         var downloadManager = DownloadManagerService.Instance;
         var installLogger = App.GetService<ILogger<DownloadHelper>>();
+        var connectionMode = await GetDownloadConnectionModeAsync().ConfigureAwait(false);
+        var proxySettings = await GetProxySettingsAsync().ConfigureAwait(false);
+        using var packageHttpClient = CreatePackageHttpClient(proxySettings);
 
         // Clear any leftover details from previous attempts
         downloadManager.UpdateDownloadDetailsText(productId, string.Empty);
@@ -117,10 +295,8 @@ public sealed class DownloadHelper
             // Pre-allocating multi-GB files can look like a hang due to long disk writes.
             ReserveStorageSpaceBeforeStartingDownload = false,
 
-            // CRITICAL for large files: Disable parallel chunking.
-            // With ParallelDownload=true, the library holds chunk data in memory before merging.
-            // For a 2GB file with 2 chunks, that's 2x1GB buffers causing severe memory pressure.
-            // Sequential download uses much less memory and avoids the merge step entirely.
+            // Parallelism is selected per file after a small HTTP range capability probe.
+            // Delta downloads do not use this configuration and keep their block-level path.
             ParallelDownload = false,
             ChunkCount = 1,
             ParallelCount = 1,
@@ -448,7 +624,7 @@ public sealed class DownloadHelper
 
                         await DeltaDownloadHelper
                             .ApplyDeltaUsingBlockmapAsync(
-                                s_deltaHttpClient,
+                                packageHttpClient,
                                 file.Url,
                                 destinationPath,
                                 file.BlockmapUrl!,
@@ -460,22 +636,35 @@ public sealed class DownloadHelper
                     }
                     else
                     {
+                        var probe = await ProbeDownloadAsync(
+                            packageHttpClient,
+                            file.Url,
+                            attemptToken
+                        ).ConfigureAwait(false);
+                        var connectionCount = ResolveConnectionCount(
+                            connectionMode,
+                            probe.SupportsRanges,
+                            probe.ContentLength
+                        );
+
                         var downloadConfig = new DownloadConfiguration
                         {
                             ReserveStorageSpaceBeforeStartingDownload =
                                 config.ReserveStorageSpaceBeforeStartingDownload,
-                            ParallelDownload = false,
-                            ChunkCount = 1,
-                            ParallelCount = 1,
+                            ParallelDownload = connectionCount > 1,
+                            ChunkCount = connectionCount,
+                            ParallelCount = connectionCount,
                             BufferBlockSize = config.BufferBlockSize,
                             MaximumBytesPerSecond = config.MaximumBytesPerSecond,
+                            CustomHttpMessageHandlerFactory = () =>
+                                CreatePackageHandler(proxySettings),
 
                             // Cap the in-memory write-ahead buffer. Without this the library's
                             // memory queue is unbounded, so a fast network races ahead of the disk
                             // writer and accumulates most of the file in RAM — a spike that never
-                            // drops after the download (lands on the LOH). 16 MB is ample headroom
-                            // for a sequential, single-chunk download and keeps the footprint flat.
-                            MaximumMemoryBufferBytes = 16 * 1024 * 1024,
+                            // drops after the download (lands on the LOH). Keep the aggregate
+                            // write-ahead buffer bounded even when multiple chunks are active.
+                            MaximumMemoryBufferBytes = 64 * 1024 * 1024,
 
                             // Do NOT enable live streaming: it makes the library retain the whole
                             // downloaded payload in memory to expose it as a MemoryStream. We only

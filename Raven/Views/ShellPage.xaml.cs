@@ -33,6 +33,8 @@ public sealed partial class ShellPage : Page
 
         ViewModel.NavigationService.Frame = NavigationFrame;
         ViewModel.NavigationViewService.Initialize(NavigationViewControl);
+        ViewModel.RefreshLocalization();
+        _localeService.LocaleChanged += OnLocaleChanged;
         App.MainWindow.ExtendsContentIntoTitleBar = true;
         App.MainWindow.AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Tall;
         App.MainWindow.SetTitleBar(AppTitleBar);
@@ -41,6 +43,26 @@ public sealed partial class ShellPage : Page
         AppTitleBar.SizeChanged += AppTitleBar_SizeChanged;
         AppTitleBar.Loaded += AppTitleBar_Loaded;
         Loaded += OnLoaded;
+    }
+
+    private void OnLocaleChanged(object? sender, EventArgs e)
+    {
+        _ = NavigationViewControl.DispatcherQueue.TryEnqueue(() =>
+        {
+            ViewModel.RefreshLocalization();
+            RefreshShellLocalization();
+            App.MainWindow.Title = "AppDisplayName".GetLocalized();
+            AppTitleBarText.Text = "Shell_AppTitleBarText.Text".GetLocalized();
+            ViewModel.NavigationService.RefreshCurrentPage();
+        });
+    }
+
+    private void RefreshShellLocalization()
+    {
+        var placeholder = "Shell_SearchBox.PlaceholderText".GetLocalized();
+        if (!string.IsNullOrWhiteSpace(placeholder))
+            SearchBox.PlaceholderText = placeholder;
+
     }
 
     private void OnPaneDisplayModeChanged(
@@ -134,15 +156,10 @@ public sealed partial class ShellPage : Page
 
     private async void OnLoaded(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
     {
+        RefreshShellLocalization();
         TitleBarHelper.UpdateTitleBar(RequestedTheme);
         this.AddHandler(PointerPressedEvent, new PointerEventHandler(OnPagePointerPressed), true);
         RegisterBackForwardKeyboardAccelerators();
-
-        if (NavigationViewControl.SettingsItem is NavigationViewItem settingsItem)
-        {
-            settingsItem.PointerEntered += NavItem_PointerEntered;
-            settingsItem.PointerExited += NavItem_PointerExited;
-        }
 
         if (XamlRoot is null)
             return;

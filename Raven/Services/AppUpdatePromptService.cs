@@ -13,8 +13,6 @@ public sealed class AppUpdatePromptService
     private const string LastUpdateCheckKey = "LastAppUpdateCheckUtc";
     private static readonly TimeSpan StartupCheckInterval = TimeSpan.FromHours(24);
     private const string RuntimeLoggerCategory = "Raven.Runtime";
-    private const string DefaultCheckForUpdatesLabel = "Check for updates";
-
     private readonly GitHubUpdaterService _gitHubUpdaterService;
     private readonly ILocalSettingsService _localSettingsService;
     private readonly ILogger _logger;
@@ -48,10 +46,7 @@ public sealed class AppUpdatePromptService
 
         var closeLabel = "Settings_UpdaterDialogClose".GetLocalized();
         var cancelLabel = "Settings_UpdaterDialogCancel".GetLocalized();
-        var checkForUpdatesLabel = GetLocalizedOrDefault(
-            "Settings_AppUpdatesButton.Content",
-            DefaultCheckForUpdatesLabel
-        );
+        var checkForUpdatesLabel = "Settings_AppUpdatesButton.Content".GetLocalized();
 
         var dialog = new ContentDialog
         {
@@ -571,12 +566,6 @@ public sealed class AppUpdatePromptService
         }
     }
 
-    private static string GetLocalizedOrDefault(string key, string fallback)
-    {
-        var localized = key.GetLocalized();
-        return string.IsNullOrWhiteSpace(localized) ? fallback : localized;
-    }
-
     private static CancellationTokenSource ReplaceTokenSource(
         CancellationTokenSource? existing,
         CancellationToken cancellationToken
@@ -607,7 +596,7 @@ public sealed class AppUpdatePromptService
         progressBar.Value = 0;
         progressBar.Visibility = Visibility.Visible;
         progressText.Visibility = Visibility.Visible;
-        progressText.Text = "0%";
+        progressText.Text = "Common_ProgressPercent".GetLocalizedFormat(0);
     }
 
     private static void ResetProgressUi(ProgressBar progressBar, TextBlock progressText)

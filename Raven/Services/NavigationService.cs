@@ -114,11 +114,30 @@ public class NavigationService : INavigationService
         return false;
     }
 
+    public void RefreshCurrentPage()
+    {
+        if (_frame?.Content is null || _frame.CurrentSourcePageType is null)
+            return;
+
+        var pageType = _frame.CurrentSourcePageType;
+        var parameter = _lastParameterUsed;
+        var backStackCount = _frame.BackStack.Count;
+        _frame.Tag = false;
+
+        if (_frame.Navigate(pageType, parameter))
+        {
+            // Refreshing must not add a second copy of the old page to the back stack.
+            while (_frame.BackStack.Count > backStackCount)
+                _frame.BackStack.RemoveAt(_frame.BackStack.Count - 1);
+        }
+    }
+
     private void OnNavigated(object sender, NavigationEventArgs e)
     {
         if (sender is Frame frame)
         {
-            var clearNavigation = (bool)frame.Tag;
+            _lastParameterUsed = e.Parameter;
+            var clearNavigation = frame.Tag is bool shouldClear && shouldClear;
             if (clearNavigation)
             {
                 frame.BackStack.Clear();

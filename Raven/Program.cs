@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.Windows.AppLifecycle;
+using Raven.Helpers;
 
 namespace Raven;
 
@@ -46,8 +47,8 @@ public static partial class Program
         {
             _ = MessageBoxW(
                 0,
-                "Another instance of Raven is already running.\nPlease close it before launching this one.",
-                "Raven",
+                "Program_AlreadyRunningMessage".GetLocalized(),
+                "Program_AlreadyRunningTitle".GetLocalized(),
                 MB_OK | MB_ICONWARNING);
             return;
         }

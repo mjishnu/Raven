@@ -85,7 +85,6 @@
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
                         <TextBlock
                             x:Uid="Settings_LocaleAndRegion"
@@ -110,17 +109,84 @@
                             HorizontalAlignment="Left"
                             ItemsSource="{x:Bind ViewModel.AllMarketNames}"
                             SelectedIndex="{x:Bind ViewModel.SelectedMarketIndex, Mode=TwoWay}" />
-                        <InfoBar
-                            x:Uid="Settings_RelaunchInfoBar"
-                            Grid.Row="5"
-                            Margin="0,4,0,0"
-                            IsClosable="False"
-                            IsOpen="{x:Bind ViewModel.ShowRelaunchPrompt, Mode=OneWay}"
-                            Severity="Informational">
-                            <InfoBar.ActionButton>
-                                <Button x:Uid="Settings_RelaunchButton" Command="{x:Bind ViewModel.RelaunchCommand}" />
-                            </InfoBar.ActionButton>
-                        </InfoBar>
+                    </Grid>
+                    <Grid
+                        Padding="20"
+                        Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        RowSpacing="10">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <TextBlock
+                            x:Uid="Settings_Downloads"
+                            Grid.Row="0"
+                            Style="{ThemeResource SubtitleTextBlockStyle}" />
+                        <TextBlock
+                            x:Uid="Settings_ParallelConnectionsDescription"
+                            Grid.Row="1"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{ThemeResource BodyTextBlockStyle}"
+                            TextWrapping="Wrap" />
+                        <ComboBox
+                            x:Uid="Settings_ParallelConnections"
+                            Grid.Row="2"
+                            MinWidth="260"
+                            MaxWidth="340"
+                            HorizontalAlignment="Left"
+                            ItemsSource="{x:Bind ViewModel.AllDownloadConnectionNames}"
+                            SelectedIndex="{x:Bind ViewModel.SelectedDownloadConnectionIndex, Mode=TwoWay}" />
+                    </Grid>
+                    <Grid
+                        Padding="20"
+                        Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        RowSpacing="10">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <TextBlock
+                            x:Uid="Settings_Network"
+                            Grid.Row="0"
+                            Style="{ThemeResource SubtitleTextBlockStyle}" />
+                        <TextBlock
+                            x:Uid="Settings_ProxyDescription"
+                            Grid.Row="1"
+                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                            Style="{ThemeResource BodyTextBlockStyle}"
+                            TextWrapping="Wrap" />
+                        <ComboBox
+                            x:Uid="Settings_ProxyMode"
+                            Grid.Row="2"
+                            MinWidth="260"
+                            MaxWidth="340"
+                            HorizontalAlignment="Left"
+                            ItemsSource="{x:Bind ViewModel.AllProxyModeNames}"
+                            SelectedIndex="{x:Bind ViewModel.SelectedProxyModeIndex, Mode=TwoWay}" />
+                        <TextBox
+                            x:Uid="Settings_ProxyUri"
+                            Grid.Row="3"
+                            MinWidth="260"
+                            MaxWidth="500"
+                            HorizontalAlignment="Left"
+                            IsEnabled="{x:Bind ViewModel.IsCustomProxy, Mode=OneWay}"
+                            Text="{x:Bind ViewModel.ProxyUri, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                        <TextBlock
+                            Grid.Row="4"
+                            Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                            Style="{ThemeResource BodyTextBlockStyle}"
+                            Text="{x:Bind ViewModel.ProxyValidationMessage, Mode=OneWay}"
+                            TextWrapping="Wrap" />
                     </Grid>
                     <Grid
                         Padding="20"

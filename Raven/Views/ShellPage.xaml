@@ -385,7 +385,8 @@
             IsBackButtonVisible="Collapsed"
             IsTitleBarAutoPaddingEnabled="False"
             IsPaneToggleButtonVisible="False"
-            IsSettingsVisible="True"
+            IsSettingsVisible="False"
+            PaneDisplayMode="LeftCompact"
             SelectedItem="{x:Bind ViewModel.Selected, Mode=OneWay}">
             <!--  Custom TitleBar -->
             <NavigationView.Resources>
@@ -393,19 +394,19 @@
                 <Thickness x:Key="NavigationViewContentMargin">0,0,0,0</Thickness>
             </NavigationView.Resources>
             <NavigationView.MenuItems>
-                <NavigationViewItem x:Uid="Shell_Main" helpers:NavigationHelper.NavigateTo="Raven.ViewModels.MainViewModel"
+                <NavigationViewItem x:Name="MainNavigationItem" Content="{x:Bind ViewModel.MainNavigationText, Mode=OneWay}" ToolTipService.ToolTip="{x:Bind ViewModel.MainNavigationText, Mode=OneWay}" helpers:NavigationHelper.NavigateTo="Raven.ViewModels.MainViewModel"
                                     PointerEntered="NavItem_PointerEntered" PointerExited="NavItem_PointerExited">
                     <NavigationViewItem.Icon>
                         <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
-                <NavigationViewItem x:Uid="Shell_Advanced_Search" helpers:NavigationHelper.NavigateTo="Raven.ViewModels.Advanced_SearchViewModel"
+                <NavigationViewItem x:Name="AdvancedSearchNavigationItem" Content="{x:Bind ViewModel.AdvancedSearchNavigationText, Mode=OneWay}" ToolTipService.ToolTip="{x:Bind ViewModel.AdvancedSearchNavigationText, Mode=OneWay}" helpers:NavigationHelper.NavigateTo="Raven.ViewModels.Advanced_SearchViewModel"
                                     PointerEntered="NavItem_PointerEntered" PointerExited="NavItem_PointerExited">
                     <NavigationViewItem.Icon>
                         <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
-                <NavigationViewItem x:Uid="Shell_Install" helpers:NavigationHelper.NavigateTo="Raven.ViewModels.InstallationsViewModel"
+                <NavigationViewItem x:Name="InstallNavigationItem" Content="{x:Bind ViewModel.InstallNavigationText, Mode=OneWay}" ToolTipService.ToolTip="{x:Bind ViewModel.InstallNavigationText, Mode=OneWay}" helpers:NavigationHelper.NavigateTo="Raven.ViewModels.InstallationsViewModel"
                                     PointerEntered="NavItem_PointerEntered" PointerExited="NavItem_PointerExited">
                     <NavigationViewItem.Icon>
                         <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="" />
@@ -413,16 +414,22 @@
                 </NavigationViewItem>
             </NavigationView.MenuItems>
             <NavigationView.FooterMenuItems>  
-                <NavigationViewItem x:Uid="Shell_Updates" helpers:NavigationHelper.NavigateTo="Raven.ViewModels.UpdatesViewModel"
+                <NavigationViewItem x:Name="UpdatesNavigationItem" Content="{x:Bind ViewModel.UpdatesNavigationText, Mode=OneWay}" ToolTipService.ToolTip="{x:Bind ViewModel.UpdatesNavigationText, Mode=OneWay}" helpers:NavigationHelper.NavigateTo="Raven.ViewModels.UpdatesViewModel"
                                     PointerEntered="NavItem_PointerEntered" PointerExited="NavItem_PointerExited">
                     <NavigationViewItem.Icon>
                         <SymbolIcon Symbol="Sync" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
-                <NavigationViewItem x:Uid="Shell_Downloads" helpers:NavigationHelper.NavigateTo="Raven.ViewModels.DownloadsViewModel"
+                <NavigationViewItem x:Name="DownloadsNavigationItem" Content="{x:Bind ViewModel.DownloadsNavigationText, Mode=OneWay}" ToolTipService.ToolTip="{x:Bind ViewModel.DownloadsNavigationText, Mode=OneWay}" helpers:NavigationHelper.NavigateTo="Raven.ViewModels.DownloadsViewModel"
                                     PointerEntered="NavItem_PointerEntered" PointerExited="NavItem_PointerExited">
                     <NavigationViewItem.Icon>
                         <FontIcon FontFamily="{StaticResource SymbolThemeFontFamily}" Glyph="" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem x:Name="SettingsNavigationItem" Content="{x:Bind ViewModel.SettingsNavigationText, Mode=OneWay}" ToolTipService.ToolTip="{x:Bind ViewModel.SettingsNavigationText, Mode=OneWay}" helpers:NavigationHelper.NavigateTo="Raven.ViewModels.SettingsViewModel"
+                                    PointerEntered="NavItem_PointerEntered" PointerExited="NavItem_PointerExited">
+                    <NavigationViewItem.Icon>
+                        <SymbolIcon Symbol="Setting" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
             </NavigationView.FooterMenuItems>

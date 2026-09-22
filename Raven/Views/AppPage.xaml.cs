@@ -233,8 +233,8 @@ public sealed partial class AppPage : Page
                 DisplayItem.Visibility = Visibility.Collapsed;
                 ErrorPanel.Visibility = Visibility.Visible;
                 ErrorPanel.Glyph = "\uF384";
-                ErrorPanel.Title = "No Internet Connection";
-                ErrorPanel.Subtitle = "Please check your network settings and try again.";
+                ErrorPanel.Title = "Common_NoInternetConnectionTitle".GetLocalized();
+                ErrorPanel.Subtitle = "Common_NoInternetConnectionMessage".GetLocalized();
             }
             else
             {
@@ -664,7 +664,7 @@ public sealed partial class AppPage : Page
         UpdateService.SetProgress(0);
         UpdateService.SetDetails(string.Empty);
         StatusText.Text = "Status_Installing".GetLocalized();
-        DetailsText.Text = "0%";
+        DetailsText.Text = "Common_ProgressPercent".GetLocalizedFormat(0);
         SetInstallButtonState(showProgress: true);
         SetProgressIndeterminate(false);
         UpdateService.StartStatusAnimation("Status_Installing".GetLocalized());

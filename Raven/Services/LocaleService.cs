@@ -1,3 +1,4 @@
+using System.Globalization;
 using StoreListings.Library;
 using Raven.Contracts.Services;
 
@@ -38,14 +39,14 @@ public class LocaleService : ILocaleService
         else if (!hasExistingSettings)
             Language = DetectLanguageFromSystem();
 
-        ApplyLanguageOverride(Language, Market);
+        ApplyLanguageOverride(Language);
     }
 
     public async Task SetMarketAsync(Market market)
     {
         Market = market;
         await _localSettingsService.SaveSettingAsync(MarketSettingsKey, market.ToString());
-        ApplyLanguageOverride(Language, Market);
+        ApplyLanguageOverride(Language);
         LocaleChanged?.Invoke(this, EventArgs.Empty);
     }
 
@@ -53,7 +54,7 @@ public class LocaleService : ILocaleService
     {
         Language = language;
         await _localSettingsService.SaveSettingAsync(LanguageSettingsKey, language.ToString());
-        ApplyLanguageOverride(Language, Market);
+        ApplyLanguageOverride(Language);
         LocaleChanged?.Invoke(this, EventArgs.Empty);
     }
 
@@ -65,25 +66,57 @@ public class LocaleService : ILocaleService
         await _localSettingsService.SaveSettingAsync(MarketSettingsKey, Market.ToString());
         await _localSettingsService.SaveSettingAsync(LanguageSettingsKey, Language.ToString());
 
-        ApplyLanguageOverride(Language, Market);
+        ApplyLanguageOverride(Language);
         LocaleChanged?.Invoke(this, EventArgs.Empty);
     }
 
     /// <summary>
     /// Overrides the app's preferred language so WinUI 3's <c>ResourceLoader</c> loads the
-    /// correct <c>Resources.resw</c> file. The override is set to the full <c>{lang}-{market}</c>
-    /// tag and MRT resolves it against the shipped resources: an exact variant wins (e.g.
-    /// <c>en-GB</c>), otherwise it falls back to the same language (<c>ko-IN</c> → <c>ko-KR</c>),
-    /// and finally to the PRI's default language (<c>en-US</c>) when nothing matches.
+    /// correct <c>Resources.resw</c> file. The UI resource language is deliberately independent
+    /// from the Store market: changing the market must not change the app language. For
+    /// languages with a shipped regional resource, use that stable resource tag; otherwise
+    /// fall back to the PRI's default language (<c>en-US</c>).
     /// </summary>
-    private static void ApplyLanguageOverride(Lang lang, Market market)
+    private static void ApplyLanguageOverride(Lang lang)
     {
         try
         {
             Microsoft.Windows.Globalization.ApplicationLanguages.PrimaryLanguageOverride =
-                $"{lang.ToString().ToLowerInvariant()}-{market.ToString().ToUpperInvariant()}";
+                GetResourceLanguage(lang);
+            ApplyDotNetCulture(lang);
         }
         catch { }
+    }
+
+    private static string GetResourceLanguage(Lang lang) =>
+        lang switch
+        {
+            Lang.zh => "zh-cn",
+            Lang.ko => "ko-kr",
+            Lang.hu => "hu-HU",
+            _ => "en-us",
+        };
+
+    private static void ApplyDotNetCulture(Lang lang)
+    {
+        var culture = TryGetCulture(lang.ToString());
+        if (culture is null)
+            return;
+
+        CultureInfo.CurrentUICulture = culture;
+        CultureInfo.DefaultThreadCurrentUICulture = culture;
+    }
+
+    private static CultureInfo? TryGetCulture(string name)
+    {
+        try
+        {
+            return CultureInfo.GetCultureInfo(name);
+        }
+        catch (CultureNotFoundException)
+        {
+            return null;
+        }
     }
 
     private static Market DetectMarketFromSystem()
