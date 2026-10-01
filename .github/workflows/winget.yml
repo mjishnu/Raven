@@ -13,11 +13,61 @@ jobs:
   publish:
     runs-on: windows-latest
     if: ${{ !github.event.release.prerelease }}
+    env:
+      IDENTIFIER: mjishnu.raven
+      INSTALLERS_REGEX: '-self-contained\.zip$'
     steps:
+      - name: Resolve release
+        id: release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RAW_TAG: ${{ inputs.tag || github.event.release.tag_name }}
+        run: |
+          $tag = $env:RAW_TAG.Trim()
+          if ($tag -notmatch '^v') { $tag = "v$tag" }
+          $json = gh release view $tag --repo $env:GITHUB_REPOSITORY --json tagName,assets
+          if ($LASTEXITCODE -ne 0) {
+            Write-Output "::error::No release '$tag' in $env:GITHUB_REPOSITORY. Recent tags:"
+            gh release list --repo $env:GITHUB_REPOSITORY --limit 5
+            exit 1
+          }
+          $urls = ($json | ConvertFrom-Json).assets |
+            Where-Object { $_.name -match $env:INSTALLERS_REGEX } |
+            ForEach-Object { $_.url }
+          if (-not $urls) {
+            Write-Output "::error::No assets in $tag match $env:INSTALLERS_REGEX"
+            exit 1
+          }
+          "version=$($tag -replace '^v')" >> $env:GITHUB_OUTPUT
+          "urls=$($urls -join ' ')" >> $env:GITHUB_OUTPUT
+
+      - uses: cargo-bins/cargo-binstall@main
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Install komac
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: cargo-binstall komac -y
+
       - name: Submit update to WinGet
-        uses: vedantmgoyal9/winget-releaser@main
-        with:
-          identifier: mjishnu.raven
-          installers-regex: '-self-contained\.zip$'
-          release-tag: ${{ inputs.tag || github.event.release.tag_name }}
-          token: ${{ secrets.WINGET_TOKEN }}
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.WINGET_TOKEN }}
+          KOMAC_FORK_OWNER: ${{ github.repository_owner }}
+        run: >-
+          komac update $env:IDENTIFIER
+          --version '${{ steps.release.outputs.version }}'
+          --urls ${{ steps.release.outputs.urls }}
+          --submit
+
+      - name: Clean up merged branches
+        if: always() && steps.release.outcome == 'success'
+        continue-on-error: true
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.WINGET_TOKEN }}
+          KOMAC_FORK_OWNER: ${{ github.repository_owner }}
+        run: komac cleanup --only-merged
