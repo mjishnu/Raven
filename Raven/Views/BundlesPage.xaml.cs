@@ -5,13 +5,14 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Navigation;
 using StoreListings.Library;
+using Raven.Contracts.Views;
 using Raven.Helpers;
 using Raven.Models;
 using Raven.ViewModels;
 
 namespace Raven.Views;
 
-public sealed partial class BundlesPage : Page
+public sealed partial class BundlesPage : Page, IViewModelPage<BundlesViewModel>
 {
     public AppInfo AppData { get; set; } = new AppInfo();
 

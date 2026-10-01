@@ -234,12 +234,13 @@ public sealed class GitHubUpdaterService
 
     /// <summary>
     /// Detects whether the running instance is a self-contained deployment.
-    /// Self-contained builds ship the .NET runtime alongside the app, so
-    /// <c>coreclr.dll</c> sits next to the executable; framework-dependent
-    /// builds resolve it from the shared runtime and do not.
+    /// Self-contained builds bundle the Windows App SDK runtime, so
+    /// <c>Microsoft.UI.Xaml.dll</c> sits next to the executable; framework-dependent
+    /// builds load it from the installed Windows App SDK runtime and do not.
+    /// (Checking for <c>coreclr.dll</c> no longer works: NativeAOT builds never ship it.)
     /// </summary>
     private static bool IsSelfContainedDeployment() =>
-        File.Exists(Path.Combine(AppContext.BaseDirectory, "coreclr.dll"));
+        File.Exists(Path.Combine(AppContext.BaseDirectory, "Microsoft.UI.Xaml.dll"));
 
     /// <summary>
     /// Strips the optional 'v'/'V' prefix from a version tag.

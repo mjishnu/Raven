@@ -3,13 +3,14 @@ using Microsoft.Extensions.Logging;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using Raven.Contracts.Views;
 using Raven.Helpers;
 using Raven.Services;
 using Raven.ViewModels;
 
 namespace Raven.Views;
 
-public sealed partial class SettingsPage : Page
+public sealed partial class SettingsPage : Page, IViewModelPage<SettingsViewModel>
 {
     private const string ApacheLicenseText = """
                                  Apache License

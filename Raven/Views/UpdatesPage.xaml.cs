@@ -3,13 +3,14 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 using StoreListings.Library;
 using Raven.Contracts.Services;
+using Raven.Contracts.Views;
 using Raven.Models;
 using Raven.Services;
 using Raven.ViewModels;
 
 namespace Raven.Views;
 
-public sealed partial class UpdatesPage : Page
+public sealed partial class UpdatesPage : Page, IViewModelPage<UpdatesViewModel>
 {
     public UpdatesViewModel ViewModel { get; }
 

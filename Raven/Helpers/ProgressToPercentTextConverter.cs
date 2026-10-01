@@ -2,7 +2,7 @@ using Microsoft.UI.Xaml.Data;
 
 namespace Raven.Helpers;
 
-public sealed class ProgressToPercentTextConverter : IValueConverter
+public sealed partial class ProgressToPercentTextConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, string language)
     {

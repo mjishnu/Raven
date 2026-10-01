@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Microsoft.Win32;
+using Raven.Helpers;
 
 namespace Raven.Services;
 
@@ -129,7 +130,7 @@ public static class Win32AppDiscovery
             );
             return Task.FromResult(true);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return Task.FromResult(false);
         }
@@ -246,38 +247,12 @@ public static class Win32AppDiscovery
     {
         try
         {
-            var shellType = Type.GetTypeFromProgID("Shell.Application");
-            if (shellType == null)
-                return new AppsFolderLaunchResult(false, null);
+            var launchedName = ShellInterop.OpenFirstKnownFolderItem(
+                ShellInterop.FOLDERID_AppsFolder,
+                name => IsFuzzyAppNameMatch(appName, name)
+            );
 
-            dynamic shell = Activator.CreateInstance(shellType)!;
-            dynamic appsFolder = shell.NameSpace("shell:AppsFolder");
-            if (appsFolder == null)
-                return new AppsFolderLaunchResult(false, null);
-
-            dynamic items = appsFolder.Items();
-            if (items == null)
-                return new AppsFolderLaunchResult(false, null);
-
-            var count = (int)items.Count;
-            for (var i = 0; i < count; i++)
-            {
-                dynamic item = items.Item(i);
-                if (item == null)
-                    continue;
-
-                string? name = item.Name as string;
-                if (string.IsNullOrWhiteSpace(name))
-                    continue;
-
-                if (!IsFuzzyAppNameMatch(appName, name))
-                    continue;
-
-                item.InvokeVerb("Open");
-                return new AppsFolderLaunchResult(true, name);
-            }
-
-            return new AppsFolderLaunchResult(false, null);
+            return new AppsFolderLaunchResult(launchedName is not null, launchedName);
         }
         catch
         {

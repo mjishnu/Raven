@@ -4,7 +4,10 @@ using Raven.Helpers;
 
 namespace Raven.Models;
 
-public class UpdateItem : INotifyPropertyChanged
+// Bound with {Binding} in the Updates item templates; this generates the property
+// accessors that reflection used to provide (unavailable when trimmed/NativeAOT).
+[WinRT.GeneratedBindableCustomProperty]
+public partial class UpdateItem : INotifyPropertyChanged
 {
     private string _packageFamilyName = string.Empty;
     public string PackageFamilyName

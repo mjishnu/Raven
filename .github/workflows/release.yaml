@@ -118,8 +118,8 @@ jobs:
       - name: Setup MSVC Toolchain (for NativeAOT)
         # NativeAOT links a native binary, so it needs the MSVC linker and the
         # target-architecture libraries on PATH/LIB. The runner is x64, so x86 and
-        # arm64 are cross-compiled (amd64_x86 / amd64_arm64). The AOT publish below
-        # consumes this environment via -p:IlcUseEnvironmentalTools=true.
+        # arm64 are cross-compiled (amd64_x86 / amd64_arm64). The AOT publishes below
+        # (the app and the updater) consume this environment via -p:IlcUseEnvironmentalTools=true.
         uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: ${{ matrix.arch == 'arm64' && 'amd64_arm64' || matrix.arch == 'x86' && 'amd64_x86' || 'amd64' }}
@@ -131,13 +131,13 @@ jobs:
           key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj', '**/packages.lock.json') }}
           restore-keys: nuget-${{ runner.os }}-
 
-      - name: Publish WinUI 3 App (Framework-Dependent)
+      - name: Publish WinUI 3 App (NativeAOT, Framework-Dependent Windows App SDK)
         shell: pwsh
         run: >
           dotnet publish Raven/Raven.csproj
           -c Release
           -r win-$env:ARCH
-          --self-contained false
+          -p:IlcUseEnvironmentalTools=true
           -o ./publish_output
           -p:Version=$env:NUMERIC_VERSION
           -p:AssemblyVersion=$env:NUMERIC_VERSION
@@ -154,7 +154,7 @@ jobs:
           # resources, crashing at startup with a missing themeresources.xaml.
           Remove-Item -Path Raven/obj, Raven/bin -Recurse -Force -ErrorAction SilentlyContinue
 
-      - name: Publish WinUI 3 App (Self-Contained)
+      - name: Publish WinUI 3 App (NativeAOT, Self-Contained)
         shell: pwsh
         run: >
           dotnet publish Raven/Raven.csproj
@@ -162,37 +162,23 @@ jobs:
           -r win-$env:ARCH
           --self-contained true
           -p:WindowsAppSDKSelfContained=true
+          -p:IlcUseEnvironmentalTools=true
           -o ./publish_output_full
           -p:Version=$env:NUMERIC_VERSION
           -p:AssemblyVersion=$env:NUMERIC_VERSION
           -p:FileVersion=$env:NUMERIC_VERSION
           -p:InformationalVersion=$env:RELEASE_TAG
 
-      - name: Publish Updater (NativeAOT)
-        shell: pwsh
-        run: >
-          dotnet publish Raven.Updater/Raven.Updater.csproj
-          -c Release
-          -r win-$env:ARCH
-          -p:PublishAot=true
-          -p:IlcUseEnvironmentalTools=true
-          -o ./updater_aot
-          -p:Version=$env:NUMERIC_VERSION
-          -p:AssemblyVersion=$env:NUMERIC_VERSION
-          -p:FileVersion=$env:NUMERIC_VERSION
-
-      - name: Replace Updater With NativeAOT Build
+      - name: Verify NativeAOT Updater
         shell: pwsh
         run: |
-          $aotUpdater = "./updater_aot/Raven.Updater.exe"
-          if (-not (Test-Path $aotUpdater)) {
-            throw "NativeAOT updater was not produced at $aotUpdater."
-          }
           foreach ($dir in @('./publish_output', './publish_output_full')) {
-            # Drop the framework-dependent updater payload copied in via ProjectReference
-            # (.exe/.dll/.deps.json/.runtimeconfig.json/.pdb), then drop in the self-sufficient AOT exe.
-            Get-ChildItem -Path $dir -Filter 'Raven.Updater.*' -File | Remove-Item -Force
-            Copy-Item -Path $aotUpdater -Destination (Join-Path $dir 'Raven.Updater.exe') -Force
+            if (-not (Test-Path (Join-Path $dir 'Raven.Updater.exe'))) {
+              throw "Raven.Updater.exe is missing from $dir."
+            }
+            if (Get-ChildItem -Path $dir -Filter 'Raven.Updater.*' -File | Where-Object Name -ne 'Raven.Updater.exe') {
+              throw "Framework-dependent Raven.Updater files found in $dir."
+            }
           }
 
       - name: Decode Certificate
@@ -223,7 +209,8 @@ jobs:
       - name: Create Zip Archives
         shell: pwsh
         run: |
-          Get-ChildItem -Path ./publish_output, ./publish_output_full -Include *.cer,*.pfx -Recurse -File -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
+          # *.pdb: NativeAOT's native symbols (~100 MB) aren't used at runtime; stack traces keep method names without them.
+          Get-ChildItem -Path ./publish_output, ./publish_output_full -Include *.cer,*.pfx,*.pdb -Recurse -File -ErrorAction SilentlyContinue | Remove-Item -Force -ErrorAction SilentlyContinue
           Compress-Archive -Path ./publish_output/* -DestinationPath "Raven-$($env:RELEASE_TAG)-win-$($env:ARCH).zip"
           Compress-Archive -Path ./publish_output_full/* -DestinationPath "Raven-$($env:RELEASE_TAG)-win-$($env:ARCH)-self-contained.zip"
 
@@ -277,7 +264,7 @@ jobs:
           body: |
             > Note: [Read installation instruction](https://github.com/mjishnu/Raven/blob/main/README.md#-how-to-run)
             > 
-            > - Normal version you need to download the runtimes (runtimes are usually shared by multiple apps)
+            > - Normal version you need to download the Windows App SDK runtime (usually shared by multiple apps);
             > - Self-contained version contains all the runtimes inbuild (larger size, runtimes can't be shared with other apps)
           files: |
             ./artifacts/Raven-*-win-x64.zip

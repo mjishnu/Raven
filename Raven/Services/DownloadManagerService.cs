@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Text.Json;
 using Microsoft.UI.Dispatching;
 using StoreListings.Library;
+using Raven.Helpers;
 using Raven.Models;
 using Raven.Services.FilePermissions;
 
@@ -174,7 +175,7 @@ public class DownloadManagerService
 
         _downloadDataPath = Path.Combine(appDataDir, "Downloads.json");
 
-        _fileStore = new PersistentListStore<DownloadItem>(_downloadDataPath);
+        _fileStore = new PersistentListStore<DownloadItem>(_downloadDataPath, RavenJsonContext.Indented.ListDownloadItem);
 
         // Load off-thread: Instance is first touched in OnLaunched, and a synchronous file
         // read + JSON parse there delays the first frame. Saves don't depend on the

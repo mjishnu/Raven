@@ -1,0 +1,25 @@
+<Solution>
+  <Configurations>
+    <Platform Name="Any CPU" />
+    <Platform Name="arm64" />
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Folder Name="/Solution Items/">
+    <File Path=".github/scripts/Install-RavenCert.bat" />
+    <File Path=".github/workflows/discord-release.yml" />
+    <File Path=".github/workflows/release.yaml" />
+    <File Path=".github/workflows/winget.yml" />
+    <File Path="README.md" />
+    <File Path="renovate.json" />
+  </Folder>
+  <Project Path="Raven.Updater/Raven.Updater.csproj" />
+  <Project Path="Raven/Raven.csproj">
+    <Platform Solution="*|Any CPU" Project="x64" />
+    <Platform Solution="*|arm64" Project="arm64" />
+    <Platform Solution="*|x64" Project="x64" />
+    <Platform Solution="*|x86" Project="x86" />
+    <Deploy />
+  </Project>
+  <Project Path="StoreListings/StoreListings.Library/StoreListings.Library.csproj" />
+</Solution>

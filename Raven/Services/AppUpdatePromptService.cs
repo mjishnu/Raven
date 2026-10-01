@@ -7,7 +7,7 @@ using Raven.Views.Dialogs;
 
 namespace Raven.Services;
 
-public sealed class AppUpdatePromptService
+public sealed partial class AppUpdatePromptService
 {
     private const string CheckUpdatesOnStartupKey = "CheckForAppUpdatesOnStartup";
     private const string LastUpdateCheckKey = "LastAppUpdateCheckUtc";
@@ -288,7 +288,7 @@ public sealed class AppUpdatePromptService
             statusAnimation.Stop();
         };
 
-        dialog.PrimaryButtonClick += (_, args) =>
+        dialog.PrimaryButtonClick += (sender, args) =>
         {
             args.Cancel = true;
 
@@ -299,11 +299,11 @@ public sealed class AppUpdatePromptService
 
             if (availableRelease is null)
             {
-                StartManualCheckAsync();
+                _ = StartManualCheckAsync();
                 return;
             }
 
-            StartManualUpdateAsync();
+            _ = StartManualUpdateAsync();
         };
 
         Task? checkTask = null;
@@ -548,7 +548,7 @@ public sealed class AppUpdatePromptService
             statusAnimation.Stop();
         };
 
-        dialog.PrimaryButtonClick += (_, args) =>
+        dialog.PrimaryButtonClick += (sender, args) =>
         {
             args.Cancel = true;
 
@@ -557,7 +557,7 @@ public sealed class AppUpdatePromptService
                 return;
             }
 
-            StartStartupUpdateAsync();
+            _ = StartStartupUpdateAsync();
         };
 
         await dialog.ShowAsync();
@@ -669,7 +669,7 @@ public sealed class AppUpdatePromptService
         }
     }
 
-    private sealed class StatusAnimationController : IDisposable
+    private sealed partial class StatusAnimationController : IDisposable
     {
         private readonly UIUpdateService _statusAnimationService;
         private readonly TextBlock _messageTextBlock;

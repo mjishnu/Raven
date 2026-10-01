@@ -29,7 +29,7 @@ public partial class App : Application
 
     private readonly ILogger<App> _logger;
 
-    public static IServiceProvider Services
+    public static IServiceProvider? Services
     {
         get; private set;
     }

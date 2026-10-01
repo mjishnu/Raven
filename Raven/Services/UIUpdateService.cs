@@ -10,7 +10,7 @@ public sealed record UIUpdate(
     string? Details = null
 );
 
-public sealed class UIUpdateService : INotifyPropertyChanged
+public sealed partial class UIUpdateService : INotifyPropertyChanged
 {
     private readonly DispatcherQueue _dispatcher;
 

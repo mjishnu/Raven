@@ -197,7 +197,7 @@ public static class UpdateCheckService
                                     Title = product.Title,
                                     LogoUrl = product.Logo?.Url,
                                     PublisherName = product.PublisherName,
-                                    InstalledVersion = installedVersion,
+                                    InstalledVersion = installedVersion ?? string.Empty,
                                     StoreVersion = verifiedVersion!,
                                     RevisionId = product.RevisionId,
                                     IsBundle = product.IsBundle,

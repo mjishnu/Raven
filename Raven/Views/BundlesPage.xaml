@@ -60,7 +60,7 @@
               Height="50"
               MaxLines="2"
               Style="{StaticResource BodyStrongTextBlockStyle}"
-              Text="{x:Bind Title, Mode=OneWay}"
+              Text="{x:Bind Title}"
               TextTrimming="CharacterEllipsis"
               TextWrapping="Wrap"
             />
@@ -70,12 +70,12 @@
                 HorizontalAlignment="Left"
                 VerticalAlignment="Top"
                 Orientation="Horizontal"
-                Visibility="{x:Bind AverageRating, Mode=OneWay, Converter={StaticResource HideElementConverter}}"
+                Visibility="{x:Bind AverageRating, Converter={StaticResource HideElementConverter}}"
               >
                 <TextBlock
                   FontSize="13"
                   Style="{StaticResource CaptionTextBlockStyle}"
-                  Text="{x:Bind AverageRating, Mode=OneWay, Converter={StaticResource OneDecimalPlaceConverter}}"
+                  Text="{x:Bind AverageRating, Converter={StaticResource OneDecimalPlaceConverter}}"
                 />
                 <TextBlock Margin="4,0,0,0" FontSize="13" Foreground="#FFB900" Text="★" />
               </StackPanel>
@@ -86,12 +86,12 @@
                 VerticalAlignment="Top"
                 Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
                 CornerRadius="5"
-                Visibility="{x:Bind DisplayPrice, Mode=OneWay, Converter={StaticResource HideElementConverter}}"
+                Visibility="{x:Bind DisplayPrice, Converter={StaticResource HideElementConverter}}"
               >
                 <TextBlock
                   FontSize="13"
                   Style="{StaticResource CaptionTextBlockStyle}"
-                  Text="{x:Bind DisplayPrice, Mode=OneWay}"
+                  Text="{x:Bind DisplayPrice}"
                 />
               </Border>
             </Grid>

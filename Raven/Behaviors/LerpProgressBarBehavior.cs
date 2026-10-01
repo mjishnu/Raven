@@ -4,7 +4,7 @@ using Microsoft.UI.Xaml.Controls;
 
 namespace Raven.Behaviors;
 
-public static class LerpProgressBarBehavior
+public static partial class LerpProgressBarBehavior
 {
     public static readonly DependencyProperty TargetValueProperty =
         DependencyProperty.RegisterAttached(
@@ -55,7 +55,7 @@ public static class LerpProgressBarBehavior
         state.SetTarget((double)e.NewValue);
     }
 
-    private sealed class State : IDisposable
+    private sealed partial class State : IDisposable
     {
         private readonly ProgressBar _bar;
         private DispatcherQueueTimer? _timer;

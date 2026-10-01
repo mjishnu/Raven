@@ -5,12 +5,13 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Navigation;
 using StoreListings.Library;
 using Raven.Contracts.Services;
+using Raven.Contracts.Views;
 using Raven.Helpers;
 using Raven.ViewModels;
 
 namespace Raven.Views;
 
-public sealed partial class Advanced_SearchPage : Page
+public sealed partial class Advanced_SearchPage : Page, IViewModelPage<Advanced_SearchViewModel>
 {
     public Advanced_SearchViewModel ViewModel { get; }
     private readonly ILocaleService _localeService;

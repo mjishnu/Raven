@@ -24,7 +24,7 @@ public enum UniformGridLayoutItemsStretch
     Uniform,
 }
 
-public sealed class VirtualGridLayout : VirtualizingLayout
+public sealed partial class VirtualGridLayout : VirtualizingLayout
 {
     // Dependency properties
     public static readonly DependencyProperty MinItemWidthProperty = DependencyProperty.Register(

@@ -2,7 +2,7 @@
 
 namespace Raven.Helpers;
 
-public class OneDecimalPlaceConverter : IValueConverter
+public partial class OneDecimalPlaceConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, string language)
     {

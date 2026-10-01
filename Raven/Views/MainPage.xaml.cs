@@ -2,11 +2,12 @@
 using Microsoft.UI.Xaml.Navigation;
 using StoreListings.Library;
 using Raven.Contracts.Services;
+using Raven.Contracts.Views;
 using Raven.ViewModels;
 
 namespace Raven.Views;
 
-public sealed partial class MainPage : Page
+public sealed partial class MainPage : Page, IViewModelPage<MainViewModel>
 {
     public MainViewModel ViewModel { get; }
     private readonly ILocaleService _localeService;

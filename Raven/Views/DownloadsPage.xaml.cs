@@ -2,6 +2,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 using Raven.Contracts.Services;
+using Raven.Contracts.Views;
 using Raven.Helpers;
 using Raven.Models;
 using Raven.Services;
@@ -9,7 +10,7 @@ using Raven.ViewModels;
 
 namespace Raven.Views;
 
-public sealed partial class DownloadsPage : Page
+public sealed partial class DownloadsPage : Page, IViewModelPage<DownloadsViewModel>
 {
     public DownloadsViewModel ViewModel { get; }
     private readonly INavigationService _navigationService;

@@ -25,14 +25,21 @@
 		<CETCompat>false</CETCompat>
 		<DefineConstants>DISABLE_XAML_GENERATED_MAIN</DefineConstants>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<PublishAot>true</PublishAot>
+		<ValidateExecutableReferencesMatchSelfContained>false</ValidateExecutableReferencesMatchSelfContained>
+		<CsWinRTAotWarningLevel>2</CsWinRTAotWarningLevel>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(PublishAot)' != 'true' and '$(PublishTrimmed)' == 'true'">
+		<DynamicCodeSupport>false</DynamicCodeSupport>
 	</PropertyGroup>
 	<ItemGroup>
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
 		<PackageReference Include="CommunityToolkit.WinUI.Media" Version="8.2.251219" />
 		<PackageReference Include="Downloader" Version="5.9.6" />
-		<PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.11" />
-		<PackageReference Include="Microsoft.WindowsAppSDK" Version="2.4.0" />
+		<PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.12" />
+		<PackageReference Include="Microsoft.WindowsAppSDK" Version="2.5.1" />
 		<PackageReference Include="Microsoft.Xaml.Behaviors.WinUI.Managed" Version="3.0.1" />
+		<PackageReference Include="Serilog" Version="4.3.0" />
 		<PackageReference Include="Serilog.Extensions.Hosting" Version="10.0.0" />
 		<PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
 		<PackageReference Include="WinUIEx" Version="2.9.3" />
@@ -56,4 +63,15 @@
 			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
 		</Content>
 	</ItemGroup>
+	<Target Name="PublishNativeAotUpdater" AfterTargets="Publish" Condition="'$(PublishAot)' == 'true' and '$(RuntimeIdentifier)' != ''">
+		<PropertyGroup>
+			<_UpdaterAotPublishDir>$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '$(IntermediateOutputPath)', 'updater-aot'))</_UpdaterAotPublishDir>
+		</PropertyGroup>
+		<MSBuild Projects="..\Raven.Updater\Raven.Updater.csproj" Targets="Publish" Properties="Configuration=$(Configuration);RuntimeIdentifier=$(RuntimeIdentifier);PublishDir=$(_UpdaterAotPublishDir)" />
+		<ItemGroup>
+			<_FrameworkDependentUpdaterFiles Include="$(PublishDir)Raven.Updater.*" />
+		</ItemGroup>
+		<Delete Files="@(_FrameworkDependentUpdaterFiles)" />
+		<Copy SourceFiles="$(_UpdaterAotPublishDir)Raven.Updater.exe" DestinationFolder="$(PublishDir)" />
+	</Target>
 </Project>

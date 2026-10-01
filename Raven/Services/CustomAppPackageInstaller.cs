@@ -1,5 +1,4 @@
 using System.IO.Compression;
-using System.Runtime.InteropServices;
 using System.Xml.Linq;
 using Microsoft.Extensions.Logging;
 using Raven.Contracts.Services;
@@ -231,9 +230,12 @@ public static class CustomAppPackageInstaller
             }
 
             var manifestUri = new Uri(Path.Combine(target, "AppxManifest.xml"));
+            // null, not []: an empty collection expression lowers to Array.Empty<Uri>(), and under
+            // NativeAOT CsWinRT has no generated IIterable<Uri> CCW for Uri[], so marshaling it throws
+            // InvalidCastException. Dependencies were already added above; null means "none".
             var op = packageManager.RegisterPackageAsync(
                 manifestUri,
-                [],
+                null,
                 DeploymentOptions.DevelopmentMode | DeploymentOptions.ForceApplicationShutdown);
 
             op.Progress = (_, p) =>
@@ -358,18 +360,18 @@ public static class CustomAppPackageInstaller
 
         try
         {
-            var shellType = Type.GetTypeFromProgID("WScript.Shell");
-            if (shellType is null) return;
-
-            dynamic shell = Activator.CreateInstance(shellType)!;
-            dynamic shortcut = shell.CreateShortcut(shortcutPath);
-            shortcut.TargetPath = exePath;
-            shortcut.WorkingDirectory = workingDir;
-            shortcut.Description = appName;
-            shortcut.Save();
-
-            Marshal.ReleaseComObject(shortcut);
-            Marshal.ReleaseComObject(shell);
+            var shortcut = (IShellLinkW)ShellInterop.CreateComObject(ShellInterop.CLSID_ShellLink);
+            try
+            {
+                shortcut.SetPath(exePath);
+                shortcut.SetWorkingDirectory(workingDir);
+                shortcut.SetDescription(appName);
+                ((IPersistFile)shortcut).Save(shortcutPath, fRemember: 1);
+            }
+            finally
+            {
+                ShellInterop.Release(shortcut);
+            }
 
             logger?.LogInformation(
                 "Custom install: created {Location} shortcut at {Path}", locationName, shortcutPath);

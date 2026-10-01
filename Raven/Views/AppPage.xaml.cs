@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml.Navigation;
 using Windows.ApplicationModel.DataTransfer;
 using StoreListings.Library;
 using Raven.Contracts.Services;
+using Raven.Contracts.Views;
 using Raven.Helpers;
 using Raven.Models;
 using Raven.Services;
@@ -13,7 +14,7 @@ using Raven.ViewModels;
 
 namespace Raven.Views;
 
-public sealed partial class AppPage : Page
+public sealed partial class AppPage : Page, IViewModelPage<AppViewModel>
 {
     public AppViewModel ViewModel
     {

@@ -123,7 +123,8 @@ public static class VersionCheckService
             packages = packageResult.Value.ToList();
         }
 
-        if (!packages.Any(p => p.PlatformDependencies.Any(pd => pd.MinVersion <= resolvedOsVersion)))
+        // A package without platform-dependency data can't be ruled out, so it doesn't block.
+        if (!packages.Any(p => p.PlatformDependencies?.Any(pd => pd.MinVersion <= resolvedOsVersion) ?? true))
         {
             onFailure?.Invoke(DownloadUrlFailureReason.OsVersionIncompatible);
             return null;
@@ -149,6 +150,11 @@ public static class VersionCheckService
         }
 
         var wuCategoryId = packages.First().WuCategoryId;
+        if (string.IsNullOrEmpty(wuCategoryId))
+        {
+            onFailure?.Invoke(DownloadUrlFailureReason.StoreQueryFailed);
+            return null;
+        }
 
         var fe3sync = await FE3Handler.SyncUpdatesAsync(
             fe3Cookie,

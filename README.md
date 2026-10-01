@@ -60,7 +60,6 @@ Built with **WinUI 3** and **.NET 10**, Raven delivers a clean, fluent UI that f
 ##  🛑 System requirements
 
 - **Windows 10** Version 2004, Build 19041+
-- [**.NET 10**](https://dotnet.microsoft.com/en-us/download/dotnet/10.0) (Not needed for self-contained)
 - [**Windows App SDK Runtime**](https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/downloads#windows-app-sdk) (Not needed for self-contained)
 
 ## 🌐 How to Run
@@ -88,7 +87,7 @@ winget install mjishnu.raven
 Raven follows the **MVVM pattern** and uses dependency injection via `Microsoft.Extensions.Hosting`.
 
 ```
-Raven.sln
+Raven.slnx
 ├── Raven/                    # WinUI 3 Application (UI layer)
 │   ├── Views/                # XAML pages: Shell, Search, App Details,
 │   │                         #   Downloads, Installations, Updates, Settings
@@ -132,6 +131,7 @@ Raven.sln
   - .NET Desktop Development
   - Windows App SDK / WinUI Development
   - Windows 10 SDK (26100)
+  - Desktop development with C++ (the MSVC linker is needed to publish, since Raven publishes as NativeAOT)
 
 ## 🚀 Getting Started
 
@@ -150,14 +150,14 @@ cd Raven
 ### 2. Build & Run
 
 **From Visual Studio:**
-1. Open `Raven.sln`
+1. Open `Raven.slnx`
 2. Set `Raven` as the startup project
 3. Select your target platform (`x64`, `x86`, or `arm64`)
 4. Press **F5** to build and run
 
 **From the command line:**
 ```bash
-dotnet build Raven.sln -c Debug -p:Platform=x64
+dotnet build Raven.slnx -c Debug -p:Platform=x64
 dotnet run --project Raven -c Debug
 ```
 
