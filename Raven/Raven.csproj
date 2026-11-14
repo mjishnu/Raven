@@ -35,8 +35,8 @@
 	<ItemGroup>
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
 		<PackageReference Include="CommunityToolkit.WinUI.Media" Version="8.2.251219" />
-		<PackageReference Include="Downloader" Version="5.10.2" />
-		<PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.15" />
+		<PackageReference Include="Downloader" Version="7.0.2" />
+		<PackageReference Include="Microsoft.Extensions.Hosting" Version="11.0.0" />
 		<PackageReference Include="Microsoft.WindowsAppSDK" Version="2.6.5" />
 		<PackageReference Include="Microsoft.Windows.AI.MachineLearning" Version="2.5.96" ExcludeAssets="runtime;native" />
 		<PackageReference Include="Microsoft.Xaml.Behaviors.WinUI.Managed" Version="3.0.1" />
