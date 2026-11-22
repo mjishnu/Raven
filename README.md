@@ -9,6 +9,10 @@
 </p>
 
 <p align="center">
+  <b>English</b> | <a href="README.tr.md">Türkçe</a>
+</p>
+
+<p align="center">
   <a href="https://github.com/mjishnu/Raven/releases"><img src="https://img.shields.io/github/v/release/mjishnu/Raven?style=flat-square&color=blue" alt="GitHub Release"></a>
   <a href="https://github.com/mjishnu/Raven/blob/main/LICENSE"><img src="https://img.shields.io/github/license/mjishnu/Raven?style=flat-square&color=green" alt="License"></a>
   <a href="https://github.com/mjishnu/Raven/stargazers"><img src="https://img.shields.io/github/stars/mjishnu/Raven?style=flat-square" alt="Stars"></a>
@@ -100,7 +104,7 @@ Raven.slnx
 │   ├── Contracts/            # Service interfaces
 │   ├── Layouts/              # Custom WinUI layouts (VirtualGridLayout)
 │   ├── Styles/               # XAML resource dictionaries
-│   └── Strings/              # Localized string resources (en-us)
+│   └── Strings/              # Localized string resources (en-us, hu-HU, ko-kr, tr-TR)
 │
 ├── Raven.Updater/            # Self-update helper executable
 │   └── Program.cs            # Copies update payload and relaunches Raven

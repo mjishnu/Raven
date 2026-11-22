@@ -1,0 +1,954 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AppDisplayName" xml:space="preserve">
+    <value>Raven</value>
+  </data>
+  <data name="Shell_Main.Content" xml:space="preserve">
+    <value>Ana sayfa</value>
+  </data>
+  <data name="Shell_Advanced_Search.Content" xml:space="preserve">
+    <value>Gelişmiş arama</value>
+  </data>
+  <data name="Shell_Install.Content" xml:space="preserve">
+    <value>Yükle</value>
+  </data>
+  <data name="Shell_Updates.Content" xml:space="preserve">
+    <value>Güncelleştirmeler</value>
+  </data>
+  <data name="Shell_Downloads.Content" xml:space="preserve">
+    <value>İndirilenler</value>
+  </data>
+  <data name="Shell_App.Content" xml:space="preserve">
+    <value>Uygulamalar</value>
+  </data>
+  <data name="Shell_SearchBox.PlaceholderText" xml:space="preserve">
+    <value>Ara</value>
+  </data>
+  <data name="Shell_AppTitleBarText.Text" xml:space="preserve">
+    <value>Raven</value>
+  </data>
+  <data name="Settings_Title.Text" xml:space="preserve">
+    <value>Ayarlar</value>
+  </data>
+  <data name="Settings_Theme.Text" xml:space="preserve">
+    <value>Tema</value>
+  </data>
+  <data name="Settings_Theme_Light.Content" xml:space="preserve">
+    <value>Açık</value>
+  </data>
+  <data name="Settings_Theme_Dark.Content" xml:space="preserve">
+    <value>Koyu</value>
+  </data>
+  <data name="Settings_Theme_Default.Content" xml:space="preserve">
+    <value>Sistem varsayılanı</value>
+  </data>
+  <data name="Settings_LocaleAndRegion.Text" xml:space="preserve">
+    <value>Dil &amp; bölge</value>
+  </data>
+  <data name="Settings_Language.Text" xml:space="preserve">
+    <value>Dil</value>
+  </data>
+  <data name="Settings_Market.Text" xml:space="preserve">
+    <value>Pazar (Bölge)</value>
+  </data>
+  <data name="Settings_RelaunchInfoBar.Title" xml:space="preserve">
+    <value>Yeniden başlatma gerekli</value>
+  </data>
+  <data name="Settings_RelaunchInfoBar.Message" xml:space="preserve">
+    <value>Dil değişikliklerinizi uygulamak için Raven'ı yeniden başlatın.</value>
+  </data>
+  <data name="Settings_RelaunchButton.Content" xml:space="preserve">
+    <value>Yeniden başlat</value>
+  </data>
+  <data name="Settings_Architecture.Text" xml:space="preserve">
+    <value>Mimari</value>
+  </data>
+  <data name="Settings_ArchitectureDescription.Text" xml:space="preserve">
+    <value>Sisteminizin mimarisini seçin</value>
+  </data>
+  <data name="Settings_Reset.Text" xml:space="preserve">
+    <value>Sıfırla</value>
+  </data>
+  <data name="Settings_ResetDescription.Text" xml:space="preserve">
+    <value>Raven'ı varsayılan ayarlara sıfırlayın.</value>
+  </data>
+  <data name="Settings_ResetButton.Content" xml:space="preserve">
+    <value>Uygulamayı sıfırla</value>
+  </data>
+  <data name="Settings_ResetDialogTitle" xml:space="preserve">
+    <value>Uygulama verileri sıfırlansın mı?</value>
+  </data>
+  <data name="Settings_ResetDialogContent" xml:space="preserve">
+    <value>Bu işlem indirilen tüm dosyaları ve önbelleğe alınmış indirme verilerini kaldırır; dil, bölge ve mimari ayarlarını varsayılana döndürür. Uygulama otomatik olarak yeniden başlatılacaktır. Bu işlem geri alınamaz.</value>
+  </data>
+  <data name="Settings_ResetDialogPrimary" xml:space="preserve">
+    <value>Sıfırla</value>
+  </data>
+  <data name="Settings_ResetDialogCancel" xml:space="preserve">
+    <value>İptal</value>
+  </data>
+  <data name="Settings_About.Text" xml:space="preserve">
+    <value>Bu uygulama hakkında</value>
+  </data>
+  <data name="Settings_AboutDescription.Text" xml:space="preserve">
+    <value>Microsoft Store uygulamalarına göz atmak, bunları indirmek, yüklemek ve güncelleştirmek için Microsoft Store'a açık kaynaklı, gizlilik odaklı bir alternatif istemci.</value>
+  </data>
+  <data name="SettingsPage_GitHubRepoLink.Content" xml:space="preserve">
+    <value>GitHub deposu</value>
+  </data>
+  <data name="SettingsPage_DiscordLink.Content" xml:space="preserve">
+    <value>Discord topluluğu</value>
+  </data>
+  <data name="SettingsPage_LicenseLink.Content" xml:space="preserve">
+    <value>Lisans</value>
+  </data>
+  <data name="Settings_DiagnosticsLogs.Text" xml:space="preserve">
+    <value>Tanılama günlükleri</value>
+  </data>
+  <data name="Settings_DiagnosticsLogsDescription.Text" xml:space="preserve">
+    <value>Sorun gidermek için günlükler klasörünü açın.</value>
+  </data>
+  <data name="Settings_DiagnosticsLogsButton.Content" xml:space="preserve">
+    <value>Günlükler klasörünü aç</value>
+  </data>
+  <data name="Settings_AppUpdates.Text" xml:space="preserve">
+    <value>Uygulama güncelleştirmeleri</value>
+  </data>
+  <data name="Settings_AppUpdatesButton.Content" xml:space="preserve">
+    <value>Güncelleştirmeleri denetle</value>
+  </data>
+  <data name="Settings_UpdaterConfirmTitle" xml:space="preserve">
+    <value>Güncelleştirme var</value>
+  </data>
+  <data name="Settings_UpdaterConfirmContent" xml:space="preserve">
+    <value>{0} sürümü yüklenmeye hazır. Güncelleştirmeyi uygulamak için uygulama yeniden başlatılacak.</value>
+  </data>
+  <data name="Settings_UpdaterConfirmPrimary" xml:space="preserve">
+    <value>Yükle</value>
+  </data>
+  <data name="Settings_UpdaterAlreadyLatestTitle" xml:space="preserve">
+    <value>Güncelsiniz</value>
+  </data>
+  <data name="Settings_UpdaterAlreadyLatestContent" xml:space="preserve">
+    <value>En son sürüm zaten yüklü.</value>
+  </data>
+  <data name="Settings_UpdaterErrorTitle" xml:space="preserve">
+    <value>Bir şeyler ters gitti</value>
+  </data>
+  <data name="Settings_UpdaterErrorContent" xml:space="preserve">
+    <value>Güncelleştirme tamamlanamadı. {0}</value>
+  </data>
+  <data name="Settings_UpdaterDialogClose" xml:space="preserve">
+    <value>Kapat</value>
+  </data>
+  <data name="Settings_UpdaterDialogCancel" xml:space="preserve">
+    <value>İptal</value>
+  </data>
+  <data name="Settings_UpdaterCheckingTitle" xml:space="preserve">
+    <value>Güncelleştirmeler denetleniyor</value>
+  </data>
+  <data name="Settings_UpdaterCheckingContent" xml:space="preserve">
+    <value>En son sürüm aranıyor.</value>
+  </data>
+  <data name="Settings_UpdaterCheckCanceledContent" xml:space="preserve">
+    <value>Denetim iptal edildi. İstediğiniz zaman yeniden deneyebilirsiniz.</value>
+  </data>
+  <data name="Settings_UpdaterStartupCheckbox" xml:space="preserve">
+    <value>Başlangıçta güncelleştirmeleri denetle</value>
+  </data>
+  <data name="Settings_UpdaterProgressPercent" xml:space="preserve">
+    <value>{0}%</value>
+  </data>
+  <data name="Settings_UpdaterInstallingTitle" xml:space="preserve">
+    <value>Güncelleştirme yükleniyor</value>
+  </data>
+  <data name="CardView_Loading.Text" xml:space="preserve">
+    <value>Yükleniyor</value>
+  </data>
+  <data name="CardView_Filters.Text" xml:space="preserve">
+    <value>Filtreler</value>
+  </data>
+  <data name="CardView_ApplyBtn.Content" xml:space="preserve">
+    <value>Uygula</value>
+  </data>
+  <data name="CardView_NoResults_Title.Text" xml:space="preserve">
+    <value>Sonuç bulunamadı</value>
+  </data>
+  <data name="CardView_NoResults_Subtitle.Text" xml:space="preserve">
+    <value>Farklı anahtar sözcükler deneyin veya arama filtrelerini kaldırın</value>
+  </data>
+  <data name="CardView_Error_LoadFailed" xml:space="preserve">
+    <value>Kartlar yüklenemedi: {0}</value>
+  </data>
+  <data name="CardView_Error_OpenFailed" xml:space="preserve">
+    <value>Öğe açılamadı: {0}</value>
+  </data>
+  <data name="Filter_Apps" xml:space="preserve">
+    <value>Uygulamalar</value>
+  </data>
+  <data name="Filter_Games" xml:space="preserve">
+    <value>Oyunlar</value>
+  </data>
+  <data name="Filter_TopFree" xml:space="preserve">
+    <value>Popüler ücretsizler</value>
+  </data>
+  <data name="Filter_TopPaid" xml:space="preserve">
+    <value>Popüler ücretliler</value>
+  </data>
+  <data name="Filter_TopTrending" xml:space="preserve">
+    <value>Trend olanlar</value>
+  </data>
+  <data name="Filter_Specials" xml:space="preserve">
+    <value>Fırsatlar</value>
+  </data>
+  <data name="Filter_BestSelling" xml:space="preserve">
+    <value>En çok satanlar</value>
+  </data>
+  <data name="AdvancedSearch_Header.Text" xml:space="preserve">
+    <value>Gelişmiş arama</value>
+  </data>
+  <data name="AdvancedSearch_SearchHint.Text" xml:space="preserve">
+    <value>URL, ürün kimliği veya paket ailesi adına göre arayın</value>
+  </data>
+  <data name="AdvancedSearch_TypeUrl.Content" xml:space="preserve">
+    <value>URL</value>
+  </data>
+  <data name="AdvancedSearch_TypeProductId.Content" xml:space="preserve">
+    <value>Ürün kimliği</value>
+  </data>
+  <data name="AdvancedSearch_TypePfn.Content" xml:space="preserve">
+    <value>Paket ailesi adı</value>
+  </data>
+  <data name="AdvancedSearch_SearchBtn.Text" xml:space="preserve">
+    <value>Ara</value>
+  </data>
+  <data name="AdvancedSearch_LookingUp.Text" xml:space="preserve">
+    <value>Ürün aranıyor</value>
+  </data>
+  <data name="AdvancedSearch_UrlCard_Title.Text" xml:space="preserve">
+    <value>URL</value>
+  </data>
+  <data name="AdvancedSearch_UrlCard_Desc.Text" xml:space="preserve">
+    <value>Ürünü otomatik olarak ayıklayıp bulmak için bir Microsoft Store ürün URL'si yapıştırın.</value>
+  </data>
+  <data name="AdvancedSearch_UrlCard_Example.Text" xml:space="preserve">
+    <value>ör. https://apps.microsoft.com/detail/9WZDNCRFHVJL</value>
+  </data>
+  <data name="AdvancedSearch_ProductIdCard_Title.Text" xml:space="preserve">
+    <value>Ürün kimliği</value>
+  </data>
+  <data name="AdvancedSearch_ProductIdCard_Desc.Text" xml:space="preserve">
+    <value>Doğrudan sayfasına gitmek için ürünün harf ve rakamlardan oluşan Store kimliğini girin.</value>
+  </data>
+  <data name="AdvancedSearch_ProductIdCard_Example.Text" xml:space="preserve">
+    <value>ör. 9WZDNCRFHVJL</value>
+  </data>
+  <data name="AdvancedSearch_PfnCard_Title.Text" xml:space="preserve">
+    <value>Paket ailesi adı</value>
+  </data>
+  <data name="AdvancedSearch_PfnCard_Desc.Text" xml:space="preserve">
+    <value>Store sayfasını bulmak için uygulamanın paket ailesi adını girin.</value>
+  </data>
+  <data name="AdvancedSearch_PfnCard_Example.Text" xml:space="preserve">
+    <value>ör. Microsoft.WindowsTerminal_8wekyb3d8bbwe</value>
+  </data>
+  <data name="AdvancedSearch_Placeholder_Url" xml:space="preserve">
+    <value>https://apps.microsoft.com/detail/...</value>
+  </data>
+  <data name="AdvancedSearch_Placeholder_ProductId" xml:space="preserve">
+    <value>ör. 9WZDNCRFHVJL</value>
+  </data>
+  <data name="AdvancedSearch_Placeholder_Pfn" xml:space="preserve">
+    <value>ör. Microsoft.WindowsTerminal_8wekyb3d8bbwe</value>
+  </data>
+  <data name="AdvancedSearch_Placeholder_Default" xml:space="preserve">
+    <value>Aramak için bir değer girin</value>
+  </data>
+  <data name="AdvancedSearch_Error_EmptyQuery" xml:space="preserve">
+    <value>Lütfen aramak için bir değer girin.</value>
+  </data>
+  <data name="AdvancedSearch_Error_InvalidUrl" xml:space="preserve">
+    <value>Bu URL'den bir ürün kimliği ayıklanamadı. Geçerli bir Microsoft Store URL'si olduğundan emin olun.</value>
+  </data>
+  <data name="AdvancedSearch_Error_NoPfnResult" xml:space="preserve">
+    <value>Bu paket ailesi adı için ürün bulunamadı.</value>
+  </data>
+  <data name="AdvancedSearch_Error_FailedLookup" xml:space="preserve">
+    <value>Ürün bulunamadı: {0}</value>
+  </data>
+  <data name="AppPage_Loading.Text" xml:space="preserve">
+    <value>Yükleniyor</value>
+  </data>
+  <data name="AppPage_BypassFilters.Text" xml:space="preserve">
+    <value>Filtreleri atla</value>
+  </data>
+  <data name="AppPage_CheckUpdates.Text" xml:space="preserve">
+    <value>Güncelleştirmeleri denetle</value>
+  </data>
+  <data name="AppPage_Screenshots.Text" xml:space="preserve">
+    <value>Ekran görüntüleri</value>
+  </data>
+  <data name="AppPage_Description.Text" xml:space="preserve">
+    <value>Açıklama</value>
+  </data>
+  <data name="AppPage_MoreDetails.Text" xml:space="preserve">
+    <value>Daha fazla ayrıntı</value>
+  </data>
+  <data name="AppPage_AppSize.Text" xml:space="preserve">
+    <value>Uygulama boyutu:</value>
+  </data>
+  <data name="AppPage_Version.Text" xml:space="preserve">
+    <value>Sürüm:</value>
+  </data>
+  <data name="AppPage_LastUpdated.Text" xml:space="preserve">
+    <value>Son güncelleştirme:</value>
+  </data>
+  <data name="AppPage_Error_LoadTitle" xml:space="preserve">
+    <value>Uygulama yüklenirken hata oluştu</value>
+  </data>
+  <data name="AppPage_Error_LoadMessage" xml:space="preserve">
+    <value>Uygulama ayrıntıları yüklenemedi: {0}</value>
+  </data>
+  <data name="AppPage_Error_CheckUpdatesTitle" xml:space="preserve">
+    <value>Güncelleştirmeleri denetle</value>
+  </data>
+  <data name="AppPage_Error_VersionCheckMsg" xml:space="preserve">
+    <value>En son sürüm alınamadı. Uygulama kullanılabilir olmayabilir veya denetim başarısız oldu.</value>
+  </data>
+  <data name="AppPage_Error_UpdateCheckFailed" xml:space="preserve">
+    <value>Güncelleştirmeler denetlenemedi: {0}</value>
+  </data>
+  <data name="AppPage_Error_OperationCanceled" xml:space="preserve">
+    <value>İşlem iptal edildi.</value>
+  </data>
+  <data name="AppPage_Error_NotSupportedTitle" xml:space="preserve">
+    <value>Uygulama desteklenmiyor</value>
+  </data>
+  <data name="AppPage_Error_NotSupportedMsg" xml:space="preserve">
+    <value>Bu uygulama desteklenmiyor. Farklı bir uygulama deneyin veya daha sonra yeniden kontrol edin.</value>
+  </data>
+  <data name="AppPage_Error_StoreQueryFailedTitle" xml:space="preserve">
+    <value>Store'a ulaşılamadı</value>
+  </data>
+  <data name="AppPage_Error_StoreQueryFailedMsg" xml:space="preserve">
+    <value>Bu uygulamanın indirme ayrıntıları şu anda alınamadı. İnternet bağlantınızı denetleyip yeniden deneyin.</value>
+  </data>
+  <data name="AppPage_Error_OsIncompatibleTitle" xml:space="preserve">
+    <value>Uygulama desteklenmiyor</value>
+  </data>
+  <data name="AppPage_Error_OsIncompatibleMsg" xml:space="preserve">
+    <value>Bu uygulama, bu cihazda çalışan Windows sürümünden daha yeni bir Windows sürümü gerektiriyor.</value>
+  </data>
+  <data name="AppPage_Error_ArchIncompatibleTitle" xml:space="preserve">
+    <value>Uygulama desteklenmiyor</value>
+  </data>
+  <data name="AppPage_Error_ArchIncompatibleMsg" xml:space="preserve">
+    <value>Bu uygulama, cihazınızın işlemcisiyle (CPU mimarisi) uyumlu bir derleme sunmuyor.</value>
+  </data>
+  <data name="AppPage_Error_NoInstallerTitle" xml:space="preserve">
+    <value>Uygulama kullanılamıyor</value>
+  </data>
+  <data name="AppPage_Error_NoInstallerMsg" xml:space="preserve">
+    <value>Bu uygulama için şu anda yüklenebilir bir paket yayımlanmamış. Daha sonra yeniden kontrol edin.</value>
+  </data>
+  <data name="AppPage_Error_DownloadInfoTitle" xml:space="preserve">
+    <value>İndirme kullanılamıyor</value>
+  </data>
+  <data name="AppPage_Error_DownloadInfoMsg" xml:space="preserve">
+    <value>Bu uygulama için şu anda bir indirme bağlantısı alınamadı. Daha sonra yeniden deneyin.</value>
+  </data>
+  <data name="AppPage_Error_UnsupportedTypeTitle" xml:space="preserve">
+    <value>Uygulama desteklenmiyor</value>
+  </data>
+  <data name="AppPage_Error_UnsupportedTypeMsg" xml:space="preserve">
+    <value>Bu uygulama, Raven'ın henüz desteklemediği bir yükleyici türü kullanıyor.</value>
+  </data>
+  <data name="AppPage_Error_FailedToInstall" xml:space="preserve">
+    <value>Yüklenemedi.</value>
+  </data>
+  <data name="AppPage_Error_UnableToOpenTitle" xml:space="preserve">
+    <value>Uygulama açılamıyor</value>
+  </data>
+  <data name="AppPage_Error_NotInstalledPackaged" xml:space="preserve">
+    <value>Bu uygulama paketi Windows paket yöneticisinde bulunamadı. Yüklü olmayabilir.</value>
+  </data>
+  <data name="AppPage_Error_NoAppEntries" xml:space="preserve">
+    <value>Uygulama paketi yüklü ancak başlatılabilir bir uygulama girişi bulunamadı.</value>
+  </data>
+  <data name="AppPage_Error_CantOpen" xml:space="preserve">
+    <value>Uygulama açılamadı. Uygulamayı yeniden yüklemeyi deneyin.</value>
+  </data>
+  <data name="AppPage_Error_NotInstalledWin32" xml:space="preserve">
+    <value>Bu uygulama Windows kaldırma kayıt defterinde bulunamadı. Yüklü olmayabilir.</value>
+  </data>
+  <data name="AppPage_Error_MissingLaunchTarget" xml:space="preserve">
+    <value>Uygulama yüklü görünüyor ancak başlatma hedefi bulunamadı (Başlat menüsü/DisplayIcon). Uygulama hatalı yüklenmiş olabilir.</value>
+  </data>
+  <data name="AppPage_Error_MissingLaunchFile" xml:space="preserve">
+    <value>Uygulama yüklü görünüyor ancak başlatma dosyası diskte bulunamadı. Uygulama taşınmış veya hatalı yüklenmiş olabilir.</value>
+  </data>
+  <data name="AppPage_Error_InstalledVersion" xml:space="preserve">
+    <value>
+
+Yüklü sürüm: {0}</value>
+  </data>
+  <data name="AppPage_Error_InstallerMissingTitle" xml:space="preserve">
+    <value>Yükleyici eksik</value>
+  </data>
+  <data name="AppPage_Error_InstallerMissingMsg" xml:space="preserve">
+    <value>Paketlenmemiş yükleyici (EXE/MSI) diskte bulunamadı.</value>
+  </data>
+  <data name="AppPage_Manual_Install_Title" xml:space="preserve">
+    <value>El ile yükleme gerekli</value>
+  </data>
+  <data name="AppPage_Manual_Install_Msg" xml:space="preserve">
+    <value>Bu uygulama paketlenmemiş bir yükleyici (EXE/MSI) kullanıyor. Yükleyici şimdi açılacak ve yüklemeyi tamamlamak için ek adımlar gerekebilir.</value>
+  </data>
+  <data name="AppPage_Btn_OpenInstaller" xml:space="preserve">
+    <value>Yükleyiciyi aç</value>
+  </data>
+  <data name="AppPage_Error_UnableToOpenInstallerTitle" xml:space="preserve">
+    <value>Yükleyici açılamıyor</value>
+  </data>
+  <data name="Common_Cancel" xml:space="preserve">
+    <value>İptal</value>
+  </data>
+  <data name="Status_Pending" xml:space="preserve">
+    <value>Bekliyor</value>
+  </data>
+  <data name="Status_Downloading" xml:space="preserve">
+    <value>İndiriliyor</value>
+  </data>
+  <data name="Status_Installing" xml:space="preserve">
+    <value>Yükleniyor</value>
+  </data>
+  <data name="Status_Cancelling" xml:space="preserve">
+    <value>İptal ediliyor</value>
+  </data>
+  <data name="Status_Failed" xml:space="preserve">
+    <value>Başarısız</value>
+  </data>
+  <data name="Status_Cancelled" xml:space="preserve">
+    <value>İptal edildi</value>
+  </data>
+  <data name="Status_Completed" xml:space="preserve">
+    <value>Tamamlandı</value>
+  </data>
+  <data name="Status_Unknown" xml:space="preserve">
+    <value>Bilinmiyor</value>
+  </data>
+  <data name="Status_Updated" xml:space="preserve">
+    <value>Güncelleştirildi</value>
+  </data>
+  <data name="Download_File" xml:space="preserve">
+    <value>dosya</value>
+  </data>
+  <data name="Download_Files" xml:space="preserve">
+    <value>dosya</value>
+  </data>
+  <data name="Download_Status_DownloadingFiles" xml:space="preserve">
+    <value>İndiriliyor ({0}/{1}) {2}</value>
+  </data>
+  <data name="Download_Status_Retry" xml:space="preserve">
+    <value>Yeniden deneniyor ({0}/{1})</value>
+  </data>
+  <data name="Download_Status_NoProgress" xml:space="preserve">
+    <value>İlerleme algılanmadı. Yeniden başlatılıyor...</value>
+  </data>
+  <data name="Download_Status_Stalled" xml:space="preserve">
+    <value>Hata: İndirme durdu ve yeniden deneme hakları tükendi.</value>
+  </data>
+  <data name="Download_Status_FailedRetries" xml:space="preserve">
+    <value>Hata: İndirme yeniden denemelerden sonra başarısız oldu.</value>
+  </data>
+  <data name="Download_Status_Canceled" xml:space="preserve">
+    <value>İndirme iptal edildi.</value>
+  </data>
+  <data name="Download_Status_Completed" xml:space="preserve">
+    <value>İndirme tamamlandı.</value>
+  </data>
+  <data name="Download_Status_MissingPackage" xml:space="preserve">
+    <value>Yükleme başarısız: ana paket eksik.</value>
+  </data>
+  <data name="Install_Error_ConflictingVersion" xml:space="preserve">
+    <value>Aynı veya daha yeni bir sürüm zaten yüklü.</value>
+  </data>
+  <data name="Install_Error_DeploymentInProgress" xml:space="preserve">
+    <value>Başka bir yükleme devam ediyor. Bitmesini bekleyip yeniden deneyin.</value>
+  </data>
+  <data name="Install_Error_InvalidPackage" xml:space="preserve">
+    <value>Geçersiz veya desteklenmeyen paket. Paketin ve bağımlılıklarının sisteminiz için desteklendiğinden emin olun.</value>
+  </data>
+  <data name="Install_Error_PackageNotFound" xml:space="preserve">
+    <value>Paket bulunamadı. Seçilen/indirilen dosya yolunu denetleyin.</value>
+  </data>
+  <data name="Install_Error_DeploymentFailure" xml:space="preserve">
+    <value>Windows dağıtımı başarısız oldu. {0}</value>
+  </data>
+  <data name="Install_Error_AdminRequired" xml:space="preserve">
+    <value>Bu paket, paketlenmiş bir hizmet içeriyor ve yönetici ayrıcalıklarıyla yüklenmelidir. Uygulamayı yönetici olarak yeniden başlatıp yeniden deneyin.</value>
+  </data>
+  <data name="Install_Error_GenericDeployment" xml:space="preserve">
+    <value>Windows dağıtım hatası (0x{0:X8}). {1}</value>
+  </data>
+  <data name="Install_Error_PackageCorrupt" xml:space="preserve">
+    <value>Paket dosyası bozuk veya eksik. Yeniden indirmeyi deneyin.</value>
+  </data>
+  <data name="Install_Error_MissingDependency" xml:space="preserve">
+    <value>Gerekli bir bileşen veya bağımlılık eksik. Uygulamayı bunun yerine Microsoft Store'dan yüklemeyi deneyin.</value>
+  </data>
+  <data name="Install_Error_InvalidManifest" xml:space="preserve">
+    <value>Paket bildirimi (AppxManifest.xml) geçersiz veya hatalı biçimlendirilmiş.</value>
+  </data>
+  <data name="Install_Error_UntrustedRoot" xml:space="preserve">
+    <value>Paket imzasının kök sertifikasına bu sistem tarafından güvenilmiyor.</value>
+  </data>
+  <data name="Install_Error_SignatureInvalid" xml:space="preserve">
+    <value>Paket imzası geçersiz veya güvenilir değil.</value>
+  </data>
+  <data name="Install_Error_SignatureVerificationHint" xml:space="preserve">
+    <value>İmza doğrulaması başarısız oldu. "İmza doğrulamasını kaldır" seçeneğini etkinleştirip yeniden deneyin.</value>
+  </data>
+  <data name="Install_Error_NotSigned" xml:space="preserve">
+    <value>Paket dijital olarak imzalanmamış.</value>
+  </data>
+  <data name="Install_Error_NotSupported" xml:space="preserve">
+    <value>Bu işlem sisteminizde desteklenmiyor.</value>
+  </data>
+  <data name="Install_Error_AccessDenied" xml:space="preserve">
+    <value>Başarısız: Erişim engellendi. Yönetici olarak çalıştırmayı deneyin veya yan yükleme ilkesinin uygulama paketlerine izin verdiğinden emin olun. {0}</value>
+  </data>
+  <data name="Install_Error_Generic" xml:space="preserve">
+    <value>Başarısız: {0}</value>
+  </data>
+  <data name="Install_Btn_ForceInstall" xml:space="preserve">
+    <value>Zorla yükle</value>
+  </data>
+  <data name="Install_Btn_RunAsAdmin" xml:space="preserve">
+    <value>Yönetici olarak çalıştır</value>
+  </data>
+  <data name="Common_OK" xml:space="preserve">
+    <value>Tamam</value>
+  </data>
+  <data name="DownloadsPage_Header.Text" xml:space="preserve">
+    <value>İndirilenler</value>
+  </data>
+  <data name="DownloadsPage_OpenFolder.Content" xml:space="preserve">
+    <value>Klasörü aç</value>
+  </data>
+  <data name="DownloadsPage_Delete.Text" xml:space="preserve">
+    <value>Sil</value>
+  </data>
+  <data name="DownloadsPage_CancelBtn.ToolTipService.ToolTip" xml:space="preserve">
+    <value>İndirmeyi iptal et</value>
+  </data>
+  <data name="Download_Status_Fetching" xml:space="preserve">
+    <value>İndirme URL'leri alınıyor</value>
+  </data>
+  <data name="Download_Status_Downloading" xml:space="preserve">
+    <value>İndiriliyor</value>
+  </data>
+  <data name="Download_Status_Installing" xml:space="preserve">
+    <value>Yükleniyor</value>
+  </data>
+  <data name="Download_Status_Cancelling" xml:space="preserve">
+    <value>İptal ediliyor</value>
+  </data>
+  <data name="InstallationsPage_Header.Text" xml:space="preserve">
+    <value>Paket yükle</value>
+  </data>
+  <data name="InstallationsPage_Installing.Text" xml:space="preserve">
+    <value>Yükleniyor...</value>
+  </data>
+  <data name="InstallationsPage_FileText.PlaceholderText" xml:space="preserve">
+    <value>Dosya seçilmedi</value>
+  </data>
+  <data name="InstallationsPage_InstallBtn.Content" xml:space="preserve">
+    <value>Yükle</value>
+  </data>
+  <data name="InstallationsPage_InstallLabel" xml:space="preserve">
+    <value>Yükle</value>
+  </data>
+  <data name="InstallationsPage_DropZone.Text" xml:space="preserve">
+    <value>Bir paket seçin veya buraya sürükleyin</value>
+  </data>
+  <data name="InstallationsPage_FilePicker_Title" xml:space="preserve">
+    <value>Bir uygulama paketi seçin</value>
+  </data>
+  <data name="InstallationsPage_DragCaption" xml:space="preserve">
+    <value>Paketi seçmek için bırakın</value>
+  </data>
+  <data name="Install_Status_Installing" xml:space="preserve">
+    <value>Yükleniyor</value>
+  </data>
+  <data name="Install_Dialog_Title" xml:space="preserve">
+    <value>Yükleme başarısız oldu</value>
+  </data>
+  <data name="InstallationsPage_FilePicker_Error" xml:space="preserve">
+    <value>Dosya seçici hatası</value>
+  </data>
+  <data name="InstallationsPage_Filter_AppPackages" xml:space="preserve">
+    <value>Uygulama paketleri (*.msix;*.appx;*.msixbundle;*.appxbundle)</value>
+  </data>
+  <data name="InstallationsPage_Filter_AllFiles" xml:space="preserve">
+    <value>Tüm dosyalar (*.*)</value>
+  </data>
+  <data name="UpdatesPage_Header.Text" xml:space="preserve">
+    <value>Güncelleştirmeler</value>
+  </data>
+  <data name="UpdatesPage_Stop.Text" xml:space="preserve">
+    <value>Durdur</value>
+  </data>
+  <data name="UpdatesPage_SelectAll.Content" xml:space="preserve">
+    <value>Tümünü seç</value>
+  </data>
+  <data name="UpdatesPage_NoUpdates.Text" xml:space="preserve">
+    <value>Yeni güncelleştirme yok</value>
+  </data>
+  <data name="UpdatesPage_Completed.Text" xml:space="preserve">
+    <value>Tamamlandı</value>
+  </data>
+  <data name="UpdatesPage_VersionSeparator.Text" xml:space="preserve">
+    <value>→</value>
+  </data>
+  <data name="UpdatesPage_CancelBtn.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Güncelleştirmeyi iptal et</value>
+  </data>
+  <data name="Updates_ButtonCheck" xml:space="preserve">
+    <value>Güncelleştirmeleri denetle</value>
+  </data>
+  <data name="Updates_ButtonChecking" xml:space="preserve">
+    <value>Denetleniyor...</value>
+  </data>
+  <data name="Updates_ButtonUpdate" xml:space="preserve">
+    <value>Seçilenleri güncelleştir ({0})</value>
+  </data>
+  <data name="Updates_CheckingBase" xml:space="preserve">
+    <value>Denetleniyor</value>
+  </data>
+  <data name="Updates_CheckingProgress" xml:space="preserve">
+    <value>Denetleniyor ({0}/{1})</value>
+  </data>
+  <data name="Search_Filter_AllDepartments" xml:space="preserve">
+    <value>Tüm bölümler</value>
+  </data>
+  <data name="Search_Filter_Fonts" xml:space="preserve">
+    <value>Yazı tipleri</value>
+  </data>
+  <data name="Search_Filter_Themes" xml:space="preserve">
+    <value>Temalar</value>
+  </data>
+  <data name="Search_Filter_AllTypes" xml:space="preserve">
+    <value>Tüm türler</value>
+  </data>
+  <data name="Search_Filter_Free" xml:space="preserve">
+    <value>Ücretsiz</value>
+  </data>
+  <data name="Search_Filter_Paid" xml:space="preserve">
+    <value>Ücretli</value>
+  </data>
+  <data name="BundlesPage_Loading.Text" xml:space="preserve">
+    <value>Yükleniyor...</value>
+  </data>
+  <data name="BundlesPage_Error.Text" xml:space="preserve">
+    <value>Beklenmeyen bir hata oluştu!</value>
+  </data>
+  <data name="BundlesPage_InBundle.Text" xml:space="preserve">
+    <value>Bu paket grubunda</value>
+  </data>
+  <data name="AppPage_StopBtn.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Durdur</value>
+  </data>
+  <data name="AppPage_MoreOptionsBtn.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Diğer seçenekler</value>
+  </data>
+  <data name="AppPage_ShareBtn.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Paylaş</value>
+  </data>
+  <data name="AppPage_Share_CopyLink.Text" xml:space="preserve">
+    <value>Bağlantıyı kopyala</value>
+  </data>
+  <data name="AppPage_Share_CopyProductId.Text" xml:space="preserve">
+    <value>Ürün kimliğini kopyala</value>
+  </data>
+  <data name="AppPage_Share_CopyPackageFamilyName.Text" xml:space="preserve">
+    <value>PFN'yi kopyala</value>
+  </data>
+  <data name="AppPage_LightboxClose.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Kapat</value>
+  </data>
+  <data name="AppPage_LightboxPrev.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Önceki</value>
+  </data>
+  <data name="AppPage_LightboxNext.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Sonraki</value>
+  </data>
+  <data name="AppPage_ScreenshotsPrev.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Önceki ekran görüntüsü</value>
+  </data>
+  <data name="AppPage_ScreenshotsNext.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Sonraki ekran görüntüsü</value>
+  </data>
+  <data name="AppPage_LightboxCounter_Format" xml:space="preserve">
+    <value>{0} / {1}</value>
+  </data>
+  <data name="DownloadsPage_MoreOptionsBtn.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Diğer seçenekler</value>
+  </data>
+  <data name="AppPage_Btn_Install" xml:space="preserve">
+    <value>Yükle</value>
+  </data>
+  <data name="AppPage_Btn_Update" xml:space="preserve">
+    <value>Güncelleştir</value>
+  </data>
+  <data name="AppPage_Btn_Open" xml:space="preserve">
+    <value>Aç</value>
+  </data>
+  <data name="AppPage_Btn_Retry" xml:space="preserve">
+    <value>Yeniden dene</value>
+  </data>
+  <data name="AppPage_Btn_Download" xml:space="preserve">
+    <value>İndir</value>
+  </data>
+  <data name="InstallationsPage_ClearBtn.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Temizle</value>
+  </data>
+  <data name="Settings_LicenseDialogTitle.Text" xml:space="preserve">
+    <value>Lisans</value>
+  </data>
+  <data name="Settings_LicenseDialogClose.Content" xml:space="preserve">
+    <value>Kapat</value>
+  </data>
+  <data name="Sideloading_DisabledTitle" xml:space="preserve">
+    <value>Yan yükleme devre dışı</value>
+  </data>
+  <data name="Sideloading_DisabledMessage" xml:space="preserve">
+    <value>Yan yükleme şu anda bu cihazda devre dışı. Etkinleştirilene kadar uygulama paketlerini yükleyemezsiniz.
+
+Windows Ayarları'nda Geliştirici Modu'nu açarak etkinleştirebilirsiniz.</value>
+  </data>
+  <data name="Sideloading_EnableButton" xml:space="preserve">
+    <value>Ayarlar'ı aç</value>
+  </data>
+  <data name="Sideloading_CancelButton" xml:space="preserve">
+    <value>Şimdi değil</value>
+  </data>
+  <data name="InstallationsPage_MoreOptionsBtn.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Gelişmiş seçenekler</value>
+  </data>
+  <data name="InstallationsPage_AdvancedInstall.Text" xml:space="preserve">
+    <value>Paketlenmemiş mod</value>
+  </data>
+  <data name="InstallationsPage_CustomFolder.PlaceholderText" xml:space="preserve">
+    <value>Yükleme klasörünü seçin</value>
+  </data>
+  <data name="InstallationsPage_BrowseFolderBtn.Content" xml:space="preserve">
+    <value>Gözat</value>
+  </data>
+  <data name="InstallationsPage_RemoveSignature.Content" xml:space="preserve">
+    <value>İmza doğrulamasını kaldır</value>
+  </data>
+  <data name="InstallationsPage_BypassRegistration.Content" xml:space="preserve">
+    <value>Paket kaydını atla</value>
+  </data>
+  <data name="InstallationsPage_CreateStartMenuShortcut.Content" xml:space="preserve">
+    <value>Başlat menüsü kısayolu oluştur</value>
+  </data>
+  <data name="InstallationsPage_CreateDesktopShortcut.Content" xml:space="preserve">
+    <value>Masaüstü kısayolu oluştur</value>
+  </data>
+  <data name="InstallationsPage_SelectDependenciesBtn.Content" xml:space="preserve">
+    <value>Bağımlılıkları seç</value>
+  </data>
+  <data name="InstallationsPage_FolderPicker_Title" xml:space="preserve">
+    <value>Yükleme konumunu seçin</value>
+  </data>
+  <data name="InstallationsPage_DependencyPicker_Title" xml:space="preserve">
+    <value>Bağımlılık paketlerini seçin</value>
+  </data>
+  <data name="InstallationsPage_Dependencies_Count" xml:space="preserve">
+    <value>{0} seçili</value>
+  </data>
+  <data name="Install_Error_NoFolderSelected" xml:space="preserve">
+    <value>Yüklemeden önce bir yükleme klasörü seçin.</value>
+  </data>
+  <data name="Install_Error_FolderExists" xml:space="preserve">
+    <value>Seçilen konumda "{0}" adlı bir klasör zaten var. Başka bir konum seçin veya mevcut klasörü kaldırın.</value>
+  </data>
+  <data name="Install_Error_NoInstallableArch" xml:space="preserve">
+    <value>Bu paket grubunda, seçtiğiniz mimariyle uyumlu bir paket yok.</value>
+  </data>
+  <data name="Install_Error_ManifestMissing" xml:space="preserve">
+    <value>Pakette AppxManifest.xml bulunamadı.</value>
+  </data>
+  <data name="Install_Error_ExecutableNotFound" xml:space="preserve">
+    <value>Yürütülebilir dosya bulunamadı. Bu uygulama kayıtsız çalışamayabilir.</value>
+  </data>
+  <data name="DeveloperMode_DisabledTitle" xml:space="preserve">
+    <value>Geliştirici Modu gerekli</value>
+  </data>
+  <data name="DeveloperMode_DisabledMessage" xml:space="preserve">
+    <value>Özel (gevşek) yükleme, paketlenmemiş dosyalardan bir uygulamayı kaydeder ve bunun için Geliştirici Modu gerekir.
+
+Windows Ayarları'nda Geliştirici Modu'nu açarak etkinleştirebilirsiniz.</value>
+  </data>
+  <data name="DeveloperMode_EnableButton" xml:space="preserve">
+    <value>Ayarlar'ı aç</value>
+  </data>
+  <data name="DeveloperMode_CancelButton" xml:space="preserve">
+    <value>Şimdi değil</value>
+  </data>
+  <data name="InstallationsPage_ClearFolderBtn.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Yükleme konumunu temizle</value>
+  </data>
+  <data name="InstallationsPage_ClearDepsBtn.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Seçili bağımlılıkları temizle</value>
+  </data>
+  <data name="Updates_FailedBanner_Title.Text" xml:space="preserve">
+    <value>Bazı güncelleştirmeler başarısız oldu</value>
+  </data>
+  <data name="Install_Error_AppInUse" xml:space="preserve">
+    <value>Uygulamanın kaynakları şu anda kullanımda olduğundan yüklenemedi. Bunları kapatıp yeniden deneyin.</value>
+  </data>
+  <data name="Install_Error_AppInUse_Processes" xml:space="preserve">
+    <value>Uygulamanın yüklenebilmesi için aşağıdaki uygulamaların kapatılması gerekiyor:</value>
+  </data>
+  <data name="Install_Btn_Retry" xml:space="preserve">
+    <value>Yeniden dene</value>
+  </data>
+  <data name="Install_Btn_DeferredInstall" xml:space="preserve">
+    <value>Ertelenmiş yükleme</value>
+  </data>
+  <data name="Install_Error_DeferredInstallDescription" xml:space="preserve">
+    <value>Ertelenmiş yükleme uygulamayı şimdi hazırlar; kaynakları serbest kaldığında veya sistem yeniden başlatıldığında otomatik olarak yüklenir.</value>
+  </data>
+  <data name="Install_Error_DependencyProvidedButNotUsed" xml:space="preserve">
+    <value>Sağlanan bağımlılıklardan bir veya daha fazlası ana paket için gerekli değildi. Yalnızca ana paketi yüklemeyi deneyebilirsiniz.</value>
+  </data>
+  <data name="Install_Btn_InstallDependenciesSeparately" xml:space="preserve">
+    <value>Bağımlılıkları ayrı yükle</value>
+  </data>
+  <data name="AppPage_InstallDependenciesSeparately.Text" xml:space="preserve">
+    <value>Ayrı yükle</value>
+  </data>
+  <data name="InstallationsPage_InstallDependenciesSeparately.Content" xml:space="preserve">
+    <value>Bağımlılıkları ayrı yükle</value>
+  </data>
+</root>
