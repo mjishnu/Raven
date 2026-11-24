@@ -200,7 +200,7 @@ public class ProxyService : IProxyService
     private async Task ApplyActiveProxyAsync(IWebProxy? webProxy)
     {
         // Push the new proxy into every shared client the app owns, then notify UI.
-        StoreListings.Library.Internal.ProxyManager.SetProxy(webProxy);
+        StoreListings.Library.ProxyManager.Proxy = webProxy;
         DownloadHelper.ApplyProxy(webProxy);
         GitHubUpdaterService.ApplyProxy(webProxy);
 
