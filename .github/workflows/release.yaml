@@ -60,6 +60,8 @@ jobs:
     name: Build ${{ matrix.arch }}
     needs: prepare
     runs-on: windows-latest
+    env:
+      CERT_ENABLED: ${{ secrets.CERT_BASE64 != '' && secrets.CERT_PASSWORD != '' && '1' || '0' }}
     strategy:
       matrix:
         arch: [x64, x86, arm64]
@@ -182,6 +184,7 @@ jobs:
           }
 
       - name: Decode Certificate
+        if: env.CERT_ENABLED == '1'
         shell: pwsh
         env:
           CERT_BASE64: ${{ secrets.CERT_BASE64 }}
@@ -190,6 +193,7 @@ jobs:
           [System.IO.File]::WriteAllBytes("RavenCert.pfx", $pfxCertBytes)
 
       - name: Sign App Files and Export Public Certificate
+        if: env.CERT_ENABLED == '1'
         shell: pwsh
         env:
           CERT_PASSWORD: ${{ secrets.CERT_PASSWORD }}
@@ -215,7 +219,7 @@ jobs:
           Compress-Archive -Path ./publish_output_full/* -DestinationPath "Raven-$($env:RELEASE_TAG)-win-$($env:ARCH)-self-contained.zip"
 
       - name: Create Auto Install Certificate Zip
-        if: matrix.arch == 'x64'
+        if: matrix.arch == 'x64' && env.CERT_ENABLED == '1'
         shell: pwsh
         run: |
           $bundleDir = Join-Path $PWD "auto_install_cert"
@@ -233,7 +237,7 @@ jobs:
             Raven-${{ needs.prepare.outputs.release_tag }}-win-${{ matrix.arch }}-self-contained.zip
 
       - name: Upload Auto Install Certificate Artifact
-        if: matrix.arch == 'x64'
+        if: matrix.arch == 'x64' && env.CERT_ENABLED == '1'
         uses: actions/upload-artifact@v7
         with:
           name: Auto-Install-Cert
