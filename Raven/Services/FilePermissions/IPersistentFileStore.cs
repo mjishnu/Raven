@@ -10,7 +10,9 @@ namespace Raven.Services.FilePermissions;
 /// - Temp files written to system temp directory for automatic cleanup on crash
 /// - Backup preservation during writes
 /// - Single-instance protection (designed for single-app usage)
-/// 
+/// - Trimming/NativeAOT safe: values are serialized with source-generated metadata, so every
+///   value type passed to ReadAsync/WriteAsync must be registered on <c>RavenJsonContext</c>
+///
 /// Usage Example:
 /// <code>
 /// var filePath = Path.Combine(appDataFolder, "download.json");

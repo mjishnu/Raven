@@ -21,22 +21,22 @@ public partial class SettingsViewModel : ObservableRecipient
     private bool _isInitialized;
 
     [ObservableProperty]
-    private ElementTheme _elementTheme;
+    public partial ElementTheme ElementTheme { get; set; }
 
     [ObservableProperty]
-    private string _versionDescription;
+    public partial string VersionDescription { get; set; }
 
     [ObservableProperty]
-    private int _selectedMarketIndex;
+    public partial int SelectedMarketIndex { get; set; }
 
     [ObservableProperty]
-    private int _selectedLanguageIndex;
+    public partial int SelectedLanguageIndex { get; set; }
 
     [ObservableProperty]
-    private int _selectedArchitectureIndex;
+    public partial int SelectedArchitectureIndex { get; set; }
 
     [ObservableProperty]
-    private bool _showRelaunchPrompt;
+    public partial bool ShowRelaunchPrompt { get; set; }
 
     // Language/Market that were active when the app started. A relaunch is needed only when the
     // current selection differs from these, because already-loaded XAML strings don't re-localize.
@@ -82,8 +82,10 @@ public partial class SettingsViewModel : ObservableRecipient
         _architectureSelectorService = architectureSelectorService;
         _proxyService = proxyService;
         _proxyService.Changed += (_, _) => RefreshProxySelection();
-        _elementTheme = _themeSelectorService.Theme;
-        _versionDescription = GetVersionDescription();
+        // Property setters are safe before _isInitialized is set: the On*Changed handlers
+        // return early until then, and nothing is subscribed to PropertyChanged yet.
+        ElementTheme = _themeSelectorService.Theme;
+        VersionDescription = GetVersionDescription();
 
         _initialLanguage = _localeService.Language;
         _initialMarket = _localeService.Market;
@@ -93,7 +95,7 @@ public partial class SettingsViewModel : ObservableRecipient
             .OrderBy(x => x.Item1, StringComparer.OrdinalIgnoreCase)
             .ToList();
         AllMarketNames = _marketItems.Select(x => x.DisplayName).ToList();
-        _selectedMarketIndex = Math.Max(
+        SelectedMarketIndex = Math.Max(
             0,
             _marketItems.FindIndex(x => x.Value == _localeService.Market)
         );
@@ -103,7 +105,7 @@ public partial class SettingsViewModel : ObservableRecipient
             .OrderBy(x => x.Item1, StringComparer.OrdinalIgnoreCase)
             .ToList();
         AllLanguageNames = _languageItems.Select(x => x.DisplayName).ToList();
-        _selectedLanguageIndex = Math.Max(
+        SelectedLanguageIndex = Math.Max(
             0,
             _languageItems.FindIndex(x => x.Value == _localeService.Language)
         );
@@ -112,7 +114,7 @@ public partial class SettingsViewModel : ObservableRecipient
             .Select(a => (a.ToString(), a))
             .ToList();
         AllArchitectureNames = _architectureItems.Select(x => x.DisplayName).ToList();
-        _selectedArchitectureIndex = Math.Max(
+        SelectedArchitectureIndex = Math.Max(
             0,
             _architectureItems.FindIndex(x => x.Value == _architectureSelectorService.SelectedStoreEdgeArchitecture)
         );

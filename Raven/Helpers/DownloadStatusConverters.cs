@@ -4,7 +4,7 @@ using Raven.Models;
 
 namespace Raven.Helpers;
 
-public class DownloadStatusToVisibilityConverter : IValueConverter
+public partial class DownloadStatusToVisibilityConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, string language)
     {
@@ -24,7 +24,7 @@ public class DownloadStatusToVisibilityConverter : IValueConverter
     }
 }
 
-public sealed class DownloadingOnlyStatusToVisibilityConverter : IValueConverter
+public sealed partial class DownloadingOnlyStatusToVisibilityConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, string language)
     {
@@ -40,7 +40,7 @@ public sealed class DownloadingOnlyStatusToVisibilityConverter : IValueConverter
         throw new NotImplementedException();
 }
 
-public class CompletedStatusToVisibilityConverter : IValueConverter
+public partial class CompletedStatusToVisibilityConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, string language)
     {
@@ -60,7 +60,7 @@ public class CompletedStatusToVisibilityConverter : IValueConverter
 /// <summary>
 /// Shows the menu button for non-active states (Completed, Failed, Cancelled)
 /// </summary>
-public class NotDownloadingStatusToVisibilityConverter : IValueConverter
+public partial class NotDownloadingStatusToVisibilityConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, string language)
     {
@@ -79,7 +79,7 @@ public class NotDownloadingStatusToVisibilityConverter : IValueConverter
     }
 }
 
-public sealed class InstallingStatusToVisibilityConverter : IValueConverter
+public sealed partial class InstallingStatusToVisibilityConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, string language)
     {
@@ -95,7 +95,7 @@ public sealed class InstallingStatusToVisibilityConverter : IValueConverter
         throw new NotImplementedException();
 }
 
-public sealed class DownloadDetailsStatusToVisibilityConverter : IValueConverter
+public sealed partial class DownloadDetailsStatusToVisibilityConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, string language)
     {
@@ -116,7 +116,7 @@ public sealed class DownloadDetailsStatusToVisibilityConverter : IValueConverter
 /// Converts DownloadStatus enum to display text.
 /// Used in DownloadsPage to avoid binding to StatusText which changes frequently due to animation.
 /// </summary>
-public sealed class DownloadStatusToTextConverter : IValueConverter
+public sealed partial class DownloadStatusToTextConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, string language)
     {
@@ -141,7 +141,7 @@ public sealed class DownloadStatusToTextConverter : IValueConverter
         throw new NotImplementedException();
 }
 
-public sealed class DownloadStatusToIndeterminateConverter : IValueConverter
+public sealed partial class DownloadStatusToIndeterminateConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, string language)
     {

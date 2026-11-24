@@ -17,6 +17,9 @@ public enum DownloadStatus
     Completed = 7,
 }
 
+// Bound with {Binding} in the Downloads/Updates item templates; this generates the
+// property accessors that reflection used to provide (unavailable when trimmed/NativeAOT).
+[WinRT.GeneratedBindableCustomProperty]
 public partial class DownloadItem : INotifyPropertyChanged
 {
     public sealed class DownloadedFile

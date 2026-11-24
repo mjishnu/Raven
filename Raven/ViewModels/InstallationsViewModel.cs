@@ -10,33 +10,33 @@ namespace Raven.ViewModels;
 public partial class InstallationsViewModel : ObservableObject
 {
     [ObservableProperty]
-    private bool _advancedInstallEnabled;
+    public partial bool AdvancedInstallEnabled { get; set; }
 
     [ObservableProperty]
-    private string? _customInstallFolder;
+    public partial string? CustomInstallFolder { get; set; }
 
     [ObservableProperty]
-    private bool _removeSignature;
+    public partial bool RemoveSignature { get; set; }
 
     [ObservableProperty]
-    private bool _skipRegistration;
+    public partial bool SkipRegistration { get; set; }
 
     [ObservableProperty]
-    private bool _createStartMenuShortcut = true;
+    public partial bool CreateStartMenuShortcut { get; set; } = true;
 
     [ObservableProperty]
-    private bool _createDesktopShortcut = true;
+    public partial bool CreateDesktopShortcut { get; set; } = true;
 
     /// <summary>True while an install is running. Observable so any page instance reflects the
     /// in-progress state (progress survives navigating away and back) and so a second concurrent
     /// install can be prevented.</summary>
     [ObservableProperty]
-    private bool _isInstalling;
+    public partial bool IsInstalling { get; set; }
 
     /// <summary>Current install progress (0–100). Observable so a page navigated back to mid-install
     /// shows live progress.</summary>
     [ObservableProperty]
-    private double _progressPercent;
+    public partial double ProgressPercent { get; set; }
 
     public IList<string> DependencyPaths { get; } = new List<string>();
 

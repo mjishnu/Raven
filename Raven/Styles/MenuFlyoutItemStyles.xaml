@@ -21,7 +21,6 @@
               Content="{TemplateBinding Text}"
               FontSize="{TemplateBinding FontSize}"
               Foreground="{TemplateBinding Foreground}"
-              IsChecked="{Binding IsChecked, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}"
               IsHitTestVisible="False" />
             <VisualStateManager.VisualStateGroups>
               <VisualStateGroup x:Name="CommonStates">
@@ -38,11 +37,21 @@
                 </VisualState>
                 <VisualState x:Name="Disabled" />
               </VisualStateGroup>
+              <!--  The item drives these states from IsChecked; mirroring them onto the
+                    CheckBox needs no binding (so no reflection under trimming/NativeAOT).  -->
               <VisualStateGroup x:Name="CheckStates">
                 <VisualState x:Name="Unchecked" />
-                <VisualState x:Name="Checked" />
+                <VisualState x:Name="Checked">
+                  <VisualState.Setters>
+                    <Setter Target="CheckBoxControl.IsChecked" Value="True" />
+                  </VisualState.Setters>
+                </VisualState>
                 <VisualState x:Name="UncheckedWithIcon" />
-                <VisualState x:Name="CheckedWithIcon" />
+                <VisualState x:Name="CheckedWithIcon">
+                  <VisualState.Setters>
+                    <Setter Target="CheckBoxControl.IsChecked" Value="True" />
+                  </VisualState.Setters>
+                </VisualState>
               </VisualStateGroup>
             </VisualStateManager.VisualStateGroups>
           </Grid>

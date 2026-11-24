@@ -15,7 +15,7 @@ public partial class Advanced_SearchViewModel : ObservableRecipient
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(PlaceholderText))]
     [NotifyPropertyChangedFor(nameof(SelectedSearchType))]
-    private int _selectedTypeIndex;
+    public partial int SelectedTypeIndex { get; set; }
 
     public SearchType SelectedSearchType => SelectedTypeIndex switch
     {
@@ -25,16 +25,16 @@ public partial class Advanced_SearchViewModel : ObservableRecipient
     };
 
     [ObservableProperty]
-    private bool _isLoading;
+    public partial bool IsLoading { get; set; }
 
     [ObservableProperty]
-    private bool _hasError;
+    public partial bool HasError { get; set; }
 
     [ObservableProperty]
-    private string _errorMessage = string.Empty;
+    public partial string ErrorMessage { get; set; } = string.Empty;
 
     [ObservableProperty]
-    private bool _showInfoCards = true;
+    public partial bool ShowInfoCards { get; set; } = true;
 
     public string PlaceholderText => SelectedSearchType switch
     {

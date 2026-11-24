@@ -15,7 +15,7 @@ public partial class MainViewModel : ObservableRecipient, INavigationAware, ICar
     public Category Category = Category.TopFree;
 
     [ObservableProperty]
-    private string headerText = "";
+    public partial string HeaderText { get; set; } = "";
 
     public ObservableCollection<Card> Cards { get; set; } = [];
 
@@ -59,10 +59,10 @@ public partial class MainViewModel : ObservableRecipient, INavigationAware, ICar
     }
 
     [ObservableProperty]
-    private List<string> itemSourceFilter1 = [];
+    public partial List<string> ItemSourceFilter1 { get; set; } = [];
 
     [ObservableProperty]
-    private List<string> itemSourceFilter2 = [];
+    public partial List<string> ItemSourceFilter2 { get; set; } = [];
 
     private static readonly Dictionary<int, MediaTypeRecommendation> MediaTypePairs = new()
     {

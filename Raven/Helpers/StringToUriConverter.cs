@@ -7,7 +7,7 @@ namespace Raven.Helpers;
 /// <see cref="Microsoft.UI.Xaml.Media.Imaging.BitmapImage.UriSource"/>.
 /// Returns null for null/empty/relative inputs. One-way only.
 /// </summary>
-public sealed class StringToUriConverter : IValueConverter
+public sealed partial class StringToUriConverter : IValueConverter
 {
     public object? Convert(object value, Type targetType, object parameter, string language)
     {

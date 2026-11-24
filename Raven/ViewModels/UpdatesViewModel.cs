@@ -22,31 +22,31 @@ public partial class UpdatesViewModel : ObservableObject
     public DispatcherQueue? DispatcherQueue { get; set; }
 
     [ObservableProperty]
-    private ObservableCollection<UpdateItem> _availableUpdates = [];
+    public partial ObservableCollection<UpdateItem> AvailableUpdates { get; set; } = [];
 
     [ObservableProperty]
-    private ObservableCollection<UpdateItem> _completedUpdates = [];
+    public partial ObservableCollection<UpdateItem> CompletedUpdates { get; set; } = [];
 
     [ObservableProperty]
-    private ObservableCollection<DownloadItem> _failedUpdates = [];
+    public partial ObservableCollection<DownloadItem> FailedUpdates { get; set; } = [];
 
     [ObservableProperty]
-    private bool _isChecking;
+    public partial bool IsChecking { get; set; }
 
     [ObservableProperty]
-    private bool _isUpdating;
+    public partial bool IsUpdating { get; set; }
 
     [ObservableProperty]
-    private int _selectedCount;
+    public partial int SelectedCount { get; set; }
 
     [ObservableProperty]
-    private string _checkingProgressBase = string.Empty;
+    public partial string CheckingProgressBase { get; set; } = string.Empty;
 
     [ObservableProperty]
-    private string _checkingProgressDots = string.Empty;
+    public partial string CheckingProgressDots { get; set; } = string.Empty;
 
     [ObservableProperty]
-    private double _checkingProgress;
+    public partial double CheckingProgress { get; set; }
 
     public bool HasUpdates => AvailableUpdates.Count > 0;
     public bool HasCompletedUpdates => CompletedUpdates.Count > 0;
@@ -443,7 +443,7 @@ public partial class UpdatesViewModel : ObservableObject
             }
 
             var json = File.ReadAllText(CompletedUpdatesPath);
-            var entries = JsonSerializer.Deserialize<List<CompletedUpdateEntry>>(json);
+            var entries = JsonSerializer.Deserialize(json, RavenJsonContext.Default.ListCompletedUpdateEntry);
             if (entries == null)
                 return;
 
@@ -481,13 +481,14 @@ public partial class UpdatesViewModel : ObservableObject
                 })
                 .ToList();
 
-            var json = JsonSerializer.Serialize(entries);
+            var json = JsonSerializer.Serialize(entries, RavenJsonContext.Default.ListCompletedUpdateEntry);
             File.WriteAllText(CompletedUpdatesPath, json);
         }
         catch { }
     }
 
-    private sealed class CompletedUpdateEntry
+    // internal (not private) so RavenJsonContext can generate its serialization metadata.
+    internal sealed class CompletedUpdateEntry
     {
         public string ProductId { get; set; } = string.Empty;
         public string Title { get; set; } = string.Empty;

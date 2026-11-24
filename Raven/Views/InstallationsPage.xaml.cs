@@ -2,6 +2,7 @@ using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Raven.Contracts.Views;
 using Raven.Helpers;
 using Raven.Services;
 using Raven.ViewModels;
@@ -10,7 +11,7 @@ using WinRT.Interop;
 
 namespace Raven.Views;
 
-public sealed partial class InstallationsPage : Page
+public sealed partial class InstallationsPage : Page, IViewModelPage<InstallationsViewModel>
 {
     private readonly ILogger _installLogger;
     public UIUpdateService UpdateService
@@ -577,7 +578,7 @@ public sealed partial class InstallationsPage : Page
             var message = cix.Reason switch
             {
                 CustomInstallError.FolderExists =>
-                    "Install_Error_FolderExists".GetLocalizedFormat(cix.FolderName),
+                    "Install_Error_FolderExists".GetLocalizedFormat(cix.FolderName ?? string.Empty),
                 CustomInstallError.NoCompatibleArch =>
                     "Install_Error_NoInstallableArch".GetLocalized(),
                 CustomInstallError.ManifestMissing =>

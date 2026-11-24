@@ -188,8 +188,18 @@ class Utils
             // Architecture Selection
             // ---------------------------------------------------------
             var archRid = SystemInfo.GetOsArchRid();
+
+            // Ignore other device families' builds (Xbox .70 / Core / Mobile) so the shown version
+            // is the desktop one; fall back to everything if the catalog matches none.
+            var osVersion = SystemInfo.GetExactWindowsVersion();
+            var desktopPackages = packages
+                .Where(p => p.PlatformDependencies?.Any(pd =>
+                    (pd.Platform == DeviceFamily.Desktop || pd.Platform == DeviceFamily.Universal)
+                    && pd.MinVersion <= osVersion) ?? true)
+                .ToList();
+
             var best = OrderCandidatesByVersionAndArch(
-                packages,
+                desktopPackages.Count > 0 ? desktopPackages : packages,
                 p => p.PackageFullName ?? p.PackageIdentityName,
                 p => p.AppVersion ?? default,
                 archRid,

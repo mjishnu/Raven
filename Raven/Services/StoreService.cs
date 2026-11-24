@@ -37,7 +37,7 @@ namespace Raven.Services
                 {
                     IsSuccess = result.IsSuccess,
                     Cards = result.Value?.Cards.ToArray() ?? new Card[0],
-                    HasMoreItems = result.Value.Cards.ToArray().Length == 0 ? false : true,
+                    HasMoreItems = result.Value?.Cards.Count > 0,
                     ErrorMessage = result.Exception?.Message,
                 };
             }

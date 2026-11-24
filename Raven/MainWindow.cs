@@ -1,8 +1,11 @@
-﻿using Raven.Helpers;
+using Microsoft.UI.Xaml.Media;
+using Raven.Helpers;
 using Windows.UI.ViewManagement;
 
 namespace Raven;
 
+// Code-only (no MainWindow.xaml): as a XAML root, WindowEx made the XAML compiler generate
+// metadata for WinUIEx's obsolete Icon type, which surfaced as a CS0618 warning.
 public sealed partial class MainWindow : WindowEx
 {
     private Microsoft.UI.Dispatching.DispatcherQueue dispatcherQueue;
@@ -11,7 +14,10 @@ public sealed partial class MainWindow : WindowEx
 
     public MainWindow()
     {
-        InitializeComponent();
+        MinWidth = 500;
+        MinHeight = 500;
+        PersistenceId = "MainWindow";
+        SystemBackdrop = new MicaBackdrop();
 
         AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "Assets/Raven.ico"));
         Content = null;

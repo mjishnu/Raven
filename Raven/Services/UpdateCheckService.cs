@@ -11,7 +11,7 @@ namespace Raven.Services;
 public static class UpdateCheckService
 {
     private const int LOOKUP_BATCH_SIZE = 5;
-    private const int INSTALL_BATCH_SIZE = 5;
+    private const int MAX_CONCURRENT_UPDATES = 5;
 
     public static async Task<List<UpdateItem>> CheckForUpdatesAsync(
         IProgress<(int completed, int total)>? progress,
@@ -197,7 +197,7 @@ public static class UpdateCheckService
                                     Title = product.Title,
                                     LogoUrl = product.Logo?.Url,
                                     PublisherName = product.PublisherName,
-                                    InstalledVersion = installedVersion,
+                                    InstalledVersion = installedVersion ?? string.Empty,
                                     StoreVersion = verifiedVersion!,
                                     RevisionId = product.RevisionId,
                                     IsBundle = product.IsBundle,
@@ -250,26 +250,31 @@ public static class UpdateCheckService
         var downloadManager = DownloadManagerService.Instance;
         var queue = items.ToList();
 
-        for (int batchStart = 0; batchStart < queue.Count; batchStart += INSTALL_BATCH_SIZE)
+        // Mark all items as Pending up front
+        foreach (var item in queue)
         {
-            ct.ThrowIfCancellationRequested();
-
-            var batch = queue.Skip(batchStart).Take(INSTALL_BATCH_SIZE).ToList();
-
-            // Mark items not yet started as Pending
-            var pending = queue.Skip(batchStart + INSTALL_BATCH_SIZE).ToList();
-            foreach (var p in pending)
-            {
-                if (!downloadManager.IsCancellationRequested(p.ProductId))
-                    downloadManager.RunOnUIThread(() => p.Status = DownloadStatus.Pending);
-            }
-
-            await Task.WhenAll(
-                batch.Select(item =>
-                    ProcessItemAsync(item, dispatcher, ct, downloadManager, onItemCompleted, market, language)
-                )
-            );
+            if (!downloadManager.IsCancellationRequested(item.ProductId))
+                downloadManager.RunOnUIThread(() => item.Status = DownloadStatus.Pending);
         }
+
+        var parallelOptions = new ParallelOptions
+        {
+            MaxDegreeOfParallelism = MAX_CONCURRENT_UPDATES,
+            CancellationToken = ct
+        };
+
+        await Parallel.ForEachAsync(queue, parallelOptions, async (item, token) =>
+        {
+            await ProcessItemAsync(
+                item,
+                dispatcher,
+                token,
+                downloadManager,
+                onItemCompleted,
+                market,
+                language
+            ).ConfigureAwait(false);
+        }).ConfigureAwait(false);
     }
 
     private static async Task ProcessItemAsync(

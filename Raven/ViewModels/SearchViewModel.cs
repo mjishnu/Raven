@@ -62,10 +62,10 @@ public partial class SearchViewModel : ObservableRecipient, ICardViewModel
         }
     }
     [ObservableProperty]
-    private List<string> itemSourceFilter1 = [];
+    public partial List<string> ItemSourceFilter1 { get; set; } = [];
 
     [ObservableProperty]
-    private List<string> itemSourceFilter2 = [];
+    public partial List<string> ItemSourceFilter2 { get; set; } = [];
     private static readonly Dictionary<int, MediaTypeSearch> MediaTypePairs = new()
     {
         { 0, MediaTypeSearch.All },

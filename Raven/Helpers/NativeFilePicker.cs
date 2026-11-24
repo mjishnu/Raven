@@ -4,7 +4,8 @@ namespace Raven.Helpers;
 
 /// <summary>
 /// Native file and folder picker using the modern IFileOpenDialog COM interface.
-/// Works correctly under elevation (unlike the WinUI FileOpenPicker / FolderPicker).
+/// Works correctly under elevation (unlike the WinUI FileOpenPicker / FolderPicker), and
+/// under NativeAOT, since the interop is source-generated (see <see cref="ShellInterop"/>).
 /// </summary>
 public static class NativeFilePicker
 {
@@ -59,7 +60,7 @@ public static class NativeFilePicker
         FilterSpec[]? filters,
         uint extraFlags)
     {
-        var dialog = (IFileOpenDialog)new FileOpenDialogCoClass();
+        var dialog = (IFileOpenDialog)ShellInterop.CreateComObject(ShellInterop.CLSID_FileOpenDialog);
         try
         {
             dialog.GetOptions(out var options);
@@ -80,14 +81,14 @@ public static class NativeFilePicker
                 return GetMultipleResults(dialog);
 
             dialog.GetResult(out var item);
-            item.GetDisplayName(SIGDN_FILESYSPATH, out var path);
+            item.GetDisplayName(ShellInterop.SIGDN_FILESYSPATH, out var path);
             return string.IsNullOrEmpty(path)
                 ? Array.Empty<string>()
                 : new[] { path };
         }
         finally
         {
-            Marshal.ReleaseComObject(dialog);
+            ShellInterop.Release(dialog);
         }
     }
 
@@ -130,23 +131,16 @@ public static class NativeFilePicker
     private static IReadOnlyList<string> GetMultipleResults(IFileOpenDialog dialog)
     {
         dialog.GetResults(out var shellItemArray);
-        try
+        shellItemArray.GetCount(out var count);
+        var paths = new List<string>((int)count);
+        for (uint i = 0; i < count; i++)
         {
-            shellItemArray.GetCount(out var count);
-            var paths = new List<string>((int)count);
-            for (uint i = 0; i < count; i++)
-            {
-                shellItemArray.GetItemAt(i, out var item);
-                item.GetDisplayName(SIGDN_FILESYSPATH, out var path);
-                if (!string.IsNullOrEmpty(path))
-                    paths.Add(path);
-            }
-            return paths;
+            shellItemArray.GetItemAt(i, out var item);
+            item.GetDisplayName(ShellInterop.SIGDN_FILESYSPATH, out var path);
+            if (!string.IsNullOrEmpty(path))
+                paths.Add(path);
         }
-        finally
-        {
-            Marshal.ReleaseComObject(shellItemArray);
-        }
+        return paths;
     }
 
     // ---------------------------------------------------------------
@@ -158,10 +152,9 @@ public static class NativeFilePicker
     private const uint FOS_ALLOWMULTISELECT = 0x00000200;
     private const uint FOS_FILEMUSTEXIST = 0x00001000;
     private const uint FOS_NOCHANGEDIR = 0x00000008;
-    private const uint SIGDN_FILESYSPATH = 0x80058000;
 
     // ---------------------------------------------------------------
-    //  COM interop declarations
+    //  Interop declarations (the COM interfaces live in ShellInterop)
     // ---------------------------------------------------------------
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
@@ -169,70 +162,5 @@ public static class NativeFilePicker
     {
         public IntPtr pszName;
         public IntPtr pszSpec;
-    }
-
-    [ComImport]
-    [Guid("DC1C5A9C-E88A-4dde-A5A1-60F82A20AEF7")]
-    private class FileOpenDialogCoClass
-    {
-    }
-
-    [ComImport]
-    [Guid("d57c7288-d4ad-4768-be02-9d969532d960")]
-    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    private interface IFileOpenDialog
-    {
-        [PreserveSig] int Show(IntPtr parent);
-        void SetFileTypes(uint cFileTypes, IntPtr rgFilterSpec);
-        void SetFileTypeIndex(uint iFileType);
-        void GetFileTypeIndex(out uint piFileType);
-        void Advise(IntPtr pfde, out uint pdwCookie);
-        void Unadvise(uint dwCookie);
-        void SetOptions(uint fos);
-        void GetOptions(out uint pfos);
-        void SetDefaultFolder(IShellItem psi);
-        void SetFolder(IShellItem psi);
-        IShellItem GetFolder();
-        IShellItem GetCurrentSelection();
-        void SetFileName([MarshalAs(UnmanagedType.LPWStr)] string pszName);
-        void GetFileName([MarshalAs(UnmanagedType.LPWStr)] out string pszName);
-        void SetTitle([MarshalAs(UnmanagedType.LPWStr)] string pszTitle);
-        void SetOkButtonLabel([MarshalAs(UnmanagedType.LPWStr)] string pszText);
-        void SetFileNameLabel([MarshalAs(UnmanagedType.LPWStr)] string pszLabel);
-        void GetResult(out IShellItem ppsi);
-        void AddPlace(IShellItem psi, int fdap);
-        void SetDefaultExtension([MarshalAs(UnmanagedType.LPWStr)] string pszDefaultExtension);
-        void Close(int hr);
-        void SetClientGuid(ref Guid guid);
-        void ClearClientData();
-        void SetFilter(IntPtr pFilter);
-        void GetResults(out IShellItemArray ppenum);
-        void GetSelectedItems(out IntPtr ppsai);
-    }
-
-    [ComImport]
-    [Guid("43826d1e-e718-42ee-bc55-a1e261c37bfe")]
-    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    private interface IShellItem
-    {
-        void BindToHandler(IntPtr pbc, ref Guid bhid, ref Guid riid, out IntPtr ppv);
-        void GetParent(out IShellItem ppsi);
-        void GetDisplayName(uint sigdnName, [MarshalAs(UnmanagedType.LPWStr)] out string ppszName);
-        void GetAttributes(uint sfgaoMask, out uint psfgaoAttribs);
-        void Compare(IShellItem psi, uint hint, out int piOrder);
-    }
-
-    [ComImport]
-    [Guid("b63ea76d-1f85-456f-a19c-48159efa858b")]
-    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
-    private interface IShellItemArray
-    {
-        void BindToHandler(IntPtr pbc, ref Guid bhid, ref Guid riid, out IntPtr ppvOut);
-        void GetPropertyStore(int flags, ref Guid riid, out IntPtr ppv);
-        void GetPropertyDescriptionList(IntPtr keyType, ref Guid riid, out IntPtr ppv);
-        void GetAttributes(int AttribFlags, uint sfgaoMask, out uint psfgaoAttribs);
-        void GetCount(out uint pdwNumItems);
-        void GetItemAt(uint dwIndex, out IShellItem ppsi);
-        void EnumItems(out IntPtr ppenumShellItems);
     }
 }

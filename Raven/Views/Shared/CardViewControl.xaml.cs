@@ -20,8 +20,8 @@ namespace Raven.Views.Shared;
 public sealed partial class CardViewControl : UserControl
 {
     #region Fields
-    private Compositor _compositor;
-    private SpringVector3NaturalMotionAnimation _springAnimation;
+    private Compositor? _compositor;
+    private SpringVector3NaturalMotionAnimation? _springAnimation;
     private bool filterBtnActive = false;
     private bool isLoadingMore = false;
     private CancellationTokenSource? _loadingDotsCts;
@@ -245,7 +245,7 @@ public sealed partial class CardViewControl : UserControl
 
         var success = true;
         var errorText = "";
-        Exception loadException = null;
+        Exception? loadException = null;
         isLoadingMore = true;
         try
         {
@@ -629,9 +629,9 @@ public sealed partial class CardViewControl : UserControl
         // event to this disconnected native peer and throws COMException 0x80004005.
         CardRepeater.ItemsSource = null;
 
-        LoadCardsMethod = null;
-        ViewModel = null;
-        ItemsSource = null;
+        ClearValue(LoadCardsMethodProperty);
+        ClearValue(ViewModelProperty);
+        ClearValue(ItemsSourceProperty);
     }
 
     private async Task AnimateLoadingDotsAsync(CancellationToken ct)

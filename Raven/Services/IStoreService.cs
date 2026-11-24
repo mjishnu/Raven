@@ -16,8 +16,8 @@ namespace Raven.Services
     public class SearchResult
     {
         public bool IsSuccess { get; set; }
-        public Card[] Cards { get; set; }
+        public Card[] Cards { get; set; } = [];
         public bool HasMoreItems { get; set; }
-        public string ErrorMessage { get; set; }
+        public string? ErrorMessage { get; set; }
     }
 }

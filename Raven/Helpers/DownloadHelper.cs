@@ -141,6 +141,7 @@ public sealed class DownloadHelper
             // Route the download through the user's active proxy, if any.
             RequestConfiguration = { Proxy = ProxyService.Instance.GetWebProxy() },
 
+
             // CRITICAL for large files: Disable parallel chunking.
             // With ParallelDownload=true, the library holds chunk data in memory before merging.
             // For a 2GB file with 2 chunks, that's 2x1GB buffers causing severe memory pressure.
@@ -616,7 +617,7 @@ public sealed class DownloadHelper
                     }
                     
                     downloadManager.UpdateDownloadStatusText(productId, null);
-                    downloadManager.UpdateDownloadDetailsText(productId, null);
+                    downloadManager.UpdateDownloadDetailsText(productId, string.Empty);
                     break;
                 }
             }
@@ -756,7 +757,7 @@ public sealed class DownloadHelper
             }
             catch (Exception ex)
             {
-                installLogger?.LogWarning(ex, "Failed to delete stale dependency {Path}", stale);
+                installLogger.LogWarning(ex, "Failed to delete stale dependency {Path}", stale);
             }
 
             downloadManager.RemoveDownloadedFileEntry(productId, stale);
@@ -807,7 +808,7 @@ public sealed class DownloadHelper
         {
             animator.Stop(downloadItem);
             updateService.StopStatusAnimation();
-            var packageFamilyName = downloadItem.PackageFamilyName;
+            var packageFamilyName = downloadItem?.PackageFamilyName;
             if (IsPackageInstalled(packageFamilyName))
             {
                 downloadManager.UpdateDownloadStatusText(productId, null);
