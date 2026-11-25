@@ -68,6 +68,13 @@ public class ActivationService : IActivationService
         await _themeSelectorService.InitializeAsync().ConfigureAwait(false);
         await _localeService.InitializeAsync().ConfigureAwait(false);
         await _architectureSelectorService.InitializeAsync().ConfigureAwait(false);
+
+        // Proxy must be initialized before any HTTP client is created, so the Store
+        // API and update checks route through the user's saved proxy from launch.
+        var proxyService = App.GetService<IProxyService>();
+        await proxyService.InitializeAsync().ConfigureAwait(false);
+
+        await App.GetService<DownloadLocationService>().InitializeAsync().ConfigureAwait(false);
     }
 
     private async Task StartupAsync()

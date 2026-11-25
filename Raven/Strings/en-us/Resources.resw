@@ -951,4 +951,73 @@ You can enable it by turning on Developer Mode in Windows Settings.</value>
   <data name="InstallationsPage_InstallDependenciesSeparately.Content" xml:space="preserve">
     <value>Install dependencies separately</value>
   </data>
+  <data name="Settings_Proxy.Text" xml:space="preserve">
+    <value>Proxy</value>
+  </data>
+  <data name="Settings_ProxyDescription.Text" xml:space="preserve">
+    <value>Save multiple proxies and switch between them at any time. All app traffic (Store API, downloads, update checks) uses the selected proxy. Choose "Direct connection" to disable proxying.</value>
+  </data>
+  <data name="Settings_Proxy_Direct.Content" xml:space="preserve">
+    <value>Direct connection (no proxy)</value>
+  </data>
+  <data name="Settings_Proxy_AddTitle.Text" xml:space="preserve">
+    <value>Add a new proxy</value>
+  </data>
+  <data name="Settings_Proxy_NameBox.PlaceholderText" xml:space="preserve">
+    <value>Name (optional)</value>
+  </data>
+  <data name="Settings_Proxy_HostBox.PlaceholderText" xml:space="preserve">
+    <value>Host or IP</value>
+  </data>
+  <data name="Settings_Proxy_PortBox.PlaceholderText" xml:space="preserve">
+    <value>Port</value>
+  </data>
+  <data name="Settings_Proxy_UsernameBox.PlaceholderText" xml:space="preserve">
+    <value>Username (optional)</value>
+  </data>
+  <data name="Settings_Proxy_PasswordBox.PlaceholderText" xml:space="preserve">
+    <value>Password (optional)</value>
+  </data>
+  <data name="Settings_Proxy_TypeCombo.PlaceholderText" xml:space="preserve">
+    <value>Type</value>
+  </data>
+  <data name="Settings_Proxy_AddButton.Content" xml:space="preserve">
+    <value>Add proxy</value>
+  </data>
+  <data name="Settings_Proxy_RemoveButton.Content" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <data name="Settings_Proxy_Error_Chip.Text" xml:space="preserve">
+    <value>Wrong proxy</value>
+  </data>
+  <data name="Settings_Proxy_Error.Title" xml:space="preserve">
+    <value>Wrong proxy</value>
+  </data>
+  <data name="Settings_Proxy_Error_HostRequired" xml:space="preserve">
+    <value>Please enter a host name or IP address.</value>
+  </data>
+  <data name="Settings_Proxy_Error_PortInvalid" xml:space="preserve">
+    <value>Please enter a valid port number (1-65535).</value>
+  </data>
+  <data name="Settings_Proxy_Error_HostInvalid" xml:space="preserve">
+    <value>Invalid IP. The format is ---.---.---.--- — four groups of up to three digits (0-255), e.g. 127.0.0.1</value>
+  </data>
+  <data name="Settings_DownloadFolder.Text" xml:space="preserve">
+    <value>Download location</value>
+  </data>
+  <data name="Settings_DownloadFolderDescription.Text" xml:space="preserve">
+    <value>New downloads are saved to the folder below. The default is Downloads\Raven.</value>
+  </data>
+  <data name="Settings_DownloadFolder_CurrentLabel.Text" xml:space="preserve">
+    <value>Current download folder</value>
+  </data>
+  <data name="Settings_DownloadFolder_BrowseButton.Content" xml:space="preserve">
+    <value>Change folder</value>
+  </data>
+  <data name="Settings_DownloadFolder_ResetButton.Content" xml:space="preserve">
+    <value>Use default</value>
+  </data>
+  <data name="Settings_DownloadFolder_PickerTitle" xml:space="preserve">
+    <value>Select download folder</value>
+  </data>
 </root>
